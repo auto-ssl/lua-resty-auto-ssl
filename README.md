@@ -10,6 +10,10 @@ This OpenResty plugin automatically and transparently issues SSL certificates fr
 
 This uses the `ssl_certificate_by_lua` functionality in OpenResty 1.9.7.2+.
 
+## Status
+
+The primary functionality is in place, but there are still a few [todos](#todo) and cleanup that needs to be done before this is probably ready for any real use.
+
 ## Installation
 
 Requirements:
@@ -115,5 +119,6 @@ http {
 ## TODO
 
 - Implement tests.
+- Implement locking to prevent concurrent first-time registrations.
 - Implement background task to perform automatic renewals.
 - Implement Redis storage mechanism (non-blocking and suitable for multi-server environments).
