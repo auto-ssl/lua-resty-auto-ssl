@@ -1,0 +1,6 @@
+/build
+/lib/resty/auto-ssl/vendor/*
+/t/build
+/t/servroot
+/t/tmp
+/t/vendor

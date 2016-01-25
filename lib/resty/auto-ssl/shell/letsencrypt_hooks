@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# When letsencrypt.sh is run locally, it will call this hook script when
+# various things need to be setup (for example, setting up the challenge token
+# or deploying the certs). In turn, this script will call our internal hook
+# HTTP API server which can then set the needed data on the current storage
+# adapter. This allows for setting the data on non-local storage so challenges
+# and certs can work in a multi-server, load balanced environment.
+
+set -e -u -x
+
+function deploy_challenge {
+  local DOMAIN="${1}" TOKEN_FILENAME="${2}" TOKEN_VALUE="${3}"
+
+  curl --silent --show-error --fail -XPOST \
+    --header "X-Hook-Secret: $HOOK_SECRET" \
+    --data-urlencode "domain=$DOMAIN" \
+    --data-urlencode "token_filename=$TOKEN_FILENAME" \
+    --data-urlencode "token_value=$TOKEN_VALUE" \
+    "http://127.0.0.1:8999/deploy-challenge"
+}
+
+function clean_challenge {
+  local DOMAIN="${1}" TOKEN_FILENAME="${2}" TOKEN_VALUE="${3}"
+
+  curl --silent --show-error --fail -XPOST \
+    --header "X-Hook-Secret: $HOOK_SECRET" \
+    --data-urlencode "domain=$DOMAIN" \
+    --data-urlencode "token_filename=$TOKEN_FILENAME" \
+    --data-urlencode "token_value=$TOKEN_VALUE" \
+    "http://127.0.0.1:8999/clean-challenge" || { echo "hook request failed"; exit 1; }
+}
+
+function deploy_cert {
+  local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" CHAINFILE="${4}"
+
+  local PRIVKEY=$(cat $KEYFILE)
+  local CERT=$(cat $CERTFILE)
+  local FULLCHAIN=$(cat $CHAINFILE)
+
+  curl --silent --show-error --fail -XPOST \
+    --header "X-Hook-Secret: $HOOK_SECRET" \
+    --data-urlencode "domain=$DOMAIN" \
+    --data-urlencode "privkey=$PRIVKEY" \
+    --data-urlencode "cert=$CERT" \
+    --data-urlencode "fullchain=$FULLCHAIN" \
+    "http://127.0.0.1:8999/deploy-cert" || { echo "hook request failed"; exit 1; }
+}
+
+HANDLER=$1; shift; $HANDLER $@

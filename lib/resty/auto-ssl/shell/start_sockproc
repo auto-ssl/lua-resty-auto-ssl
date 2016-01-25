@@ -1,0 +1,39 @@
+#!/bin/bash
+
+SOCK_FILE=/tmp/shell.sock
+PID_FILE=/tmp/auto-ssl-sockproc.pid
+
+# We want to launch sockproc from inside nginx using os.execute (mainly just to
+# simplify the deployment of auto-ssl, so you don't have to worry about running
+# sockproc). But we need to clear the file descriptors we pass to sockproc, or
+# else when nginx is stopped, sockproc inherits the port nginx was listening to,
+# and then sockproc holds that port open, preventing nginx from starting
+# again.
+#
+# This wipes any file descriptors > 2 that nginx might pass along (so only
+# stdin, stdout, and stderr are retained).
+#
+# See:
+# http://stackoverflow.com/a/4839945/222487
+# http://stackoverflow.com/a/23104923/222487
+SELF=$BASHPID
+FILE_DESCRIPTORS=$(find /proc/$SELF/fd -type l -printf '%f\n')
+for FD in $FILE_DESCRIPTORS; do
+  if ((FD > 2)); then
+    eval "exec $FD>&-"
+  fi
+done
+
+# When nginx shuts down, the sockproc daemon continues to run. So when nginx
+# subsequently starts again, we'll also make sure we restart sockproc.
+if [ -e $PID_FILE ]; then
+  PID=$(cat $PID_FILE)
+  kill $PID || true
+fi
+
+# Just make sure the socket file is cleaned up.
+rm -f $SOCK_FILE || true
+
+# Start the sockproc daemon.
+VENDOR_DIR="$(dirname $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd))/vendor"
+$VENDOR_DIR/sockproc $SOCK_FILE $PID_FILE
