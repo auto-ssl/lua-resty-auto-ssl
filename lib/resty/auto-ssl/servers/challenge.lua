@@ -1,4 +1,4 @@
-local storage = require "lib.resty.auto-ssl.storage"
+local storage = require "resty.auto-ssl.storage"
 
 -- This server should be setup to respond on port 80 to
 -- /.well-known/acme-challenge/* requests. This handles Let's Encrypt's
