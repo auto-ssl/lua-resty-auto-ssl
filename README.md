@@ -19,7 +19,7 @@ Requirements:
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
 
 ```sh
-$ sudo luarocks install lua-resty-auto-ssl
+$ sudo luarocks install https://raw.githubusercontent.com/GUI/lua-resty-auto-ssl/master/lua-resty-auto-ssl-git-1.rockspec
 
 # Create /etc/resty-auto-ssl and make sure it's writable by whichever user your
 # nginx workers run as (in this example, "www-data").
@@ -30,6 +30,10 @@ $ sudo chown www-data /etc/resty-auto-ssl
 Implement the necessary configuration inside your nginx config. Here is a minimal example:
 
 ```nginx
+events {
+  worker_connections 1024;
+}
+
 http {
   # The "auto_ssl" shared dict must be defined with enough storage space to
   # hold your certificate data.
@@ -42,9 +46,9 @@ http {
   init_worker_by_lua_block {
     local auto_ssl = require "resty.auto-ssl"
 
-    # Define a function to determine which SNI domains to automatically handle
-    # and register new certificates for. Defaults to not allowing any domains,
-    # so this must be configured.
+    -- Define a function to determine which SNI domains to automatically handle
+    -- and register new certificates for. Defaults to not allowing any domains,
+    -- so this must be configured.
     auto_ssl.allow_domain = function(domain)
       return true
     end
