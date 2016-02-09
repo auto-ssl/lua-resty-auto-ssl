@@ -29,7 +29,7 @@ install:
 	install -D -m 755 lib/resty/auto-ssl/vendor/sockproc $(INST_LUADIR)/resty/auto-ssl/vendor/sockproc
 
 $(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh:
-	curl -sSLo $@ "https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/3432f60e33cdd1fdacbcc523a885b367d84e53ec/letsencrypt.sh"
+	curl -sSLo $@ "https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/21c18dd3b8c2572b894d9ec2e5c3fc2589f56f32/letsencrypt.sh"
 	chmod +x $@
 	touch $@
 
@@ -55,7 +55,7 @@ TEST_TMP_DIR:=$(ROOT_DIR)/t/tmp
 TEST_LUAROCKS_DIR:=$(TEST_VENDOR_DIR)/lib/luarocks/rocks
 TEST_LUA_SHARE_DIR:=$(TEST_VENDOR_DIR)/share/lua/5.1
 TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
-PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(PATH)
+PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(PATH)
 
 LUACHECK:=luacheck
 LUACHECK_VERSION:=0.13.0-1
@@ -65,6 +65,9 @@ OPENSSL:=openssl-$(OPENSSL_VERSION)
 
 OPENRESTY_VERSION:=1.9.7.2
 OPENRESTY:=ngx_openresty-$(OPENRESTY_VERSION)
+
+LUAROCKS_VERSION=2.3.0
+LUAROCKS=luarocks-$(LUAROCKS_VERSION)
 
 NGROK_VERSION:=2.0.19
 NGROK:=ngrok-$(NGROK_VERSION)
@@ -90,9 +93,20 @@ $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	chmod +x $@
 	touch $@
 
-$(TEST_BUILD_DIR)/lib/perl5: $(TEST_TMP_DIR)/cpanm
+$(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
+	$< -L $(TEST_BUILD_DIR) --notest Expect
+	chmod u+w $@
+	touch $@
+
+$(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm: $(TEST_TMP_DIR)/cpanm
+	$< -L $(TEST_BUILD_DIR) --notest File::Slurp
+	chmod u+w $@
+	touch $@
+
+$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
 	$< -L $(TEST_BUILD_DIR) --notest LWP::Protocol::https
-	$< -L $(TEST_BUILD_DIR) --notest https://github.com/openresty/test-nginx/archive/f27e5952d48a32699808ff2806a7806155645fcb.tar.gz
+	$< -L $(TEST_BUILD_DIR) --notest https://github.com/openresty/test-nginx/archive/9eeb0957a5eb0f2dd800e9627a12191073adb2ad.tar.gz
+	chmod u+w $@
 	touch $@
 
 $(TEST_VENDOR_DIR)/$(NGROK)/ngrok: | $(TEST_TMP_DIR) $(TEST_VENDOR_DIR)
@@ -113,16 +127,32 @@ $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make install
 	touch $@
 
+$(TEST_TMP_DIR)/$(LUAROCKS)/.installed: $(TEST_TMP_DIR)/$(OPENRESTY)/.installed | $(TEST_TMP_DIR)
+	cd $(TEST_TMP_DIR) && rm -rf luarocks*
+	cd $(TEST_TMP_DIR) && curl -L -O http://luarocks.org/releases/$(LUAROCKS).tar.gz
+	cd $(TEST_TMP_DIR) && tar -xf $(LUAROCKS).tar.gz
+	cd $(TEST_TMP_DIR)/$(LUAROCKS) && ./configure \
+		--prefix=$(TEST_BUILD_DIR)/luajit \
+		--with-lua=$(TEST_BUILD_DIR)/luajit \
+		--with-lua-include=$(TEST_BUILD_DIR)/luajit/include/luajit-2.1 \
+		--lua-suffix=jit-2.1.0-beta1
+	cd $(TEST_TMP_DIR)/$(LUAROCKS) && make bootstrap
+	touch $@
+
 test_dependencies: \
 	$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION) \
 	$(TEST_VENDOR_DIR)/$(NGROK)/ngrok \
 	$(TEST_TMP_DIR)/$(OPENRESTY)/.installed \
-	$(TEST_BUILD_DIR)/lib/perl5
+	$(TEST_TMP_DIR)/$(LUAROCKS)/.installed \
+	$(TEST_BUILD_DIR)/lib/perl5/Expect.pm \
+	$(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm \
+	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm
 
 lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
 
 test: test_dependencies
+	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove
 
 grind:

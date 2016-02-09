@@ -48,16 +48,16 @@ http {
 
   # Intial setup tasks.
   init_worker_by_lua_block {
-    local auto_ssl = require "resty.auto-ssl"
+    auto_ssl = (require "resty.auto-ssl").new()
 
     -- Define a function to determine which SNI domains to automatically handle
     -- and register new certificates for. Defaults to not allowing any domains,
     -- so this must be configured.
-    auto_ssl.allow_domain = function(domain)
+    auto_ssl:set("allow_domain", function(domain)
       return true
-    end
+    end)
 
-    auto_ssl.init_worker()
+    auto_ssl:init_worker()
   }
 
   # HTTPS server
@@ -66,8 +66,7 @@ http {
 
     # Dynamic handler for issuing or returning certs for SNI domains.
     ssl_certificate_by_lua_block {
-      local auto_ssl = require "resty.auto-ssl"
-      auto_ssl.ssl_certificate()
+      auto_ssl:ssl_certificate()
     }
 
     # You must still define a static ssl_certificate file for nginx to start.
@@ -89,8 +88,7 @@ http {
     # Endpoint used for performing domain verification with Let's Encrypt.
     location /.well-known/acme-challenge/ {
       content_by_lua_block {
-        local auto_ssl = require "resty.auto-ssl"
-        auto_ssl.challenge_server()
+        auto_ssl:challenge_server()
       }
     }
   }
@@ -100,25 +98,80 @@ http {
     listen 127.0.0.1:8999;
     location / {
       content_by_lua_block {
-        local auto_ssl = require "resty.auto-ssl"
-        auto_ssl.hook_server()
+        auto_ssl:hook_server()
       }
     }
   }
 }
 ```
 
+## Configuration
+
+Additional configuration options can be set on the `auto_ssl` instance that is created:
+
+- **`allow_domain`**
+  *Default:* `function(domain) return false end`
+
+  A function that determines whether the incoming SNI domain should automatically issue a new SSL certificate.
+
+  By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("allow_domain", function(domain)
+    return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
+  })
+  ```
+
+- **`dir`**
+  *Default:* `/etc/resty-auto-ssl`
+
+  The base directory used for storing configuration, temporary files, and certificate files (if using the `file` storage adapter). This directory must be writable by the user nginx workers run as.
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("dir", "/some/other/location")
+  ```
+
+- **`storage_adapter`**
+  *Default:* `resty.auto-ssl.storage_adapters.file`
+  *Options:* `resty.auto-ssl.storage_adapters.file`, `resty.auto-ssl.storage_adapters.redis`
+
+  The storage mechanism used for persistent storage of the SSL certificates. File-based and redis-based storage adapters are supplied, but custom external adapters may also be specified (the value simply needs to be on the `lua_package_path`).
+
+  The default storage adapter persists the certificates to local files. However, you may want to consider another storage adapter (like redis) for a couple reason:
+    - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
+    - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
+  ```
+
+- **`redis`**
+  *Default:* `{ host = "127.0.0.1", port = 6379 }`
+
+  If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts `host`, `port`, and `socket` (for unix socket paths) options.
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("redis", {
+    host = "10.10.10.1"
+  })
+  ```
+
 ## Precautions
 
-- **Allowed Hosts:** By default, resty-auto-ssl will not perform any SSL registrations until you define the `auto_ssl.allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist. the allowed domains in some way.
+- **Allowed Hosts:** By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
 - **Untrusted Code:** Ensure your OpenResty server where this is installed cannot execute untrusted code. The certificates and private keys have to be readable by the web server user, so it's important that this data is not compromised.
-- **File Storage:** The default storage adapter persists the certificates to local files. You may want to consider another storage adapter for a couple reason:
-  - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written once the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
+- **File Storage:** The default storage adapter persists the certificates to local files. However, you may want to consider another storage adapter (like redis) for a couple reason:
+  - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
   - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
 
 ## TODO
 
-- Implement tests.
-- Implement locking to prevent concurrent first-time registrations.
 - Implement background task to perform automatic renewals.
-- Implement Redis storage mechanism (non-blocking and suitable for multi-server environments).
