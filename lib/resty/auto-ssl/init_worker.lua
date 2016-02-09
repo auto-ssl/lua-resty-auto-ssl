@@ -1,4 +1,3 @@
-local auto_ssl = require "resty.auto-ssl"
 local lock = require "resty.lock"
 local resty_random = require "resty.random"
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
@@ -22,22 +21,40 @@ local function generate_hook_sever_secret()
   ngx.shared.auto_ssl:set("hook_server:secret", str.to_hex(random))
 end
 
-local function generate_config()
-  os.execute("mkdir -p " .. auto_ssl.dir .. "/letsencrypt/conf.d")
-  os.execute("mkdir -p " .. auto_ssl.dir .. "/letsencrypt/.acme-challenges")
-  os.execute("mkdir -p " .. auto_ssl.dir .. "/storage/file")
-  os.execute("chmod 700 " .. auto_ssl.dir .. "/storage/file")
+local function generate_config(auto_ssl_instance)
+  local base_dir = auto_ssl_instance:get("dir")
 
-  local file, err = io.open(auto_ssl.dir .. "/letsencrypt/.config.sh", "w")
+  os.execute("mkdir -p " .. base_dir .. "/letsencrypt/conf.d")
+  os.execute("mkdir -p " .. base_dir .. "/letsencrypt/.acme-challenges")
+
+  local file, err = io.open(base_dir .. "/letsencrypt/config.sh", "w")
   if err then
     ngx.log(ngx.ERR, "auto-ssl: failed to open letsencrypt config file")
   else
-    file:write('CONFIG_D="' .. auto_ssl.dir .. '/letsencrypt/conf.d"')
+    file:write('# This file will be overwritten by resty-auto-ssl.\n')
+    file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d\n\n')
+    file:write('CONFIG_D="' .. base_dir .. '/letsencrypt/conf.d"\n')
+
+    local ca = auto_ssl_instance:get("ca")
+    if ca then
+      file:write('CA="' .. ca .. '"\n')
+    end
+
     file:close()
   end
 end
 
-local function setup()
+local function setup_storage(auto_ssl_instance)
+  local adapter = require(auto_ssl_instance:get("storage_adapter"))
+  local adapter_instance = adapter.new(auto_ssl_instance)
+  adapter_instance:setup()
+
+  local storage = require "resty.auto-ssl.storage"
+  local storage_instance = storage.new(adapter_instance)
+  auto_ssl_instance:set("storage", storage_instance)
+end
+
+local function setup(auto_ssl_instance)
   -- Use a lock to ensure setup tasks don't overlap (even if multiple workers
   -- are starting).
   local generate_lock, new_lock_err = lock:new("auto_ssl", { ["timeout"] = 0 })
@@ -52,7 +69,8 @@ local function setup()
   end
 
   generate_hook_sever_secret()
-  generate_config()
+  generate_config(auto_ssl_instance)
+  setup_storage(auto_ssl_instance)
 
   local ok, unlock_err = generate_lock:unlock()
   if not ok then
@@ -60,7 +78,7 @@ local function setup()
   end
 end
 
-return function()
+return function(auto_ssl_instance)
   start_sockproc()
-  setup()
+  setup(auto_ssl_instance)
 end

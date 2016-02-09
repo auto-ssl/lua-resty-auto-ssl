@@ -1,11 +1,10 @@
-local auto_ssl = require "resty.auto-ssl"
 local http = require "resty.http"
+local lock = require "resty.lock"
 local ocsp = require "ngx.ocsp"
 local ssl = require "ngx.ssl"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
-local storage = require "resty.auto-ssl.storage"
 
-local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem)
+local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newly_issued)
   -- Convert certificate from PEM to DER format.
   local fullchain_der, fullchain_der_err = ssl.cert_pem_to_der(fullchain_pem)
   if not fullchain_der or fullchain_der_err then
@@ -29,32 +28,85 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem)
     ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of private key for " .. domain, set_privkey_err)
   end
 
-  return fullchain_der, privkey_der
+  return fullchain_der, privkey_der, newly_issued
 end
 
-local function get_cert(domain)
+local function issue_cert(auto_ssl_instance, storage, domain)
+  local fullchain_pem, privkey_pem, err
+
+  -- Before issuing a cert, create a local lock to ensure multiple workers
+  -- don't simultaneously try to register the same cert.
+  local local_lock, new_local_lock_err = lock:new("auto_ssl", { exptime = 30, timeout = 30 })
+  if new_local_lock_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create lock: ", new_local_lock_err)
+    return
+  end
+  local _, local_lock_err = local_lock:lock("issue_cert:" .. domain)
+  if local_lock_err then
+    ngx.log(ngx.err, "auto-ssl: failed to obtain lock: ", local_lock_err)
+    return
+  end
+
+  -- Also add a lock to the configured storage adapter, which allows for a
+  -- distributed lock across multiple servers (depending on the storage
+  -- adapter).
+  local distributed_lock_value, distributed_lock_err = storage:issue_cert_lock(domain)
+  if distributed_lock_err then
+    ngx.log(ngx.err, "auto-ssl: failed to obtain lock: ", distributed_lock_err)
+    return
+  end
+
+  -- After obtaining the local and distributed lock, see if the certificate
+  -- has already been registered.
+  fullchain_pem, privkey_pem = storage:get_cert(domain)
+  if fullchain_pem and privkey_pem then
+  --  ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
+    return fullchain_pem, privkey_pem
+  end
+
+  ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
+  fullchain_pem, privkey_pem, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+  if err then
+    ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
+  end
+
+  local _, local_unlock_err = local_lock:unlock()
+  if local_unlock_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
+  end
+
+  local _, distributed_unlock_err = storage:issue_cert_unlock(domain, distributed_lock_value)
+  if distributed_unlock_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
+  end
+
+  return fullchain_pem, privkey_pem, err
+end
+
+local function get_cert(auto_ssl_instance, domain)
   -- Look for the certificate in shared memory first.
   local fullchain_der = ngx.shared.auto_ssl:get("domain:fullchain_der:" .. domain)
   local privkey_der = ngx.shared.auto_ssl:get("domain:privkey_der:" .. domain)
   if fullchain_der and privkey_der then
-    return fullchain_der, privkey_der
+    return fullchain_der, privkey_der, false
   end
 
   -- Next, look for the certificate in permanent storage (which can be shared
   -- across servers depending on the storage).
-  local fullchain_pem, privkey_pem = storage.get_cert(domain)
+  local storage = auto_ssl_instance:get("storage")
+  local fullchain_pem, privkey_pem = storage:get_cert(domain)
   if fullchain_pem and privkey_pem then
-    return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem)
+    return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, false)
   end
 
   -- Finally, issue a new certificate if one hasn't been found yet.
-  fullchain_pem, privkey_pem = ssl_provider.issue_cert(domain)
+  fullchain_pem, privkey_pem = issue_cert(auto_ssl_instance, storage, domain)
   if fullchain_pem and privkey_pem then
-    return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem)
+    return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, true)
   end
 
   -- Return an error if issuing the certificate failed.
-  return nil, nil, "failed to get or issue certificate"
+  return nil, nil, nil, "failed to get or issue certificate"
 end
 
 local function get_ocsp_response(fullchain_der)
@@ -103,11 +155,18 @@ local function get_ocsp_response(fullchain_der)
   return ocsp_resp
 end
 
-local function set_ocsp_stapling(domain, fullchain_der)
+local function set_ocsp_stapling(domain, fullchain_der, newly_issued)
   -- Fetch the OCSP stapling response from the cache, or make the request to
   -- fetch it.
   local ocsp_resp = ngx.shared.auto_ssl:get("domain:ocsp:" .. domain)
   if not ocsp_resp then
+    -- If the certificate was just issued on the current request, wait 1 second
+    -- before making the initial OCSP request. Otherwise Let's Encrypt seems to
+    -- return an Unauthorized response.
+    if newly_issued then
+      ngx.sleep(1)
+    end
+
     local ocsp_response_err
     ocsp_resp, ocsp_response_err = get_ocsp_response(fullchain_der)
     if ocsp_response_err then
@@ -128,7 +187,7 @@ local function set_ocsp_stapling(domain, fullchain_der)
   return true
 end
 
-local function set_cert(domain, fullchain_der, privkey_der)
+local function set_cert(domain, fullchain_der, privkey_der, newly_issued)
   local ok, err
 
   -- Clear the default fallback certificates (defined in the hard-coded nginx
@@ -139,7 +198,7 @@ local function set_cert(domain, fullchain_der, privkey_der)
   end
 
   -- Set OCSP stapling.
-  ok, err = set_ocsp_stapling(domain, fullchain_der)
+  ok, err = set_ocsp_stapling(domain, fullchain_der, newly_issued)
   if not ok then
     ngx.log(ngx.ERR, "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
   end
@@ -157,29 +216,30 @@ local function set_cert(domain, fullchain_der, privkey_der)
   end
 end
 
-return function()
+return function(auto_ssl_instance)
   -- Determine the domain making the SSL request with SNI.
   local domain, server_name_err = ssl.server_name()
-  if server_name_err then
-    ngx.log(ngx.ERR, "auto-ssl: could not determine domain with SNI - skipping")
+  if server_name_err or not domain then
+    ngx.log(ngx.WARN, "auto-ssl: could not determine domain with SNI - skipping")
     return
   end
 
   -- Check to ensure the domain is one we allow for handling SSL.
-  if not auto_ssl.allow_domain(domain) then
-    ngx.log(ngx.ERR, "auto-ssl: domain not allowed - skipping - ", domain)
+  local allow_domain = auto_ssl_instance:get("allow_domain")
+  if not allow_domain(domain) then
+    ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed - skipping - ", domain)
     return
   end
 
   -- Get or issue the certificate for this domain.
-  local fullchain_der, privkey_der, get_cert_err = get_cert(domain)
+  local fullchain_der, privkey_der, newly_issued, get_cert_err = get_cert(auto_ssl_instance, domain)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: could not get certificate for ", domain, " - skipping - ", get_cert_err)
     return
   end
 
   -- Set the certificate on the response.
-  local _, set_cert_err = set_cert(domain, fullchain_der, privkey_der)
+  local _, set_cert_err = set_cert(domain, fullchain_der, privkey_der, newly_issued)
   if set_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - skipping - ", set_cert_err)
     return

@@ -1,19 +1,20 @@
 local _M = {}
 
-local auto_ssl = require "resty.auto-ssl"
 local shell_execute = require "resty.auto-ssl.utils.shell_execute"
-local storage = require "resty.auto-ssl.storage"
 
-function _M.issue_cert(domain)
+function _M.issue_cert(auto_ssl_instance, domain)
+  local package_root = auto_ssl_instance.package_root
+  local base_dir = auto_ssl_instance:get("dir")
+
   -- Run letsencrypt.sh for this domain, using our custom hooks to handle the
   -- domain validation and the issued certificates.
   local command = "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
-    auto_ssl.package_root .. "/auto-ssl/vendor/letsencrypt.sh " ..
+    package_root .. "/auto-ssl/vendor/letsencrypt.sh " ..
     "--cron " ..
     "--domain " .. domain .. " " ..
     "--challenge http-01 " ..
-    "--config " .. auto_ssl.dir .. "/letsencrypt/.config.sh " ..
-    "--hook " .. auto_ssl.package_root .. "/auto-ssl/shell/letsencrypt_hooks"
+    "--config " .. base_dir .. "/letsencrypt/config.sh " ..
+    "--hook " .. package_root .. "/auto-ssl/shell/letsencrypt_hooks"
   local status, out, err = shell_execute(command)
   if status ~= 0 then
     ngx.log(ngx.ERR, "auto-ssl: letsencrypt.sh failed: ", command, " status: ", status, " out: ", out, " err: ", err)
@@ -22,7 +23,8 @@ function _M.issue_cert(domain)
 
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
-  local fullchain_pem, privkey_pem = storage.get_cert(domain)
+  local storage = auto_ssl_instance:get("storage")
+  local fullchain_pem, privkey_pem = storage:get_cert(domain)
 
   -- If letsencrypt.sh said it succeeded, but we still don't have any certs in
   -- storage, the issue is likely that the certs have been deleted out of our
@@ -33,12 +35,12 @@ function _M.issue_cert(domain)
     ngx.log(ngx.WARN, "auto-ssl: letsencrypt.sh succeeded, but certs still missing from storage - trying to manually copy - domain: " .. domain)
 
     command = "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
-      auto_ssl.package_root .. "/auto-ssl/shell/letsencrypt_hooks " ..
+      package_root .. "/auto-ssl/shell/letsencrypt_hooks " ..
       "deploy_cert " ..
       domain .. " " ..
-      auto_ssl.dir .. "/letsencrypt/certs/" .. domain .. "/privkey.pem " ..
-      auto_ssl.dir .. "/letsencrypt/certs/" .. domain .. "/cert.pem " ..
-      auto_ssl.dir .. "/letsencrypt/certs/" .. domain .. "/fullchain.pem"
+      base_dir .. "/letsencrypt/certs/" .. domain .. "/privkey.pem " ..
+      base_dir .. "/letsencrypt/certs/" .. domain .. "/cert.pem " ..
+      base_dir .. "/letsencrypt/certs/" .. domain .. "/fullchain.pem"
     status, out, err = shell_execute(command)
     if status ~= 0 then
       ngx.log(ngx.ERR, "auto-ssl: letsencrypt.sh manual hook.sh failed: ", command, " status: ", status, " out: ", out, " err: ", err)
@@ -46,7 +48,7 @@ function _M.issue_cert(domain)
     end
 
     -- Try fetching again.
-    fullchain_pem, privkey_pem = storage.get_cert(domain)
+    fullchain_pem, privkey_pem = storage:get_cert(domain)
   end
 
   -- Return error if things are still unexpectedly missing.
