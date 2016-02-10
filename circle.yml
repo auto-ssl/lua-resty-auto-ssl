@@ -5,6 +5,8 @@ dependencies:
     - t/vendor
   pre:
     - sudo apt-get install luarocks
+  override:
+    - make test_dependencies
 test:
   override:
     - make test
