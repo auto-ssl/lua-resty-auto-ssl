@@ -1,0 +1,8 @@
+dependencies:
+  cache_directories:
+    - t/build
+    - t/tmp
+    - t/vendor
+test:
+  override:
+    - make test

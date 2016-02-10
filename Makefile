@@ -151,7 +151,7 @@ test_dependencies: \
 lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
 
-test: test_dependencies
+test: test_dependencies lint
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove
 
