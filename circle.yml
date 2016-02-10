@@ -3,6 +3,8 @@ dependencies:
     - t/build
     - t/tmp
     - t/vendor
+  pre:
+    - sudo apt-get install luarocks
 test:
   override:
     - make test
