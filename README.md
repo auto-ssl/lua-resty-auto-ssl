@@ -1,5 +1,7 @@
 # lua-resty-auto-ssl
 
+[![Circle CI](https://circleci.com/gh/GUI/lua-resty-auto-ssl.svg?style=svg)](https://circleci.com/gh/GUI/lua-resty-auto-ssl)
+
 On the fly (and free) SSL registration and renewal inside [OpenResty/nginx](http://openresty.org) with [Let's Encrypt](https://letsencrypt.org).
 
 This OpenResty plugin automatically and transparently issues SSL certificates from Let's Encrypt (a free certificate authority) as requests are received. It works like:
