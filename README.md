@@ -49,7 +49,7 @@ http {
   resolver 8.8.8.8;
 
   # Intial setup tasks.
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "resty.auto-ssl").new()
 
     -- Define a function to determine which SNI domains to automatically handle
@@ -59,6 +59,10 @@ http {
       return true
     end)
 
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 

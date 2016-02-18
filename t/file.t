@@ -19,7 +19,7 @@ __DATA__
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -33,6 +33,10 @@ __DATA__
       -- behavior from Let's Encrypt's staging environment.
       ocsp_stapling_error_level = ngx.NOTICE,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 

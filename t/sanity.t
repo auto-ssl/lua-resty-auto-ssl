@@ -19,7 +19,7 @@ __DATA__
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -32,6 +32,10 @@ __DATA__
       -- behavior from Let's Encrypt's staging environment.
       ocsp_stapling_error_level = ngx.NOTICE,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -131,7 +135,7 @@ auto-ssl: issuing new certificate for
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -144,6 +148,10 @@ auto-ssl: issuing new certificate for
       -- behavior from Let's Encrypt's staging environment.
       ocsp_stapling_error_level = ngx.NOTICE,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -243,7 +251,7 @@ issuing new certificate for
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -251,6 +259,10 @@ issuing new certificate for
         return true
       end,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -345,11 +357,15 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -444,7 +460,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -457,6 +473,10 @@ lua ssl certificate verify error: (18: self signed certificate)
         end
       end,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -552,7 +572,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new()
     auto_ssl:set("dir", "$TEST_NGINX_RESTY_AUTO_SSL_DIR")
     auto_ssl:set("ca", "https://acme-staging.api.letsencrypt.org/directory")
@@ -564,6 +584,10 @@ lua ssl certificate verify error: (18: self signed certificate)
         return false
       end
     end)
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -659,7 +683,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -667,6 +691,10 @@ lua ssl certificate verify error: (18: self signed certificate)
         return string.find(domain, "ngrok.io")
       end,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
@@ -763,7 +791,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
-  init_worker_by_lua_block {
+  init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
@@ -771,6 +799,10 @@ lua ssl certificate verify error: (18: self signed certificate)
         return true
       end,
     })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
 
