@@ -26,6 +26,10 @@ function _M.new(options)
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
   end
 
+  if not options["ocsp_stapling_error_level"] then
+    options["ocsp_stapling_error_level"] = ngx.ERR
+  end
+
   return setmetatable({ options = options }, { __index = _M })
 end
 

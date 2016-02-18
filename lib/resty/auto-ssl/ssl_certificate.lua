@@ -187,7 +187,7 @@ local function set_ocsp_stapling(domain, fullchain_der, newly_issued)
   return true
 end
 
-local function set_cert(domain, fullchain_der, privkey_der, newly_issued)
+local function set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, newly_issued)
   local ok, err
 
   -- Clear the default fallback certificates (defined in the hard-coded nginx
@@ -200,7 +200,7 @@ local function set_cert(domain, fullchain_der, privkey_der, newly_issued)
   -- Set OCSP stapling.
   ok, err = set_ocsp_stapling(domain, fullchain_der, newly_issued)
   if not ok then
-    ngx.log(ngx.ERR, "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
+    ngx.log(auto_ssl_instance:get("ocsp_stapling_error_level"), "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
   end
 
   -- Set the public certificate chain.
@@ -239,7 +239,7 @@ return function(auto_ssl_instance)
   end
 
   -- Set the certificate on the response.
-  local _, set_cert_err = set_cert(domain, fullchain_der, privkey_der, newly_issued)
+  local _, set_cert_err = set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, newly_issued)
   if set_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - skipping - ", set_cert_err)
     return
