@@ -43,7 +43,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   end
   local _, local_lock_err = local_lock:lock("issue_cert:" .. domain)
   if local_lock_err then
-    ngx.log(ngx.err, "auto-ssl: failed to obtain lock: ", local_lock_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", local_lock_err)
     return
   end
 
@@ -52,7 +52,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   -- adapter).
   local distributed_lock_value, distributed_lock_err = storage:issue_cert_lock(domain)
   if distributed_lock_err then
-    ngx.log(ngx.err, "auto-ssl: failed to obtain lock: ", distributed_lock_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", distributed_lock_err)
     return
   end
 
