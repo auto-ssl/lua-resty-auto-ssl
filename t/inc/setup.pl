@@ -20,3 +20,5 @@ if($letsencrypt_key) {
 }
 
 $ENV{TEST_NGINX_LUA_PACKAGE_PATH} = "$::CWD/lib/?.lua;;";
+
+$ENV{TEST_NGINX_RESOLVER} //= "8.8.8.8 8.8.4.4";

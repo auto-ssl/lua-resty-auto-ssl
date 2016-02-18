@@ -20,7 +20,7 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate and stores it in redis
 --- http_config
-  resolver 8.8.8.8;
+  resolver $TEST_NGINX_RESOLVER;
   lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
