@@ -60,7 +60,6 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   -- has already been registered.
   fullchain_pem, privkey_pem = storage:get_cert(domain)
   if fullchain_pem and privkey_pem then
-  --  ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
     return fullchain_pem, privkey_pem
   end
 
