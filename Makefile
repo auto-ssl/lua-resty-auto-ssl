@@ -16,6 +16,7 @@ all: \
 
 install:
 	install -D -m 644 lib/resty/auto-ssl.lua $(INST_LUADIR)/resty/auto-ssl.lua
+	install -D -m 644 lib/resty/auto-ssl/init.lua $(INST_LUADIR)/resty/auto-ssl/init.lua
 	install -D -m 644 lib/resty/auto-ssl/init_worker.lua $(INST_LUADIR)/resty/auto-ssl/init_worker.lua
 	install -D -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
 	install -D -m 644 lib/resty/auto-ssl/servers/hook.lua $(INST_LUADIR)/resty/auto-ssl/servers/hook.lua
