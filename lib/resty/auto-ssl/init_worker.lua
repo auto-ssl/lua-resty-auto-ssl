@@ -1,6 +1,6 @@
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
 
-return function()
+return function(auto_ssl_instance)
   -- Startup sockproc. This background process allows for non-blocking shell
   -- commands with resty.shell.
   --
@@ -12,4 +12,10 @@ return function()
   -- relying on letsencrypt.sh), then we could get rid of the need for this
   -- background process, which would be nice.
   start_sockproc()
+
+  local storage = auto_ssl_instance:get("storage")
+  local adapter = storage.adapter
+  if adapter.setup_worker then
+    adapter:setup_worker()
+  end
 end
