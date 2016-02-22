@@ -178,6 +178,11 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
   - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
 
+## Credits
+
+**[letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh)** is the client used internally that does all the heavy lifting with Let's Encrypt.
+
 ## TODO
 
 - Implement background task to perform automatic renewals.
+- We currently rely on [letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.
