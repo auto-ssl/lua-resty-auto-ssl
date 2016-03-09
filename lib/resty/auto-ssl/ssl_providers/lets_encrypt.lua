@@ -21,6 +21,8 @@ function _M.issue_cert(auto_ssl_instance, domain)
     return nil, nil, "letsencrypt.sh failure"
   end
 
+  ngx.log(ngx.DEBUG, "auto-ssl: letsencrypt.sh output: " .. out)
+
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
   local storage = auto_ssl_instance:get("storage")

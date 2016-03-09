@@ -32,7 +32,7 @@ return function(auto_ssl_instance)
     assert(params["domain"])
     assert(params["fullchain"])
     assert(params["privkey"])
-    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"])
+    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"])
     if err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set cert: ", err)
     end

@@ -153,3 +153,84 @@ auto-ssl: issuing new certificate for
 [error]
 [alert]
 [emerg]
+
+=== TEST 2: renews certificates in the background
+--- http_config
+  resolver $TEST_NGINX_RESOLVER;
+  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
+  lua_shared_dict auto_ssl 1m;
+
+  init_by_lua_block {
+    auto_ssl = (require "lib.resty.auto-ssl").new({
+      dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      storage_adapter = "resty.auto-ssl.storage_adapters.redis",
+      redis = {
+        port = 9999,
+      },
+      allow_domain = function(domain)
+        return true
+      end,
+      renew_check_interval = 1,
+
+      -- FIXME: Revisit this, but Let's Encrypt staging has started to return
+      -- OCSP stapling errors for all requests. See if this is new expected
+      -- behavior from Let's Encrypt's staging environment.
+      ocsp_stapling_error_level = ngx.NOTICE,
+    })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate ../../certs/example_fallback.crt;
+    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+--- config
+  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  location /t {
+    content_by_lua_block {
+      ngx.sleep(5)
+    }
+  }
+--- timeout: 30s
+--- request
+GET /t
+--- error_log
+(Longer than 30 days). Skipping
+auto-ssl: checking certificate renewals for
+--- no_error_log
+[error]
+[alert]
+[emerg]

@@ -1,4 +1,5 @@
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
+local renewal_job = require "resty.auto-ssl.jobs.renewal"
 
 return function(auto_ssl_instance)
   -- Startup sockproc. This background process allows for non-blocking shell
@@ -18,4 +19,6 @@ return function(auto_ssl_instance)
   if adapter.setup_worker then
     adapter:setup_worker()
   end
+
+  renewal_job.spawn(auto_ssl_instance)
 end

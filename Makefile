@@ -64,7 +64,7 @@ PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luaji
 LUACHECK:=luacheck
 LUACHECK_VERSION:=0.13.0-1
 
-OPENSSL_VERSION:=1.0.2f
+OPENSSL_VERSION:=1.0.2g
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
 OPENRESTY_VERSION:=1.9.7.2
@@ -108,8 +108,7 @@ $(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm: $(TEST_TMP_DIR)/cpanm
 	touch $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest LWP::Protocol::https
-	$< -L $(TEST_BUILD_DIR) --notest https://github.com/openresty/test-nginx/archive/9eeb0957a5eb0f2dd800e9627a12191073adb2ad.tar.gz
+	$< -L $(TEST_BUILD_DIR) --notest Test::Nginx@0.25
 	chmod u+w $@
 	touch $@
 

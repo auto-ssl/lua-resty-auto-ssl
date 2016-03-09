@@ -14,7 +14,9 @@ local function start()
   end
 
   local exit_code = os.execute("umask 0022 && " .. auto_ssl.package_root .. "/auto-ssl/shell/start_sockproc")
-  if exit_code ~= 0 then
+  if exit_code == 0 then
+    ngx.shared.auto_ssl:set("sockproc_started", true)
+  else
     ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc")
   end
 
@@ -24,7 +26,11 @@ local function start()
   end
 end
 
-return function()
+return function(force)
+  if ngx.shared.auto_ssl:get("sockproc_started") and not force then
+    return
+  end
+
   local ok, err = pcall(start)
   if not ok then
     ngx.log(ngx.ERR, "auto-ssl: failed to run start_sockproc: ", err)
