@@ -108,8 +108,7 @@ $(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm: $(TEST_TMP_DIR)/cpanm
 	touch $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest LWP::Protocol::https
-	$< -L $(TEST_BUILD_DIR) --notest https://github.com/openresty/test-nginx/archive/9eeb0957a5eb0f2dd800e9627a12191073adb2ad.tar.gz
+	$< -L $(TEST_BUILD_DIR) --notest Test::Nginx@0.25
 	chmod u+w $@
 	touch $@
 

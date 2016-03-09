@@ -84,4 +84,15 @@ function _M.delete(self, key)
   return redis_instance:del(key)
 end
 
+function _M.keys_with_suffix(self, suffix)
+  local redis_instance, instance_err = get_redis_instance(self)
+  if instance_err then
+    return false, instance_err
+  end
+
+  local keys, err = redis_instance:keys("*" .. suffix)
+
+  return keys, err
+end
+
 return _M

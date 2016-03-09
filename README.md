@@ -14,7 +14,7 @@ This uses the `ssl_certificate_by_lua` functionality in OpenResty 1.9.7.2+.
 
 ## Status
 
-The primary functionality is in place, but there are still a few [todos](#todo) and cleanup that needs to be done before this is probably ready for any real use.
+Used in production (but the internal APIs might still be in flux).
 
 ## Installation
 
@@ -141,6 +141,17 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   auto_ssl:set("dir", "/some/other/location")
   ```
 
+- **`renew_check_interval`**
+  *Default:* `86400`
+
+  How frequently (in seconds) all of the domains should be checked for certificate renewals. Defaults to checking every 1 day. Certificates will automatically be renewed if the expire in less than 30 days.
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("renew_check_interval", 172800)
+  ```
+
 - **`storage_adapter`**
   *Default:* `resty.auto-ssl.storage_adapters.file`
   *Options:* `resty.auto-ssl.storage_adapters.file`, `resty.auto-ssl.storage_adapters.redis`
@@ -184,5 +195,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 
 ## TODO
 
-- Implement background task to perform automatic renewals.
+- Allow for non-SNI support via custom callback functions (so the hostname can be determined by the active port or server IP).
+- Document and formalize the API for other storage adapters.
+- Open source the MongoDB storage adapter we're using in API Umbrella.
 - We currently rely on [letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.

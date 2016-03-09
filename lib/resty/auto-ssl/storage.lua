@@ -30,10 +30,10 @@ function _M.get_cert(self, domain)
   end
 
   local data = cjson.decode(json)
-  return data["fullchain_pem"], data["privkey_pem"]
+  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
 end
 
-function _M.set_cert(self, domain, fullchain_pem, privkey_pem)
+function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- Store the public certificate and private key as a single JSON string.
   --
   -- We use a single JSON string so that the storage adapter just has to store
@@ -43,6 +43,7 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem)
   local data = cjson.encode({
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
+    cert_pem = cert_pem,
   })
 
   -- Store the cert with the current timestamp, so the old certs are preserved
@@ -52,6 +53,21 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem)
 
   -- Store the cert under the "latest" alias, which is what this app will use.
   return self.adapter:set(domain .. ":latest", data)
+end
+
+function _M.all_cert_domains(self)
+  local keys, err = self.adapter:keys_with_suffix(":latest")
+  if err then
+    return nil, err
+  end
+
+  local domains = {}
+  for _, key in ipairs(keys) do
+    local domain = ngx.re.sub(key, ":latest$", "", "jo")
+    table.insert(domains, domain)
+  end
+
+  return domains
 end
 
 -- A simplistic locking mechanism to try and ensure the app doesn't try to
