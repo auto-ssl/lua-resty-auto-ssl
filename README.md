@@ -80,7 +80,7 @@ http {
     # You may generate a self-signed fallback with:
     #
     # openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
-    #   -subj '/CN=resty-auto-ssl-fallback' \
+    #   -subj '/CN=sni-support-required-for-valid-ssl' \
     #   -keyout /etc/ssl/resty-auto-ssl-fallback.key \
     #   -out /etc/ssl/resty-auto-ssl-fallback.crt
     ssl_certificate /etc/ssl/resty-auto-ssl-fallback.crt;
@@ -118,7 +118,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 - **`allow_domain`**
   *Default:* `function(domain) return false end`
 
-  A function that determines whether the incoming SNI domain should automatically issue a new SSL certificate.
+  A function that determines whether the incoming domain should automatically issue a new SSL certificate.
 
   By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
 
@@ -127,7 +127,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   ```lua
   auto_ssl:set("allow_domain", function(domain)
     return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
-  })
+  end)
   ```
 
 - **`dir`**
@@ -181,6 +181,47 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   })
   ```
 
+- **`request_domain`**
+  *Default:* `function(ssl, ssl_options) return ssl.server_name() end`
+
+  A function that determines the hostname of the request. By default, the SNI domain is used, but a custom function can be implemented to determine the domain name for non-SNI requests (by basing the domain on something that can be determined outside of SSL, like the port or IP address that received the request).
+
+  *Example:*
+
+  This example, along with the accompanying nginx `server` blocks, will default to SNI domain names, but for non-SNI clients will respond with predefined hosts based on the connecting port. Connections to port 9000 will register and return a certificate for `foo.example.com`, while connections to port 9001 will register and return a certificate for `bar.example.com`. Any other ports will return the default nginx fallback certificate.
+
+  ```lua
+  auto_ssl:set("request_domain", function(ssl, ssl_options)
+    return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
+    local domain, err = ssl.server_name()
+    if (not domain or err) and ssl_options and ssl_options["port"] then
+      if ssl_options["port"] == 9000 then
+        domain = "foo.example.com"
+      elseif ssl_options["port"] == 9001 then
+        domain = "bar.example.com"
+      end
+    end
+
+    return domain, err
+  end)
+  ```
+
+  ```nginx
+  server {
+    listen 9000 ssl;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate({ port = 9000 })
+    }
+  }
+
+  server {
+    listen 9001 ssl;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate({ port = 9001 })
+    }
+  }
+  ```
+
 ## Precautions
 
 - **Allowed Hosts:** By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
@@ -195,7 +236,6 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 
 ## TODO
 
-- Allow for non-SNI support via custom callback functions (so the hostname can be determined by the active port or server IP).
 - Document and formalize the API for other storage adapters.
 - Open source the MongoDB storage adapter we're using in API Umbrella.
 - We currently rely on [letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.

@@ -215,32 +215,33 @@ local function set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, n
   end
 end
 
-return function(auto_ssl_instance)
+return function(auto_ssl_instance, ssl_options)
   -- Determine the domain making the SSL request with SNI.
-  local domain, server_name_err = ssl.server_name()
-  if server_name_err or not domain then
-    ngx.log(ngx.WARN, "auto-ssl: could not determine domain with SNI - skipping")
+  local request_domain = auto_ssl_instance:get("request_domain")
+  local domain, domain_err = request_domain(ssl, ssl_options)
+  if not domain or domain_err then
+    ngx.log(ngx.WARN, "auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - " .. (domain_err or ""))
     return
   end
 
   -- Check to ensure the domain is one we allow for handling SSL.
   local allow_domain = auto_ssl_instance:get("allow_domain")
   if not allow_domain(domain) then
-    ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed - skipping - ", domain)
+    ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed - using fallback - ", domain)
     return
   end
 
   -- Get or issue the certificate for this domain.
   local fullchain_der, privkey_der, newly_issued, get_cert_err = get_cert(auto_ssl_instance, domain)
   if get_cert_err then
-    ngx.log(ngx.ERR, "auto-ssl: could not get certificate for ", domain, " - skipping - ", get_cert_err)
+    ngx.log(ngx.ERR, "auto-ssl: could not get certificate for ", domain, " - using fallback - ", get_cert_err)
     return
   end
 
   -- Set the certificate on the response.
   local _, set_cert_err = set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, newly_issued)
   if set_cert_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - skipping - ", set_cert_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - using fallback - ", set_cert_err)
     return
   end
 end
