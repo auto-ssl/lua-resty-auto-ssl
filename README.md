@@ -192,7 +192,6 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 
   ```lua
   auto_ssl:set("request_domain", function(ssl, ssl_options)
-    return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
     local domain, err = ssl.server_name()
     if (not domain or err) and ssl_options and ssl_options["port"] then
       if ssl_options["port"] == 9000 then
