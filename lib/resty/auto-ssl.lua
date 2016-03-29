@@ -16,6 +16,12 @@ function _M.new(options)
     options["dir"] = "/etc/resty-auto-ssl"
   end
 
+  if not options["request_domain"] then
+    options["request_domain"] = function(ssl, ssl_options) -- luacheck: ignore
+      return ssl.server_name()
+    end
+  end
+
   if not options["allow_domain"] then
     options["allow_domain"] = function(domain) -- luacheck: ignore
       return false
@@ -59,9 +65,9 @@ function _M.init_worker(self)
   init_worker(self)
 end
 
-function _M.ssl_certificate(self)
+function _M.ssl_certificate(self, ssl_options)
   local ssl_certificate = require "resty.auto-ssl.ssl_certificate"
-  ssl_certificate(self)
+  ssl_certificate(self, ssl_options)
 end
 
 function _M.challenge_server(self)

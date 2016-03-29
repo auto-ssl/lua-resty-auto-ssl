@@ -3,7 +3,7 @@ do "./t/inc/setup.pl" or die "Setup failed: $@";
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 6 + 6);
+plan tests => repeat_each() * (blocks() * 6 + 10);
 
 check_accum_error_log();
 no_long_string();
@@ -345,7 +345,7 @@ GET /t
 --- response_body
 failed to do SSL handshake: 18: self signed certificate
 --- error_log
-auto-ssl: could not determine domain with SNI - skipping
+auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - 
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
 [alert]
@@ -448,7 +448,7 @@ GET /t
 --- response_body
 failed to do SSL handshake: 18: self signed certificate
 --- error_log
-auto-ssl: domain not allowed - skipping - default-disallow-
+auto-ssl: domain not allowed - using fallback - default-disallow-
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
 [alert]
@@ -560,7 +560,7 @@ GET /t
 failed to do SSL handshake: 18: self signed certificate
 --- error_log
 allow_domain called
-auto-ssl: domain not allowed - skipping - allow-domain-fn-check-
+auto-ssl: domain not allowed - using fallback - allow-domain-fn-check-
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
 [alert]
@@ -671,7 +671,7 @@ GET /t
 failed to do SSL handshake: 18: self signed certificate
 --- error_log
 allow_domain set() called
-auto-ssl: domain not allowed - skipping - set-options-fn-
+auto-ssl: domain not allowed - using fallback - set-options-fn-
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
 [alert]
@@ -888,6 +888,165 @@ failed to do SSL handshake: 18: self signed certificate
 auto-ssl: issuing new certificate for unresolvable-
 auto-ssl: letsencrypt.sh failed
 auto-ssl: could not get certificate for unresolvable-
+lua ssl certificate verify error: (18: self signed certificate)
+--- no_error_log
+[alert]
+[emerg]
+
+=== TEST 9: allows for custom logic to control domain name to handle lack of SNI support
+--- http_config
+  resolver $TEST_NGINX_RESOLVER;
+  lua_shared_dict auto_ssl 1m;
+
+  init_by_lua_block {
+    auto_ssl = (require "lib.resty.auto-ssl").new({
+      dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      request_domain = function(ssl, ssl_options)
+        local domain, err = ssl.server_name()
+        if (not domain or err) and ssl_options and ssl_options["port"] then
+          if ssl_options["port"] == 9443 then
+            domain = "non-sni-" .. ssl_options["port"] .. "-$TEST_NGINX_NGROK_HOSTNAME"
+          elseif ssl_options["port"] == 9444 then
+            domain = "non-sni-mismatch-" .. ssl_options["port"] .. "-$TEST_NGINX_NGROK_HOSTNAME"
+          end
+        end
+
+        return domain, err
+      end,
+      allow_domain = function(domain)
+        return true
+      end,
+    })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate ../../certs/example_fallback.crt;
+    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate({ port = 9443 })
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9444 ssl;
+    ssl_certificate ../../certs/example_fallback.crt;
+    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate({ port = 9444 })
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9445 ssl;
+    ssl_certificate ../../certs/example_fallback.crt;
+    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate({ port = 9445 })
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+--- config
+  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_verify_depth 5;
+  location /t {
+    content_by_lua_block {
+      local ports = { 9443, 9444, 9445 }
+      for _, port in ipairs(ports) do
+        local sock = ngx.socket.tcp()
+        sock:settimeout(30000)
+        local ok, err = sock:connect("127.0.0.1:" .. port)
+        if not ok then
+          ngx.say("failed to connect: " .. port .. ": ", err)
+          goto continue
+        end
+
+        local sess, err = sock:sslhandshake(nil, nil, true)
+        if not sess then
+          ngx.say("failed to do SSL handshake: " .. port .. ": ", err)
+          goto continue
+        end
+
+        local req = "GET /foo HTTP/1.0\r\nHost: non-sni-" .. port .. "-$TEST_NGINX_NGROK_HOSTNAME\r\nConnection: close\r\n\r\n"
+        local bytes, err = sock:send(req)
+        if not bytes then
+          ngx.say("failed to send http request: " .. port .. ": ", err)
+          goto continue
+        end
+
+        while true do
+          local line, err = sock:receive()
+          if not line then
+            goto continue
+          end
+
+          ngx.say("received: " .. port .. ": ", line)
+        end
+
+        local ok, err = sock:close()
+        if not ok then
+          ngx.say("failed to close: " .. port .. ": ", err)
+          goto continue
+        end
+
+        ::continue::
+      end
+    }
+  }
+--- timeout: 30s
+--- request
+GET /t
+--- response_body
+failed to do SSL handshake: 9443: 18: self signed certificate
+failed to do SSL handshake: 9444: 18: self signed certificate
+failed to do SSL handshake: 9445: 18: self signed certificate
+--- error_log
+auto-ssl: issuing new certificate for non-sni-9443-
+lua ssl certificate verify error: (18: self signed certificate)
+auto-ssl: issuing new certificate for non-sni-mismatch-9444-
+lua ssl certificate verify error: (18: self signed certificate)
+auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - 
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
 [alert]
