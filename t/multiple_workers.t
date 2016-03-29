@@ -77,6 +77,7 @@ __DATA__
   }
 --- config
   lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
       local sock = ngx.socket.tcp()
