@@ -1,5 +1,5 @@
 use Test::Nginx::Socket::Lua;
-do "./t/inc/setup.pl";
+do "./t/inc/setup.pl" or die "Setup failed: $@";
 
 # Run more times than normal to make sure there's no weird concurrency issues
 # across multiple workers.
@@ -21,7 +21,6 @@ __DATA__
 === TEST 1: issues a new SSL certificate when multiple nginx workers are running
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {

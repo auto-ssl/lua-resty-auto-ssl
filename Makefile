@@ -19,6 +19,8 @@ install:
 	install -m 644 lib/resty/auto-ssl.lua $(INST_LUADIR)/resty/auto-ssl.lua
 	install -m 644 lib/resty/auto-ssl/init.lua $(INST_LUADIR)/resty/auto-ssl/init.lua
 	install -m 644 lib/resty/auto-ssl/init_worker.lua $(INST_LUADIR)/resty/auto-ssl/init_worker.lua
+	install -d $(INST_LUADIR)/resty/auto-ssl/jobs
+	install -m 644 lib/resty/auto-ssl/jobs/renewal.lua $(INST_LUADIR)/resty/auto-ssl/jobs/renewal.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/servers
 	install -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
 	install -m 644 lib/resty/auto-ssl/servers/hook.lua $(INST_LUADIR)/resty/auto-ssl/servers/hook.lua
@@ -31,6 +33,7 @@ install:
 	install -m 644 lib/resty/auto-ssl/storage.lua $(INST_LUADIR)/resty/auto-ssl/storage.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/storage_adapters
 	install -m 644 lib/resty/auto-ssl/storage_adapters/file.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/file.lua
+	install -m 644 lib/resty/auto-ssl/storage_adapters/redis.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/redis.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/utils
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
@@ -80,7 +83,7 @@ OPENRESTY:=openresty-$(OPENRESTY_VERSION)
 LUAROCKS_VERSION=2.3.0
 LUAROCKS=luarocks-$(LUAROCKS_VERSION)
 
-NGROK_VERSION:=2.0.19
+NGROK_VERSION:=2.0.25
 NGROK:=ngrok-$(NGROK_VERSION)
 
 define test_luarocks_install
@@ -96,7 +99,7 @@ $(TEST_TMP_DIR):
 $(TEST_VENDOR_DIR):
 	mkdir -p $@
 
-$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): | $(TEST_VENDOR_DIR)
+$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/$(LUAROCKS)/.installed | $(TEST_VENDOR_DIR)
 	$(call test_luarocks_install,LUACHECK)
 
 $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
@@ -119,9 +122,18 @@ $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
 	chmod u+w $@
 	touch $@
 
+UNAME := $(shell uname)
+ifeq ($(UNAME), Linux)
 $(TEST_VENDOR_DIR)/$(NGROK)/ngrok: | $(TEST_TMP_DIR) $(TEST_VENDOR_DIR)
-	curl -L -o $(TEST_TMP_DIR)/ngrok_$(NGROK_VERSION)_linux_amd64.zip https://dl.ngrok.com/ngrok_$(NGROK_VERSION)_linux_amd64.zip
-	unzip $(TEST_TMP_DIR)/ngrok_$(NGROK_VERSION)_linux_amd64.zip -d $(TEST_VENDOR_DIR)/$(NGROK)
+	curl -L -o $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz https://bin.equinox.io/a/2nnnbSQv68d/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
+	mkdir -p $(TEST_VENDOR_DIR)/$(NGROK)
+	tar -C $(TEST_VENDOR_DIR)/$(NGROK) -xf $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
+endif
+ifeq ($(UNAME), Darwin)
+$(TEST_VENDOR_DIR)/$(NGROK)/ngrok: | $(TEST_TMP_DIR) $(TEST_VENDOR_DIR)
+	curl -L -o $(TEST_TMP_DIR)/ngrok_$(NGROK_VERSION)-darwin-amd64.zip https://bin.equinox.io/a/jhmzSv18UeY/ngrok-$(NGROK_VERSION)-darwin-amd64.zip
+	unzip $(TEST_TMP_DIR)/ngrok_$(NGROK_VERSION)-darwin-amd64.zip -d $(TEST_VENDOR_DIR)/$(NGROK)
+endif
 
 $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && rm -rf openssl*
@@ -132,7 +144,7 @@ $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP
 	cd $(TEST_TMP_DIR) && rm -rf ngx_openresty*
 	cd $(TEST_TMP_DIR) && curl -L -O https://openresty.org/download/$(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENRESTY).tar.gz
-	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL)
+	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-debug --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL)
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make install
 	touch $@

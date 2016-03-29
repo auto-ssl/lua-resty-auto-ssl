@@ -1,5 +1,5 @@
 use Test::Nginx::Socket::Lua;
-do "./t/inc/setup.pl";
+do "./t/inc/setup.pl" or die "Setup failed: $@";
 
 make_path("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/redis");
 my $redis = Expect->spawn("redis-server ./t/config/redis.conf");
@@ -21,7 +21,6 @@ __DATA__
 === TEST 1: issues a new SSL certificate and stores it in redis
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -157,7 +156,6 @@ auto-ssl: issuing new certificate for
 === TEST 2: renews certificates in the background
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {

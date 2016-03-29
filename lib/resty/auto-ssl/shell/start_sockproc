@@ -16,13 +16,23 @@ PID_FILE=/tmp/auto-ssl-sockproc.pid
 # See:
 # http://stackoverflow.com/a/4839945/222487
 # http://stackoverflow.com/a/23104923/222487
-SELF=$BASHPID
-FILE_DESCRIPTORS=$(find /proc/$SELF/fd -type l -printf '%f\n')
-for FD in $FILE_DESCRIPTORS; do
-  if ((FD > 2)); then
+if [ -d /proc ]; then
+  SELF=$BASHPID
+  FILE_DESCRIPTORS=$(find /proc/$SELF/fd -type l -printf '%f\n')
+  for FD in $FILE_DESCRIPTORS; do
+    if ((FD > 2)); then
+      eval "exec $FD>&-"
+    fi
+  done
+
+# If /proc isn't supported (eg, OS X), fallback to a simpler, naive mechanism
+# to wipe file descriptors > 2.
+else
+  END=255
+  for ((FD=3; FD <= END; FD++)); do
     eval "exec $FD>&-"
-  fi
-done
+  done
+fi
 
 # When nginx shuts down, the sockproc daemon continues to run. So when nginx
 # subsequently starts again, we'll also make sure we restart sockproc.

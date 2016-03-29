@@ -1,5 +1,5 @@
 use Test::Nginx::Socket::Lua;
-do "./t/inc/setup.pl";
+do "./t/inc/setup.pl" or die "Setup failed: $@";
 
 repeat_each(2);
 
@@ -16,7 +16,6 @@ __DATA__
 === TEST 1: issues a new SSL certificate
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -132,7 +131,6 @@ auto-ssl: issuing new certificate for
 === TEST 2: returns an existing SSL certificate
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -248,7 +246,6 @@ issuing new certificate for
 === TEST 3: returns the fallback SSL certificate when SNI isn't used
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -354,7 +351,6 @@ lua ssl certificate verify error: (18: self signed certificate)
 === TEST 4: disallows all domains for registration by default
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -457,7 +453,6 @@ lua ssl certificate verify error: (18: self signed certificate)
 === TEST 5: calls the allow_domain function which can perform more complex logic
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -569,7 +564,6 @@ lua ssl certificate verify error: (18: self signed certificate)
 === TEST 6: options can also be set with the set() function after new()
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -680,7 +674,6 @@ lua ssl certificate verify error: (18: self signed certificate)
 === TEST 7: returns the fallback SSL certificate when the domain is allowed and valid, but the domain challenge fails
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
@@ -788,7 +781,6 @@ lua ssl certificate verify error: (18: self signed certificate)
 === TEST 8: returns the fallback SSL certificate when the domain is allowed, but not resolvable
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
-  lua_package_path "$TEST_NGINX_LUA_PACKAGE_PATH/?.lua;;";
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
