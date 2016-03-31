@@ -96,12 +96,25 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   end
 end
 
+local function renew_all_domains(auto_ssl_instance)
+  -- Loop through all known domains and check to see if they should be renewed.
+  local storage = auto_ssl_instance:get("storage")
+  local domains, domains_err = storage:all_cert_domains()
+  if domains_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to fetch all certificate domains: ", domains_err)
+  else
+    for _, domain in ipairs(domains) do
+      renew_check_cert(auto_ssl_instance, storage, domain)
+    end
+  end
+end
+
 local function do_renew(auto_ssl_instance)
   -- Ensure only 1 worker executes the renewal once per interval.
   if not get_interval_lock("renew", auto_ssl_instance:get("renew_check_interval")) then
     return
   end
-  local renew_lock, new_renew_lock_err = lock:new("auto_ssl", { ["timeout"] = 0 })
+  local renew_lock, new_renew_lock_err = lock:new("auto_ssl", { exptime = 1800, timeout = 0 })
   if new_renew_lock_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create lock: ", new_renew_lock_err)
     return
@@ -112,15 +125,9 @@ local function do_renew(auto_ssl_instance)
     return
   end
 
-  -- Loop through all known domains and check to see if they should be renewed.
-  local storage = auto_ssl_instance:get("storage")
-  local domains, domains_err = storage:all_cert_domains()
-  if domains_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to fetch all certificate domains: ", domains_err)
-  else
-    for _, domain in ipairs(domains) do
-      renew_check_cert(auto_ssl_instance, storage, domain)
-    end
+  local renew_ok, renew_err = pcall(renew_all_domains, auto_ssl_instance)
+  if not renew_ok then
+    ngx.log(ngx.ERR, "auto-ssl: failed to run do_renew cycle: ", renew_err)
   end
 
   local ok, unlock_err = renew_lock:unlock()

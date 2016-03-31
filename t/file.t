@@ -3,7 +3,7 @@ do "./t/inc/setup.pl" or die "Setup failed: $@";
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 6);
+plan tests => repeat_each() * (blocks() * 6 + 2);
 
 check_accum_error_log();
 no_long_string();
@@ -205,12 +205,63 @@ auto-ssl: issuing new certificate for
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
+      -- Wait for scheduled renewals to happen (since the check interval is
+      -- every 1 second).
       ngx.sleep(5)
+
+      -- Since we don't actually expect the renewal to happen (since our cert
+      -- is too new), we'll ensure that the "skipping" message gets logged (so
+      -- we're at least sure that the renewal was fired.
+
+      -- Next, ensure that that we're still able to access things using the
+      -- existing certificate even after the renewal was triggered.
+      local sock = ngx.socket.tcp()
+      sock:settimeout(30000)
+      local ok, err = sock:connect("127.0.0.1:9443")
+      if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+      end
+
+      local sess, err = sock:sslhandshake(nil, "$TEST_NGINX_NGROK_HOSTNAME", true)
+      if not sess then
+        ngx.say("failed to do SSL handshake: ", err)
+        return
+      end
+
+      local req = "GET /foo HTTP/1.0\r\nHost: $TEST_NGINX_NGROK_HOSTNAME\r\nConnection: close\r\n\r\n"
+      local bytes, err = sock:send(req)
+      if not bytes then
+        ngx.say("failed to send http request: ", err)
+        return
+      end
+
+      while true do
+        local line, err = sock:receive()
+        if not line then
+          break
+        end
+
+        ngx.say("received: ", line)
+      end
+
+      local ok, err = sock:close()
+      if not ok then
+        ngx.say("failed to close: ", err)
+        return
+      end
     }
   }
 --- timeout: 30s
 --- request
 GET /t
+--- response_body
+received: HTTP/1.1 200 OK
+received: Server: openresty
+received: Content-Type: text/plain
+received: Connection: close
+received: 
+received: foo
 --- error_log
 (Longer than 30 days). Skipping
 auto-ssl: checking certificate renewals for
@@ -218,3 +269,4 @@ auto-ssl: checking certificate renewals for
 [error]
 [alert]
 [emerg]
+issuing new certificate for
