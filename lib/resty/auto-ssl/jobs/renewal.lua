@@ -67,7 +67,9 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
 
   -- Write out the cert.pem value to the location letsencrypt.sh expects it for
   -- checking.
-  local cert_pem_path = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain .. "/cert.pem"
+  local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
+  os.execute("mkdir -p " .. dir)
+  local cert_pem_path = dir .. "/cert.pem"
   local file, err = io.open(cert_pem_path, "w")
   if err then
     ngx.log(ngx.ERR, "auto-ssl: write cert.pem for " .. domain .. " failed: ", err)
