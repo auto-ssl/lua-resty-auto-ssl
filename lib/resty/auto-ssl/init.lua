@@ -40,7 +40,9 @@ end
 local function setup_storage(auto_ssl_instance)
   local adapter = require(auto_ssl_instance:get("storage_adapter"))
   local adapter_instance = adapter.new(auto_ssl_instance)
-  adapter_instance:setup()
+  if adapter_instance.setup then
+    adapter_instance:setup()
+  end
 
   local storage = require "resty.auto-ssl.storage"
   local storage_instance = storage.new(adapter_instance)

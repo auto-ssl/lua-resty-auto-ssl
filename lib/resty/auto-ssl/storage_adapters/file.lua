@@ -12,7 +12,7 @@ function _M.new(auto_ssl_instance)
   return setmetatable({ options = options }, { __index = _M })
 end
 
-function _M.setup(self)
+function _M.setup_worker(self)
   local base_dir = self.options["dir"]
   os.execute("mkdir -p " .. base_dir .. "/storage/file")
   os.execute("chmod 700 " .. base_dir .. "/storage/file")
