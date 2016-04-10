@@ -25,7 +25,7 @@ Requirements:
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
 
 ```sh
-$ sudo luarocks install https://raw.githubusercontent.com/GUI/lua-resty-auto-ssl/master/lua-resty-auto-ssl-git-1.rockspec
+$ sudo luarocks install lua-resty-auto-ssl
 
 # Create /etc/resty-auto-ssl and make sure it's writable by whichever user your
 # nginx workers run as (in this example, "www-data").
