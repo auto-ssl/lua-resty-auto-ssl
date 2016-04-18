@@ -48,7 +48,7 @@ http {
   # A DNS resolver must be defined for OSCP stapling to function.
   resolver 8.8.8.8;
 
-  # Intial setup tasks.
+  # Initial setup tasks.
   init_by_lua_block {
     auto_ssl = (require "resty.auto-ssl").new()
 
