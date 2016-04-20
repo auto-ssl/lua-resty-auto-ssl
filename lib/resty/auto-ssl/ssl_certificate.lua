@@ -17,13 +17,14 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newl
     return nil, nil, "failed to convert private key from PEM to DER: " .. (privkey_der_err or "")
   end
 
-  -- Cache DER formats in memory.
-  local _, set_fullchain_err = ngx.shared.auto_ssl:set("domain:fullchain_der:" .. domain, fullchain_der)
+  -- Cache DER formats in memory for 1 hour (so renewals will get picked up
+  -- across multiple servers).
+  local _, set_fullchain_err = ngx.shared.auto_ssl:set("domain:fullchain_der:" .. domain, fullchain_der, 3600)
   if set_fullchain_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of certificate chain for " .. domain, set_fullchain_err)
   end
 
-  local _, set_privkey_err = ngx.shared.auto_ssl:set("domain:privkey_der:" .. domain, privkey_der)
+  local _, set_privkey_err = ngx.shared.auto_ssl:set("domain:privkey_der:" .. domain, privkey_der, 3600)
   if set_privkey_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of private key for " .. domain, set_privkey_err)
   end
