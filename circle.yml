@@ -1,5 +1,6 @@
 dependencies:
   cache_directories:
+    - build
     - t/build
     - t/tmp
     - t/vendor
