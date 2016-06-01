@@ -32,11 +32,11 @@ function clean_challenge {
 }
 
 function deploy_cert {
-  local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" CHAINFILE="${4}"
+  local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}" TIMESTAMP="${6}"
 
   local PRIVKEY=$(cat $KEYFILE)
   local CERT=$(cat $CERTFILE)
-  local FULLCHAIN=$(cat $CHAINFILE)
+  local FULLCHAIN=$(cat $FULLCHAINFILE)
 
   curl --silent --show-error --fail -XPOST \
     --header "X-Hook-Secret: $HOOK_SECRET" \
@@ -45,6 +45,10 @@ function deploy_cert {
     --data-urlencode "cert=$CERT" \
     --data-urlencode "fullchain=$FULLCHAIN" \
     "http://127.0.0.1:8999/deploy-cert" || { echo "hook request failed"; exit 1; }
+}
+
+function unchanged_cert {
+  local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}"
 }
 
 HANDLER=$1; shift; $HANDLER $@

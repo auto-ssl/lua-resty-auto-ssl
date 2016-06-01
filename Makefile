@@ -1,6 +1,10 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(ROOT_DIR)/build
 
+LETSENCRYPT_SH_VERSION:=v0.2.0
+LUA_RESTY_SHELL_VERSION:=0f88be3272c703686ef0d37f267f0616672c6931
+SOCKPROC_VERSION:=0d7b390c0b4879e29b7f3dff578285c42af613dc
+
 .PHONY:
 	all \
 	grind \
@@ -10,9 +14,9 @@ BUILD_DIR:=$(ROOT_DIR)/build
 	test_dependencies
 
 all: \
-	$(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh \
-	$(ROOT_DIR)/lib/resty/auto-ssl/vendor/shell.lua \
-	$(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc
+	$(BUILD_DIR)/stamp-letsencrypt.sh-$(LETSENCRYPT_SH_VERSION) \
+	$(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION) \
+	$(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION)
 
 install:
 	install -d $(INST_LUADIR)/resty/auto-ssl
@@ -42,21 +46,27 @@ install:
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
 	install -m 755 lib/resty/auto-ssl/vendor/sockproc $(INST_LUADIR)/resty/auto-ssl/vendor/sockproc
 
-$(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh:
-	curl -sSLo $@ "https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/21c18dd3b8c2572b894d9ec2e5c3fc2589f56f32/letsencrypt.sh"
-	chmod +x $@
+$(BUILD_DIR):
+	mkdir -p $@
+
+$(BUILD_DIR)/stamp-letsencrypt.sh-$(LETSENCRYPT_SH_VERSION): | $(BUILD_DIR)
+	rm -f $(BUILD_DIR)/stamp-letsencrypt.sh-*
+	curl -sSLo $(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh "https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/$(LETSENCRYPT_SH_VERSION)/letsencrypt.sh"
+	chmod +x $(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh
 	touch $@
 
-$(ROOT_DIR)/lib/resty/auto-ssl/vendor/shell.lua:
-	curl -sSLo $@ "https://raw.githubusercontent.com/juce/lua-resty-shell/0f88be3272c703686ef0d37f267f0616672c6931/lib/resty/shell.lua"
+$(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION): | $(BUILD_DIR)
+	rm -f $(BUILD_DIR)/stamp-lua-resty-shell-*
+	curl -sSLo $(ROOT_DIR)/lib/resty/auto-ssl/vendor/shell.lua "https://raw.githubusercontent.com/juce/lua-resty-shell/$(LUA_RESTY_SHELL_VERSION)/lib/resty/shell.lua"
+	touch $@
 
-$(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc:
-	mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && curl -sSLo sockproc-0d7b390c0b4879e29b7f3dff578285c42af613dc.tar.gz "https://github.com/juce/sockproc/archive/0d7b390c0b4879e29b7f3dff578285c42af613dc.tar.gz"
-	cd $(BUILD_DIR) && tar -xf sockproc-0d7b390c0b4879e29b7f3dff578285c42af613dc.tar.gz
-	cd $(BUILD_DIR)/sockproc-0d7b390c0b4879e29b7f3dff578285c42af613dc && make
-	cp $(BUILD_DIR)/sockproc-0d7b390c0b4879e29b7f3dff578285c42af613dc/sockproc $@
-	chmod +x $@
+$(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION): | $(BUILD_DIR)
+	rm -f $(BUILD_DIR)/stamp-sockproc-*
+	cd $(BUILD_DIR) && curl -sSLo sockproc-$(SOCKPROC_VERSION).tar.gz "https://github.com/juce/sockproc/archive/$(SOCKPROC_VERSION).tar.gz"
+	cd $(BUILD_DIR) && tar -xf sockproc-$(SOCKPROC_VERSION).tar.gz
+	cd $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION) && make
+	cp $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION)/sockproc $(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc
+	chmod +x $(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc
 	touch $@
 
 #
@@ -72,12 +82,12 @@ TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
 PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(PATH)
 
 LUACHECK:=luacheck
-LUACHECK_VERSION:=0.13.0-1
+LUACHECK_VERSION:=0.15.0-1
 
-OPENSSL_VERSION:=1.0.2g
+OPENSSL_VERSION:=1.0.2h
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
-OPENRESTY_VERSION:=1.9.7.4
+OPENRESTY_VERSION:=1.9.7.5
 OPENRESTY:=openresty-$(OPENRESTY_VERSION)
 
 LUAROCKS_VERSION=2.3.0
@@ -87,10 +97,10 @@ NGROK_VERSION:=2.0.25
 NGROK:=ngrok-$(NGROK_VERSION)
 
 define test_luarocks_install
-  $(eval PACKAGE:=$($(1)))
-  $(eval PACKAGE_VERSION:=$($(1)_VERSION))
-  luarocks --tree=$(TEST_VENDOR_DIR) install $(PACKAGE) $(PACKAGE_VERSION)
-  touch $@
+	$(eval PACKAGE:=$($(1)))
+	$(eval PACKAGE_VERSION:=$($(1)_VERSION))
+	luarocks --tree=$(TEST_VENDOR_DIR) install $(PACKAGE) $(PACKAGE_VERSION)
+	touch $@
 endef
 
 $(TEST_TMP_DIR):
@@ -137,7 +147,7 @@ endif
 
 $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && rm -rf openssl*
-	cd $(TEST_TMP_DIR) && curl -L -O http://mirrors.ibiblio.org/openssl/source/$(OPENSSL).tar.gz
+	cd $(TEST_TMP_DIR) && curl -L -O ftp://ftp.openssl.org/source/$(OPENSSL).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENSSL).tar.gz
 
 $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
