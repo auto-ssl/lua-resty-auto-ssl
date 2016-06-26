@@ -82,12 +82,12 @@ TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
 PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(PATH)
 
 LUACHECK:=luacheck
-LUACHECK_VERSION:=0.15.0-1
+LUACHECK_VERSION:=0.15.1-1
 
 OPENSSL_VERSION:=1.0.2h
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
-OPENRESTY_VERSION:=1.9.7.5
+OPENRESTY_VERSION:=1.9.15.1
 OPENRESTY:=openresty-$(OPENRESTY_VERSION)
 
 LUAROCKS_VERSION=2.3.0
@@ -151,7 +151,7 @@ $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENSSL).tar.gz
 
 $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
-	cd $(TEST_TMP_DIR) && rm -rf ngx_openresty*
+	cd $(TEST_TMP_DIR) && rm -rf openresty*
 	cd $(TEST_TMP_DIR) && curl -L -O https://openresty.org/download/$(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-debug --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL)
@@ -167,7 +167,7 @@ $(TEST_TMP_DIR)/$(LUAROCKS)/.installed: $(TEST_TMP_DIR)/$(OPENRESTY)/.installed 
 		--prefix=$(TEST_BUILD_DIR)/luajit \
 		--with-lua=$(TEST_BUILD_DIR)/luajit \
 		--with-lua-include=$(TEST_BUILD_DIR)/luajit/include/luajit-2.1 \
-		--lua-suffix=jit-2.1.0-beta1
+		--lua-suffix=jit-2.1.0-beta2
 	cd $(TEST_TMP_DIR)/$(LUAROCKS) && make bootstrap
 	touch $@
 
