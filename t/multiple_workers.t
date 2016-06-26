@@ -8,7 +8,7 @@ repeat_each(10);
 master_on();
 workers(5);
 
-plan tests => repeat_each() * (blocks() * 6);
+plan tests => repeat_each() * (blocks() * 7);
 
 check_accum_error_log();
 no_long_string();
@@ -130,6 +130,7 @@ received: foo
 --- error_log
 auto-ssl: issuing new certificate for
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]

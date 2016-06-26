@@ -3,7 +3,7 @@ do "./t/inc/setup.pl" or die "Setup failed: $@";
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 6 + 2);
+plan tests => repeat_each() * (blocks() * 7 + 2);
 
 check_accum_error_log();
 no_long_string();
@@ -137,6 +137,7 @@ latest cert: string
 --- error_log
 auto-ssl: issuing new certificate for
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]
@@ -266,6 +267,7 @@ received: foo
 (Longer than 30 days). Skipping
 auto-ssl: checking certificate renewals for
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]
