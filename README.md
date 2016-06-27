@@ -237,4 +237,5 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 
 - Document and formalize the API for other storage adapters.
 - Open source the MongoDB storage adapter we're using in API Umbrella.
+- Add the ability to encrypt data at rest for any storage adapter (based on what we built for API Umbrella's MongoDB storage adapter).
 - We currently rely on [letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.
