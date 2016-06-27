@@ -20,7 +20,7 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate and stores it as a file
 --- main_config
-user nobody nobody;
+user nobody;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
