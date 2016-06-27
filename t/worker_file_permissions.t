@@ -140,6 +140,7 @@ user nobody $TEST_NGINX_NOBODY_GROUP;
       end
       ngx.say("permissions:")
       output = string.gsub(output, "%s+$", "")
+      output = string.gsub(output, " $TEST_NGINX_NOBODY_GROUP ", " nobody ")
       ngx.say(output)
     }
   }
