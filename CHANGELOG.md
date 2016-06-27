@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.8.2 - 2016-06-26
+
+### Fixed
+- Fix letsencrypt.sh directory permissions on startup.
+
 ## 0.8.1 - 2016-05-31
 
 ### Fixed
