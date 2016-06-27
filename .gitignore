@@ -2,5 +2,6 @@
 /lib/resty/auto-ssl/vendor/*
 /t/build
 /t/servroot
+/t/servroot-worker-perms
 /t/tmp
 /t/vendor
