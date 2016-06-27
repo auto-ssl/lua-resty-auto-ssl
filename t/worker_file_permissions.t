@@ -4,6 +4,9 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
+my ($nobody_user, $nobody_passwd, $nobody_uid, $nobody_gid ) = getpwnam "nobody";
+$ENV{TEST_NGINX_NOBODY_GROUP} = getgrgid $nobody_gid;
+
 repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 7);
@@ -20,7 +23,7 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate and stores it as a file
 --- main_config
-user nobody;
+user nobody $TEST_NGINX_NOBODY_GROUP;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
