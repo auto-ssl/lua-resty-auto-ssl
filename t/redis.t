@@ -1,5 +1,9 @@
+use strict;
+use warnings;
 use Test::Nginx::Socket::Lua;
-do "./t/inc/setup.pl" or die "Setup failed: $@";
+use File::Path qw(make_path);
+require "./t/inc/setup.pl";
+AutoSsl::setup();
 
 make_path("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/redis");
 my $redis = Expect->spawn("redis-server ./t/config/redis.conf");

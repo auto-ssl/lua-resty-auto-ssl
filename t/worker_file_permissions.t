@@ -4,24 +4,23 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
-# Run more times than normal to make sure there's no weird concurrency issues
-# across multiple workers.
-repeat_each(10);
-
-master_on();
-workers(5);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 7);
 
 check_accum_error_log();
 no_long_string();
 no_shuffle();
+master_on();
+workers(2);
 
 run_tests();
 
 __DATA__
 
-=== TEST 1: issues a new SSL certificate when multiple nginx workers are running
+=== TEST 1: issues a new SSL certificate and stores it as a file
+--- main_config
+user nobody nobody;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
@@ -30,6 +29,7 @@ __DATA__
     auto_ssl = (require "lib.resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
+      storage_adapter = "resty.auto-ssl.storage_adapters.file",
       allow_domain = function(domain)
         return true
       end,
@@ -83,6 +83,7 @@ __DATA__
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
+      local run_command = require "resty.auto-ssl.utils.run_command"
       local sock = ngx.socket.tcp()
       sock:settimeout(30000)
       local ok, err = sock:connect("127.0.0.1:9443")
@@ -118,6 +119,25 @@ __DATA__
         ngx.say("failed to close: ", err)
         return
       end
+
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "r")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+
+      local content = file:read("*all")
+      file:close()
+      ngx.say("latest cert: " .. type(content))
+
+      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR -not -path '*ngrok.io*' -printf '%p %u %g %m\n' | sort")
+      if err then
+        ngx.say("failed to find file permissions: ", err)
+        return nil, err
+      end
+      ngx.say("permissions:")
+      output = string.gsub(output, "%s+$", "")
+      ngx.say(output)
     }
   }
 --- timeout: 30s
@@ -130,6 +150,19 @@ received: Content-Type: text/plain
 received: Connection: close
 received: 
 received: foo
+latest cert: string
+permissions:
+/tmp/resty-auto-ssl-test-worker-perms nobody root 755
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt root root 777
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/.acme-challenges nobody nobody 755
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/certs nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/conf.d root root 755
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/config.sh root root 644
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/locks nobody nobody 755
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.json nobody nobody 600
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.pem nobody nobody 600
+/tmp/resty-auto-ssl-test-worker-perms/storage nobody nobody 755
+/tmp/resty-auto-ssl-test-worker-perms/storage/file nobody nobody 700
 --- error_log
 auto-ssl: issuing new certificate for
 --- no_error_log

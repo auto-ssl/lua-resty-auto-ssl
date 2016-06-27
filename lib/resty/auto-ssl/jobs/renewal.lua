@@ -1,5 +1,6 @@
-local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 local lock = require "resty.lock"
+local run_command = require "resty.auto-ssl.utils.run_command"
+local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local _M = {}
 
@@ -68,7 +69,11 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- Write out the cert.pem value to the location letsencrypt.sh expects it for
   -- checking.
   local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
-  os.execute("mkdir -p " .. dir)
+  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. dir)
+  if mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/certs dir: ", mkdir_err)
+    return false, mkdir_err
+  end
   local cert_pem_path = dir .. "/cert.pem"
   local file, err = io.open(cert_pem_path, "w")
   if err then

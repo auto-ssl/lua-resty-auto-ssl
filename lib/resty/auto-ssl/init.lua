@@ -1,4 +1,5 @@
 local resty_random = require "resty.random"
+local run_command = require "resty.auto-ssl.utils.run_command"
 local str = require "resty.string"
 
 -- Generate a secret token used for the letsencrypt.sh bash hook script to
@@ -17,8 +18,15 @@ end
 local function generate_config(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
 
-  os.execute("mkdir -p " .. base_dir .. "/letsencrypt/conf.d")
-  os.execute("mkdir -p " .. base_dir .. "/letsencrypt/.acme-challenges")
+  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/letsencrypt/conf.d")
+  if mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/conf.d dir: ", mkdir_err)
+  end
+
+  local _, _, chmod_err = run_command("chmod 777 " .. base_dir .. "/letsencrypt")
+  if chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt dir permissions: ", chmod_err)
+  end
 
   local file, err = io.open(base_dir .. "/letsencrypt/config.sh", "w")
   if err then
@@ -27,6 +35,7 @@ local function generate_config(auto_ssl_instance)
     file:write('# This file will be overwritten by resty-auto-ssl.\n')
     file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d\n\n')
     file:write('CONFIG_D="' .. base_dir .. '/letsencrypt/conf.d"\n')
+    file:write('LOCKFILE="' .. base_dir .. '/letsencrypt/locks/lock"\n')
 
     local ca = auto_ssl_instance:get("ca")
     if ca then

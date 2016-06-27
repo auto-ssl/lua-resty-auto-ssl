@@ -1,12 +1,13 @@
 local auto_ssl = require "resty.auto-ssl"
 local lock = require "resty.lock"
+local run_command = require "resty.auto-ssl.utils.run_command"
 
 local function start()
-  local exit_code = os.execute("umask 0022 && " .. auto_ssl.package_root .. "/auto-ssl/shell/start_sockproc")
-  if exit_code == 0 then
-    ngx.shared.auto_ssl:set("sockproc_started", true)
+  local _, _, err = run_command("umask 0022 && " .. auto_ssl.package_root .. "/auto-ssl/shell/start_sockproc")
+  if err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc: ", err)
   else
-    ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc")
+    ngx.shared.auto_ssl:set("sockproc_started", true)
   end
 end
 

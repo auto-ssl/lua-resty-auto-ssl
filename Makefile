@@ -41,6 +41,7 @@ install:
 	install -d $(INST_LUADIR)/resty/auto-ssl/utils
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
+	install -m 644 lib/resty/auto-ssl/utils/run_command.lua $(INST_LUADIR)/resty/auto-ssl/utils/run_command.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
 	install -m 755 lib/resty/auto-ssl/vendor/letsencrypt.sh $(INST_LUADIR)/resty/auto-ssl/vendor/letsencrypt.sh
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
@@ -122,11 +123,6 @@ $(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
 	chmod u+w $@
 	touch $@
 
-$(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest File::Slurp
-	chmod u+w $@
-	touch $@
-
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
 	$< -L $(TEST_BUILD_DIR) --notest Test::Nginx@0.25
 	chmod u+w $@
@@ -177,7 +173,6 @@ test_dependencies: \
 	$(TEST_TMP_DIR)/$(OPENRESTY)/.installed \
 	$(TEST_TMP_DIR)/$(LUAROCKS)/.installed \
 	$(TEST_BUILD_DIR)/lib/perl5/Expect.pm \
-	$(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm \
 	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm
 
 lint: test_dependencies
@@ -185,7 +180,13 @@ lint: test_dependencies
 
 test: test_dependencies lint
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
-	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove
+	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
+	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
+	pkill sockproc || true
+	sudo pkill -U nobody sockproc || true
+	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove t/worker_file_permissions.t
+	sudo pkill -U nobody sockproc || true
+	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test

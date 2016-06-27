@@ -1,3 +1,5 @@
+local run_command = require "resty.auto-ssl.utils.run_command"
+
 local _M = {}
 
 local function file_path(self, key)
@@ -14,8 +16,14 @@ end
 
 function _M.setup_worker(self)
   local base_dir = self.options["dir"]
-  os.execute("mkdir -p " .. base_dir .. "/storage/file")
-  os.execute("chmod 700 " .. base_dir .. "/storage/file")
+  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/storage/file")
+  if mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create storage directory: ", mkdir_err)
+  end
+  local _, _, chmod_err = run_command("chmod 700 " .. base_dir .. "/storage/file")
+  if chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to set storage directory permissions: ", chmod_err)
+  end
 end
 
 function _M.get(self, key)

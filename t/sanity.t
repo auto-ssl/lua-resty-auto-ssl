@@ -1,5 +1,8 @@
+use strict;
+use warnings;
 use Test::Nginx::Socket::Lua;
-do "./t/inc/setup.pl" or die "Setup failed: $@";
+require "./t/inc/setup.pl";
+AutoSsl::setup();
 
 repeat_each(2);
 
