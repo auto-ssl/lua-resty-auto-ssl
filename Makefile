@@ -119,13 +119,16 @@ $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	touch $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest Expect
-	chmod u+w $@
+	$< -L $(TEST_BUILD_DIR) --reinstall --notest Expect@1.33
 	touch $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest Test::Nginx@0.25
-	chmod u+w $@
+	$< -L $(TEST_BUILD_DIR) --reinstall --notest Test::Nginx@0.25
+	touch $@
+
+# Dependency for Expect.pm
+$(TEST_BUILD_DIR)/lib/perl5/x86_64-linux-thread-multi/IO/Tty.pm: $(TEST_TMP_DIR)/cpanm
+	$< -L $(TEST_BUILD_DIR) --reinstall --notest IO::Tty@1.12
 	touch $@
 
 UNAME := $(shell uname)
@@ -173,7 +176,8 @@ test_dependencies: \
 	$(TEST_TMP_DIR)/$(OPENRESTY)/.installed \
 	$(TEST_TMP_DIR)/$(LUAROCKS)/.installed \
 	$(TEST_BUILD_DIR)/lib/perl5/Expect.pm \
-	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm
+	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm \
+	$(TEST_BUILD_DIR)/lib/perl5/x86_64-linux-thread-multi/IO/Tty.pm
 
 lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib

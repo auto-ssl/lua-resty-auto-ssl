@@ -5,7 +5,7 @@ dependencies:
     - t/tmp
     - t/vendor
   pre:
-    - sudo apt-get install luarocks libio-pty-perl
+    - sudo apt-get install luarocks
   override:
     - make test_dependencies
 test:
