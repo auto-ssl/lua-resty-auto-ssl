@@ -32,7 +32,7 @@ function _M.new(auto_ssl_instance)
   end
 
   if not options["port"] then
-    options["host"] = 6379
+    options["port"] = 6379
   end
 
   return setmetatable({ options = options }, { __index = _M })
