@@ -13,8 +13,8 @@ sub setup {
   $ngrok->log_stdout(0);
   $ngrok->expect(10, "-re", "Hostname:([a-z0-9]+.ngrok.io)") or die "failed to find hostname for ngrok";
   $ENV{TEST_NGINX_NGROK_HOSTNAME} = ($ngrok->matchlist())[0] or die "failed to extract hostname for ngrok";
-  $ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR} //= "/tmp/resty-auto-ssl-test";
-  $ENV{TEST_NGINX_RESOLVER} //= "8.8.8.8 8.8.4.4";
+  $ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR} ||= "/tmp/resty-auto-ssl-test";
+  $ENV{TEST_NGINX_RESOLVER} ||= "8.8.8.8 8.8.4.4";
 
   # If the tests have previously been run, wipe out any test data, but ensure we
   # retain the private account key registered with Let's Encrypt. If we don't,
