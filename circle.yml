@@ -4,6 +4,10 @@ dependencies:
     - t/build
     - t/tmp
     - t/vendor
+    - /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.json
+    - /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.pem
+    - /tmp/resty-auto-ssl-test/letsencrypt/private_key.json
+    - /tmp/resty-auto-ssl-test/letsencrypt/private_key.pem
   pre:
     - sudo apt-get install luarocks
   override:
