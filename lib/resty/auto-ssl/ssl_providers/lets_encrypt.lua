@@ -42,7 +42,9 @@ function _M.issue_cert(auto_ssl_instance, domain)
       domain .. " " ..
       base_dir .. "/letsencrypt/certs/" .. domain .. "/privkey.pem " ..
       base_dir .. "/letsencrypt/certs/" .. domain .. "/cert.pem " ..
-      base_dir .. "/letsencrypt/certs/" .. domain .. "/fullchain.pem"
+      base_dir .. "/letsencrypt/certs/" .. domain .. "/fullchain.pem " ..
+      base_dir .. "/letsencrypt/certs/" .. domain .. "/chain.pem " ..
+      ngx.now()
     status, out, err = shell_execute(command)
     if status ~= 0 then
       ngx.log(ngx.ERR, "auto-ssl: letsencrypt.sh manual hook.sh failed: ", command, " status: ", status, " out: ", out, " err: ", err)
