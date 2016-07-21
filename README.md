@@ -179,7 +179,6 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   ```lua
   auto_ssl:set("redis", {
     host = "10.10.10.1"
-    port = 6379
   })
   ```
 
