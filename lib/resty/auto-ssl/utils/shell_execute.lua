@@ -29,7 +29,7 @@ return function(command)
   if status ~= 0 and err == "no such file or directory" then
     ngx.log(ngx.ERR, "auto-ssl: sockproc unexpectedly not available, trying to restart")
     start_sockproc(true)
-    status, out, err = shell.execute(command)
+    status, out, err = shell.execute(command, { timeout = 60 })
   end
 
   return status, out, err
