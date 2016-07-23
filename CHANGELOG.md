@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.8.4 - 2016-07-23
+
+### Fixed
+- Extend timeout for calling letsencrypt.sh from 15 seconds to 60 seconds to improve handling when Let's Encrypt may take longer to respond than normal.
+
 ## 0.8.3 - 2016-07-20
 
 ### Fixed
