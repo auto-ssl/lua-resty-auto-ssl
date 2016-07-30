@@ -42,8 +42,9 @@ events {
 }
 
 http {
-  # The "auto_ssl" shared dict must be defined with enough storage space to
-  # hold your certificate data.
+  # The "auto_ssl" shared dict should be defined with enough storage space to
+  # hold your certificate data. 1MB of storage holds certificates for
+  # approximately 100 separate domains.
   lua_shared_dict auto_ssl 1m;
 
   # A DNS resolver must be defined for OCSP stapling to function.
