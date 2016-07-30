@@ -46,7 +46,7 @@ http {
   # hold your certificate data.
   lua_shared_dict auto_ssl 1m;
 
-  # A DNS resolver must be defined for OSCP stapling to function.
+  # A DNS resolver must be defined for OCSP stapling to function.
   resolver 8.8.8.8;
 
   # Initial setup tasks.
