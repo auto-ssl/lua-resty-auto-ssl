@@ -135,21 +135,21 @@ local function get_ocsp_response(fullchain_der)
 
   -- Perform various checks to ensure we have a valid OCSP response.
   if not res then
-    return nil, "OCSP responder query failed: " .. (req_err or "")
+    return nil, "OCSP responder query failed (" .. (ocsp_url or "") .. "): " .. (req_err or "")
   end
 
   if res.status ~= 200 then
-    return nil, "OCSP responder returns bad HTTP status code " .. (res.status or "")
+    return nil, "OCSP responder returns bad HTTP status code (" .. (ocsp_url or "") .. "): " .. (res.status or "")
   end
 
   local ocsp_resp = res.body
   if not ocsp_resp or ocsp_resp == "" then
-    return nil, "OCSP responder returns bad response body " .. (ocsp_resp or "")
+    return nil, "OCSP responder returns bad response body (" .. (ocsp_url or "") .. "): " .. (ocsp_resp or "")
   end
 
   local ok, ocsp_validate_err = ocsp.validate_ocsp_response(ocsp_resp, fullchain_der)
   if not ok then
-    return nil, "failed to validate OCSP response " .. (ocsp_validate_err or "")
+    return nil, "failed to validate OCSP response (" .. (ocsp_url or "") .. "): " .. (ocsp_validate_err or "")
   end
 
   return ocsp_resp
