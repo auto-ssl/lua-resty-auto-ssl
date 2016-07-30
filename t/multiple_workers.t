@@ -33,11 +33,6 @@ __DATA__
       allow_domain = function(domain)
         return true
       end,
-
-      -- FIXME: Revisit this, but Let's Encrypt staging has started to return
-      -- OCSP stapling errors for all requests. See if this is new expected
-      -- behavior from Let's Encrypt's staging environment.
-      ocsp_stapling_error_level = ngx.NOTICE,
     })
     auto_ssl:init()
   }

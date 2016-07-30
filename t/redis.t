@@ -38,11 +38,6 @@ __DATA__
       allow_domain = function(domain)
         return true
       end,
-
-      -- FIXME: Revisit this, but Let's Encrypt staging has started to return
-      -- OCSP stapling errors for all requests. See if this is new expected
-      -- behavior from Let's Encrypt's staging environment.
-      ocsp_stapling_error_level = ngx.NOTICE,
     })
     auto_ssl:init()
   }
@@ -176,11 +171,6 @@ auto-ssl: issuing new certificate for
         return true
       end,
       renew_check_interval = 1,
-
-      -- FIXME: Revisit this, but Let's Encrypt staging has started to return
-      -- OCSP stapling errors for all requests. See if this is new expected
-      -- behavior from Let's Encrypt's staging environment.
-      ocsp_stapling_error_level = ngx.NOTICE,
     })
     auto_ssl:init()
   }
