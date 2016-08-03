@@ -13,7 +13,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--cron " ..
     "--domain " .. domain .. " " ..
     "--challenge http-01 " ..
-    "--config " .. base_dir .. "/letsencrypt/config.sh " ..
+    "--config " .. base_dir .. "/letsencrypt/config " ..
     "--hook " .. package_root .. "/auto-ssl/shell/letsencrypt_hooks"
   local status, out, err = shell_execute(command)
   if status ~= 0 then
