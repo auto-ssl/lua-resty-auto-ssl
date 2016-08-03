@@ -1,5 +1,13 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.8.5 - 2016-08-03
+
+### Fixed
+- Update letsencrypt.sh to account for new Let's Encrypt license as of August 1, 2016. This would lead to certificate registration errors for new users (but should not have affected existing lua-resty-auto-ssl users).
+
+### Changed
+- Improve error messages for OCSP stapling failures to aid in debugging.
+
 ## 0.8.4 - 2016-07-23
 
 ### Fixed
