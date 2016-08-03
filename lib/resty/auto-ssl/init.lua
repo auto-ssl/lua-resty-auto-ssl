@@ -28,7 +28,11 @@ local function generate_config(auto_ssl_instance)
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt dir permissions: ", chmod_err)
   end
 
-  local file, err = io.open(base_dir .. "/letsencrypt/config.sh", "w")
+  -- Remove the old "config.sh" file used by letsencrypt.sh v0.2.0. Now it's
+  -- moved to just "config".
+  os.remove(base_dir .. "/letsencrypt/config.sh")
+
+  local file, err = io.open(base_dir .. "/letsencrypt/config", "w")
   if err then
     ngx.log(ngx.ERR, "auto-ssl: failed to open letsencrypt config file")
   else
@@ -36,6 +40,7 @@ local function generate_config(auto_ssl_instance)
     file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d\n\n')
     file:write('CONFIG_D="' .. base_dir .. '/letsencrypt/conf.d"\n')
     file:write('LOCKFILE="' .. base_dir .. '/letsencrypt/locks/lock"\n')
+    file:write('WELLKNOWN="' .. base_dir .. '/letsencrypt/.acme-challenges"\n')
 
     local ca = auto_ssl_instance:get("ca")
     if ca then
