@@ -3,6 +3,8 @@ local lock = require "resty.lock"
 
 local function start()
   local exit_status = os.execute("umask 0022 && " .. auto_ssl.package_root .. "/auto-ssl/shell/start_sockproc")
+  -- Lua 5.2 has a different return signature than LuaJIT and prior versions of
+  -- Lua (it returns a boolean instead of the status code).
   if exit_status == 0 or exit_status == true then
     ngx.shared.auto_ssl:set("sockproc_started", true)
   else
