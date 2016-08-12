@@ -2,8 +2,11 @@ dependencies:
   cache_directories:
     - build
     - t/build
+    - t/buildlua52
     - t/tmp
+    - t/tmplua52
     - t/vendor
+    - t/vendorlua52
     - /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.json
     - /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.pem
     - /tmp/resty-auto-ssl-test/letsencrypt/private_key.json
@@ -15,3 +18,4 @@ dependencies:
 test:
   override:
     - make test
+    - make test LUA_MODE=lua52

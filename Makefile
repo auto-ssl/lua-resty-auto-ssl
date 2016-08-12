@@ -74,9 +74,15 @@ $(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 # Testing
 #
 
-TEST_BUILD_DIR:=$(ROOT_DIR)/t/build
-TEST_VENDOR_DIR:=$(ROOT_DIR)/t/vendor
-TEST_TMP_DIR:=$(ROOT_DIR)/t/tmp
+ifeq ("$(LUA_MODE)", "lua52")
+OPENRESTY_FLAGS:="--with-luajit-xcflags='-DLUAJIT_ENABLE_LUA52COMPAT'"
+else
+OPENRESTY_FLAGS:=""
+endif
+
+TEST_BUILD_DIR:=$(ROOT_DIR)/t/build$(LUA_MODE)
+TEST_VENDOR_DIR:=$(ROOT_DIR)/t/vendor$(LUA_MODE)
+TEST_TMP_DIR:=$(ROOT_DIR)/t/tmp$(LUA_MODE)
 TEST_LUAROCKS_DIR:=$(TEST_VENDOR_DIR)/lib/luarocks/rocks
 TEST_LUA_SHARE_DIR:=$(TEST_VENDOR_DIR)/share/lua/5.1
 TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
@@ -151,9 +157,9 @@ $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 
 $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && rm -rf openresty*
-	cd $(TEST_TMP_DIR) && curl -L -O https://openresty.org/download/$(OPENRESTY).tar.gz
+	cd $(TEST_TMP_DIR) && curl -L -O https://github.com/openresty/openresty/releases/download/v$(OPENRESTY_VERSION)/$(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENRESTY).tar.gz
-	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-debug --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL)
+	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-debug --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL) $(OPENRESTY_FLAGS)
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make install
 	touch $@
@@ -183,9 +189,10 @@ lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
 
 test: test_dependencies lint
-	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
 	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
+	rm -rf $(ROOT_DIR)/t/servroot*
+	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	pkill sockproc || true
 	sudo pkill -U nobody sockproc || true
 	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
