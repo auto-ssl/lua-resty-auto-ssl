@@ -191,7 +191,7 @@ lint: test_dependencies
 test: test_dependencies lint
 	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
 	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
-	rm -rf $(ROOT_DIR)/t/servroot*
+	sudo rm -rf $(ROOT_DIR)/t/servroot*
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	pkill sockproc || true
 	sudo pkill -U nobody sockproc || true
