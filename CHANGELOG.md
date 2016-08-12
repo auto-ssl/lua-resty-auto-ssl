@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.8.6 - 2016-08-11
+
+### Fixed
+- Fix compatibility with OpenResty pre-built packages or when compiled with Lua 5.2 compatibility enabled (`LUAJIT_ENABLE_LUA52COMPAT`). Thanks to [@ikennaokpala](https://github.com/ikennaokpala).
+
 ## 0.8.5 - 2016-08-03
 
 ### Fixed
