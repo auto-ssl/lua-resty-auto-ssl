@@ -15,6 +15,7 @@ dependencies:
     - sudo apt-get install luarocks
   override:
     - make test_dependencies
+    - make test_dependencies LUA_MODE=lua52
 test:
   override:
     - make test
