@@ -20,6 +20,13 @@ local function get_redis_instance(self)
     return false, err
   end
 
+  if self.options["auth"] then
+    ok, err = instance:auth(self.options["auth"])
+    if not ok then
+      return false, err
+    end
+  end
+
   ngx.ctx.auto_ssl_redis_instance = instance
   return instance
 end
