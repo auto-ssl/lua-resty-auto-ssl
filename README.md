@@ -175,7 +175,12 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 - **`redis`**
   *Default:* `{ host = "127.0.0.1", port = 6379 }`
 
-  If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts `host`, `port`, and `socket` (for unix socket paths) options.
+  If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts the following options:
+
+  - `host`
+  - `port`
+  - `socket` (for unix socket paths)
+  - `auth`
 
   *Example:*
 
