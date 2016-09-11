@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SOCK_FILE=/tmp/shell.sock
 PID_FILE=/tmp/auto-ssl-sockproc.pid

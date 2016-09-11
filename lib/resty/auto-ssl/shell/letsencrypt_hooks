@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # When letsencrypt.sh is run locally, it will call this hook script when
 # various things need to be setup (for example, setting up the challenge token
