@@ -5,6 +5,10 @@ LETSENCRYPT_SH_VERSION:=afabfff06e2dece1772ed788ac41ca0d297ab49b
 LUA_RESTY_SHELL_VERSION:=0f88be3272c703686ef0d37f267f0616672c6931
 SOCKPROC_VERSION:=0aa4db08f299dcc9b6c00afad028d0e2678c95b0
 
+RUNTIME_DEPENDENCIES:=bash curl diff grep mktemp openssl sed
+$(foreach bin,$(RUNTIME_DEPENDENCIES),\
+	$(if $(shell command -v $(bin) 2> /dev/null),,$(error `$(bin)` was not found in PATH. Please install `$(bin)` first)))
+
 .PHONY:
 	all \
 	grind \

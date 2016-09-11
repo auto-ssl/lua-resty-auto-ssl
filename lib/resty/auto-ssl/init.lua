@@ -2,6 +2,24 @@ local resty_random = require "resty.random"
 local run_command = require "resty.auto-ssl.utils.run_command"
 local str = require "resty.string"
 
+local function check_dependencies()
+  local runtime_dependencies = {
+    "bash",
+    "curl",
+    "diff",
+    "grep",
+    "mktemp",
+    "openssl",
+    "sed",
+  }
+  for _, bin in ipairs(runtime_dependencies) do
+    local _, _, err = run_command("command -v " .. bin)
+    if(err) then
+      ngx.log(ngx.ERR, "auto-ssl: `" .. bin .. "` was not found in PATH. Please install `" .. bin .. "` first.")
+    end
+  end
+end
+
 -- Generate a secret token used for the letsencrypt.sh bash hook script to
 -- communicate with the internal HTTP API hook server.
 --
@@ -64,6 +82,7 @@ local function setup_storage(auto_ssl_instance)
 end
 
 return function(auto_ssl_instance)
+  check_dependencies()
   generate_hook_sever_secret()
   generate_config(auto_ssl_instance)
   setup_storage(auto_ssl_instance)
