@@ -1,5 +1,15 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.9.0 - 2016-09-11
+
+### Added
+- Add support for Redis authentication when using the Redis storage adapter. Thanks to [@Eihrister](https://github.com/Eihrister).
+- Add dependency checks during install and startup to provide better error messages in case system commands are not available.
+
+### Fixed
+- Fix compatibility on BusyBox-based systems where the `find` command did not support the `-printf` option.
+- Fix compatibility for systems where bash is installed in a location other than `/bin/bash`.
+
 ## 0.8.6 - 2016-08-11
 
 ### Fixed
