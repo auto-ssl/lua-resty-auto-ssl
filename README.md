@@ -24,7 +24,8 @@ Requirements:
   - Or nginx built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
-- bash, curl, diff, grep, mktemp, sed, make (these are generally pre-installed on most systems, but may not be included in some minimal containers)
+- make (for initial install via LuaRocks)
+- bash, curl, diff, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
 
 
 ```sh
