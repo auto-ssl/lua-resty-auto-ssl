@@ -31,6 +31,14 @@ local function get_redis_instance(self)
   return instance
 end
 
+local function prefixed_key(self, key)
+  if self.options["prefix"] then
+    return self.options["prefix"] .. ":" .. key
+  else
+    return key
+  end
+end
+
 function _M.new(auto_ssl_instance)
   local options = auto_ssl_instance:get("redis") or {}
 
@@ -54,7 +62,7 @@ function _M.get(self, key)
     return nil, instance_err
   end
 
-  local res, err = redis_instance:get(key)
+  local res, err = redis_instance:get(prefixed_key(self, key))
   if res == ngx.null then
     res = nil
     err = "not found"
@@ -69,6 +77,7 @@ function _M.set(self, key, value, options)
     return false, instance_err
   end
 
+  key = prefixed_key(self, key)
   local ok, err = redis_instance:set(key, value)
   if ok then
     if options and options["exptime"] then
@@ -88,7 +97,7 @@ function _M.delete(self, key)
     return false, instance_err
   end
 
-  return redis_instance:del(key)
+  return redis_instance:del(prefixed_key(self, key))
 end
 
 function _M.keys_with_suffix(self, suffix)
@@ -97,7 +106,7 @@ function _M.keys_with_suffix(self, suffix)
     return false, instance_err
   end
 
-  local keys, err = redis_instance:keys("*" .. suffix)
+  local keys, err = redis_instance:keys(prefixed_key(self, "*" .. suffix))
 
   return keys, err
 end
