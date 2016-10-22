@@ -8,9 +8,13 @@ function _M.issue_cert(auto_ssl_instance, domain)
 
   -- Run dehydrated for this domain, using our custom hooks to handle the
   -- domain validation and the issued certificates.
+  --
+  -- Disable dehydrated's locking, since we perform our own domain-specific
+  -- locking using the storage adapter.
   local command = "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
     package_root .. "/auto-ssl/vendor/dehydrated " ..
     "--cron " ..
+    "--no-lock " ..
     "--domain " .. domain .. " " ..
     "--challenge http-01 " ..
     "--config " .. base_dir .. "/letsencrypt/config " ..
