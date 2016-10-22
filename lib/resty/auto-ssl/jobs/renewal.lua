@@ -66,7 +66,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     cert_pem = fullchain_pem
   end
 
-  -- Write out the cert.pem value to the location letsencrypt.sh expects it for
+  -- Write out the cert.pem value to the location dehydrated expects it for
   -- checking.
   local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
   local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. dir)
@@ -83,7 +83,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   file:write(cert_pem)
   file:close()
 
-  -- Trigger a normal certificate issuance attempt, which letsencrypt.sh will
+  -- Trigger a normal certificate issuance attempt, which dehydrated will
   -- skip if the certificate already exists or renew if it's within the
   -- configured time for renewals.
   ngx.log(ngx.NOTICE, "auto-ssl: checking certificate renewals for ", domain)

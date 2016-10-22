@@ -773,7 +773,7 @@ GET /t
 failed to do SSL handshake: 18: self signed certificate
 --- error_log
 auto-ssl: issuing new certificate for not-ours-
-auto-ssl: letsencrypt.sh failed
+auto-ssl: dehydrated failed
 auto-ssl: could not get certificate for not-ours-
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
@@ -881,7 +881,7 @@ GET /t
 failed to do SSL handshake: 18: self signed certificate
 --- error_log
 auto-ssl: issuing new certificate for unresolvable-
-auto-ssl: letsencrypt.sh failed
+auto-ssl: dehydrated failed
 auto-ssl: could not get certificate for unresolvable-
 lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
@@ -1161,7 +1161,7 @@ received: Connection: close
 received: 
 received: foo
 --- error_log
-auto-ssl: letsencrypt.sh succeeded, but certs still missing from storage - trying to manually copy
+auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy
 --- no_error_log
 [error]
 [alert]

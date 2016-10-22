@@ -1,4 +1,4 @@
--- This server provides an internal-only API for the letsencrypt'sh bash hook
+-- This server provides an internal-only API for the dehydrated bash hook
 -- script to call. This allows for storing the tokens or certificates in the
 -- configured storage adapter (which allows for non-local storage mechanisms
 -- that can be shared across multiple servers, so this can work in a

@@ -21,7 +21,7 @@ return function(auto_ssl_instance)
   -- permissions of the nginx master process).
   --
   -- If we implement a native resty Let's Encrypt ACME client (rather than
-  -- relying on letsencrypt.sh), then we could get rid of the need for this
+  -- relying on dehydrated), then we could get rid of the need for this
   -- background process, which would be nice.
   start_sockproc()
 

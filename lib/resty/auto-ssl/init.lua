@@ -20,7 +20,7 @@ local function check_dependencies()
   end
 end
 
--- Generate a secret token used for the letsencrypt.sh bash hook script to
+-- Generate a secret token used for the dehydrated bash hook script to
 -- communicate with the internal HTTP API hook server.
 --
 -- The internal HTTP API should only be listening on a private port on
@@ -46,7 +46,7 @@ local function generate_config(auto_ssl_instance)
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt dir permissions: ", chmod_err)
   end
 
-  -- Remove the old "config.sh" file used by letsencrypt.sh v0.2.0. Now it's
+  -- Remove the old "config.sh" file used by dehydrated v0.2.0. Now it's
   -- moved to just "config".
   os.remove(base_dir .. "/letsencrypt/config.sh")
 

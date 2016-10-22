@@ -410,7 +410,7 @@ received: foo
 latest cert: string
 --- error_log
 auto-ssl: issuing new certificate for
-letsencrypt.sh succeeded, but certs still missing from storage
+dehydrated succeeded, but certs still missing from storage
 --- no_error_log
 [error]
 [alert]
