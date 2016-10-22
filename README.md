@@ -182,6 +182,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   - `port`
   - `socket` (for unix socket paths)
   - `auth`
+  - `prefix`
 
   *Example:*
 
