@@ -1,5 +1,17 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.10.0 - 2016-10-22
+
+### Added
+- Add support for Redis key prefix when using the Redis storage adapter. Thanks to [@brettg](https://github.com/brettg).
+
+### Fixed
+- Fix concurrent initial requests for different domains blocking SSL cert creation.
+
+### Changed
+- Upgrade letsencrypt.sh dependency, which has also been renamed "dehydrated".
+- Upgrade lua-resty-shell and sockproc dependencies.
+
 ## 0.9.0 - 2016-09-11
 
 ### Added
