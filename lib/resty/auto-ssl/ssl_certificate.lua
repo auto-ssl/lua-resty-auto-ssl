@@ -32,6 +32,22 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newl
   return fullchain_der, privkey_der, newly_issued
 end
 
+local function issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+  if local_lock then
+    local _, local_unlock_err = local_lock:unlock()
+    if local_unlock_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
+    end
+  end
+
+  if distributed_lock_value then
+    local _, distributed_unlock_err = storage:issue_cert_unlock(domain, distributed_lock_value)
+    if distributed_unlock_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", distributed_unlock_err)
+    end
+  end
+end
+
 local function issue_cert(auto_ssl_instance, storage, domain)
   local fullchain_pem, privkey_pem, err
 
@@ -54,6 +70,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   local distributed_lock_value, distributed_lock_err = storage:issue_cert_lock(domain)
   if distributed_lock_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", distributed_lock_err)
+    issue_cert_unlock(domain, storage, local_lock, nil)
     return
   end
 
@@ -61,6 +78,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   -- has already been registered.
   fullchain_pem, privkey_pem = storage:get_cert(domain)
   if fullchain_pem and privkey_pem then
+    issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return fullchain_pem, privkey_pem
   end
 
@@ -70,16 +88,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
     ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
   end
 
-  local _, local_unlock_err = local_lock:unlock()
-  if local_unlock_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
-  end
-
-  local _, distributed_unlock_err = storage:issue_cert_unlock(domain, distributed_lock_value)
-  if distributed_unlock_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
-  end
-
+  issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
   return fullchain_pem, privkey_pem, err
 end
 

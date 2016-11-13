@@ -28,6 +28,22 @@ local function get_interval_lock(name, interval)
   return true
 end
 
+local function renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+  if local_lock then
+    local _, local_unlock_err = local_lock:unlock()
+    if local_unlock_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
+    end
+  end
+
+  if distributed_lock_value then
+    local _, distributed_unlock_err = storage:issue_cert_unlock(domain, distributed_lock_value)
+    if distributed_unlock_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", distributed_unlock_err)
+    end
+  end
+end
+
 local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- Before issuing a cert, create a local lock to ensure multiple workers
   -- don't simultaneously try to register the same cert.
@@ -48,6 +64,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   local distributed_lock_value, distributed_lock_err = storage:issue_cert_lock(domain)
   if distributed_lock_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", distributed_lock_err)
+    renew_check_cert_unlock(domain, storage, local_lock, nil)
     return
   end
 
@@ -55,6 +72,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   local fullchain_pem, _, cert_pem = storage:get_cert(domain)
   if not fullchain_pem then
     ngx.log(ngx.ERR, "auto-ssl: attempting to renew certificate for domain without certificates in storage: ", domain)
+    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return
   end
 
@@ -72,12 +90,14 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. dir)
   if mkdir_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/certs dir: ", mkdir_err)
+    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return false, mkdir_err
   end
   local cert_pem_path = dir .. "/cert.pem"
   local file, err = io.open(cert_pem_path, "w")
   if err then
     ngx.log(ngx.ERR, "auto-ssl: write cert.pem for " .. domain .. " failed: ", err)
+    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return false, err
   end
   file:write(cert_pem)
@@ -92,15 +112,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", err)
   end
 
-  local _, local_unlock_err = local_lock:unlock()
-  if local_unlock_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
-  end
-
-  local _, distributed_unlock_err = storage:issue_cert_unlock(domain, distributed_lock_value)
-  if distributed_unlock_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
-  end
+  renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
 end
 
 local function renew_all_domains(auto_ssl_instance)
