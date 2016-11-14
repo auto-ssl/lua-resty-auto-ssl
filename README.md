@@ -51,6 +51,11 @@ http {
   lua_shared_dict auto_ssl 1m;
 
   # A DNS resolver must be defined for OCSP stapling to function.
+  #
+  # This example uses Google's DNS server. You may want to use your system's
+  # default DNS servers, which can be found in /etc/resolv.conf. If your network
+  # is not IPv6 compatible, you may wish to disable IPv6 results by using the
+  # "ipv6=off" flag (like "resolver 8.8.8.8 ipv6=off").
   resolver 8.8.8.8;
 
   # Initial setup tasks.
