@@ -1,5 +1,12 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.10.1 - 2016-11-13
+
+### Fixed
+- Fix certificate renewal if using the Redis storage adapter with key prefixes. Thanks to [@brettg](https://github.com/brettg).
+- Fix potential issues caused by locks not being released if unexpected errors occurred during certificate issuance or renewal.
+- Clarify nginx "resolver" usage for potential IPv6 compatibility issues.
+
 ## 0.10.0 - 2016-10-22
 
 ### Added
