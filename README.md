@@ -21,7 +21,7 @@ Used in production (but the internal APIs might still be in flux).
 Requirements:
 
 - [OpenResty](http://openresty.org/#Download) 1.9.7.2 or higher
-  - Or nginx built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
+  - Or nginx patched with [ssl_cert_cb_yield](https://github.com/openresty/openresty/blob/v1.11.2.2/patches/nginx-1.11.2-ssl_cert_cb_yield.patch) and built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
 - make (for initial install via LuaRocks)
