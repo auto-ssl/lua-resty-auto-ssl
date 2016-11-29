@@ -1,6 +1,7 @@
 general:
   artifacts:
     - t/logs
+    - t/logslua52
 dependencies:
   cache_directories:
     - build

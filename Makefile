@@ -87,6 +87,7 @@ endif
 TEST_BUILD_DIR:=$(ROOT_DIR)/t/build$(LUA_MODE)
 TEST_VENDOR_DIR:=$(ROOT_DIR)/t/vendor$(LUA_MODE)
 TEST_TMP_DIR:=$(ROOT_DIR)/t/tmp$(LUA_MODE)
+TEST_LOGS_DIR:=$(ROOT_DIR)/t/logs$(LUA_MODE)
 TEST_LUAROCKS_DIR:=$(TEST_VENDOR_DIR)/lib/luarocks/rocks
 TEST_LUA_SHARE_DIR:=$(TEST_VENDOR_DIR)/share/lua/5.1
 TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
@@ -195,14 +196,14 @@ lint: test_dependencies
 test: test_dependencies lint
 	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
 	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
-	sudo rm -rf $(ROOT_DIR)/t/servroot* $(ROOT_DIR)/t/logs
-	mkdir -p $(ROOT_DIR)/t/logs
+	sudo rm -rf $(ROOT_DIR)/t/servroot* $(TEST_LOGS_DIR)
+	mkdir -p $(TEST_LOGS_DIR)
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	pkill sockproc || true
 	sudo pkill -U nobody sockproc || true
-	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(ROOT_DIR)/t/logs/error-worker-perms.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
+	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(TEST_LOGS_DIR)/error-worker-perms.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
 	sudo pkill -U nobody sockproc || true
-	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(ROOT_DIR)/t/logs/error.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
+	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(TEST_LOGS_DIR)/error.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test
