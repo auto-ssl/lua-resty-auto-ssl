@@ -22,14 +22,15 @@ return function(command)
     end
   end
 
-  local status, out, err = shell.execute(command)
+  local options = { timeout = 60 }
+  local status, out, err = shell.execute(command, options)
 
   -- If the script fails due to a missing sockproc socket, try starting up
   -- the sockproc process again and then retry.
   if status ~= 0 and err == "no such file or directory" then
     ngx.log(ngx.ERR, "auto-ssl: sockproc unexpectedly not available, trying to restart")
     start_sockproc(true)
-    status, out, err = shell.execute(command, { timeout = 60 })
+    status, out, err = shell.execute(command, options)
   end
 
   return status, out, err
