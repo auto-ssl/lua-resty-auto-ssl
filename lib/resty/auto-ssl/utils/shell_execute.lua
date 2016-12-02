@@ -22,7 +22,7 @@ return function(command)
     end
   end
 
-  local options = { timeout = 60 }
+  local options = { timeout = 60000 }
   local status, out, err = shell.execute(command, options)
 
   -- If the script fails due to a missing sockproc socket, try starting up
