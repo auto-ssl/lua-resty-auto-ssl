@@ -237,6 +237,17 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   }
   ```
 
+- **`ca`**
+  *Default:* the default Let's Encrypt CA
+
+  URL of the Let's Encrypt environment to use. Normally you should not set this, unless you want make us of Let's Encrypts [staging environment](https://letsencrypt.org/docs/staging-environment/).
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("ca", "https://some-other-letsencrypt.org/directory")
+  ```
+
 ## Precautions
 
 - **Allowed Hosts:** By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
