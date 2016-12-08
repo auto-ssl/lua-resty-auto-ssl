@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.10.2 - 2016-12-07
+
+### Fixed
+- Extend timeout for calling dehydrated shell script from 15 seconds to 60 seconds to improve handling when Let's Encrypt may take longer to respond than normal (the intended fix for this same issue in v0.8.4 didn't actually fix the issue).
+
 ## 0.10.1 - 2016-11-13
 
 ### Fixed
