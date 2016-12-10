@@ -6,12 +6,16 @@ function _M.issue_cert(auto_ssl_instance, domain)
   local package_root = auto_ssl_instance.package_root
   local base_dir = auto_ssl_instance:get("dir")
 
+  local env_vars =
+    "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
+    "HOOK_SERVER_PORT=" .. auto_ssl_instance:get("hook_server_port")
+
   -- Run dehydrated for this domain, using our custom hooks to handle the
   -- domain validation and the issued certificates.
   --
   -- Disable dehydrated's locking, since we perform our own domain-specific
   -- locking using the storage adapter.
-  local command = "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
+  local command = env_vars .. " " ..
     package_root .. "/auto-ssl/vendor/dehydrated " ..
     "--cron " ..
     "--no-lock " ..
@@ -40,7 +44,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   if not fullchain_pem or not privkey_pem then
     ngx.log(ngx.WARN, "auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy - domain: " .. domain)
 
-    command = "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
+    command = env_vars .. " " ..
       package_root .. "/auto-ssl/shell/letsencrypt_hooks " ..
       "deploy_cert " ..
       domain .. " " ..

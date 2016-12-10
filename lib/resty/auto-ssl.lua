@@ -40,6 +40,10 @@ function _M.new(options)
     options["renew_check_interval"] = 86400 -- 1 day
   end
 
+  if not options["hook_server_port"] then
+    options["hook_server_port"] = 8999
+  end
+
   return setmetatable({ options = options }, { __index = _M })
 end
 

@@ -248,6 +248,17 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   auto_ssl:set("ca", "https://some-other-letsencrypt.org/directory")
   ```
 
+- **`hook_server_port`**
+  *Default:* 8999
+
+  Internally we use a special server server running on port 8999 for handling certificate tasks. The port used for this service may be changed here. Please note that you will also need to change it in your nginx configuration.
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("hook_server_port", 90)
+  ```
+
 ## Precautions
 
 - **Allowed Hosts:** By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
