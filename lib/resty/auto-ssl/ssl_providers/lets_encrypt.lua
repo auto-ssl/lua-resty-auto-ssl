@@ -5,10 +5,14 @@ local shell_execute = require "resty.auto-ssl.utils.shell_execute"
 function _M.issue_cert(auto_ssl_instance, domain)
   local package_root = auto_ssl_instance.package_root
   local base_dir = auto_ssl_instance:get("dir")
+  local hook_port = auto_ssl_instance:get("hook_server_port")
+
+  assert(type(hook_port) == "number", "hook_port must be a number")
+  assert(hook_port <= 65535, "hook_port must be below 65536")
 
   local env_vars =
     "env HOOK_SECRET=" .. ngx.shared.auto_ssl:get("hook_server:secret") .. " " ..
-    "HOOK_SERVER_PORT=" .. auto_ssl_instance:get("hook_server_port")
+    "HOOK_SERVER_PORT=" .. hook_port
 
   -- Run dehydrated for this domain, using our custom hooks to handle the
   -- domain validation and the issued certificates.
