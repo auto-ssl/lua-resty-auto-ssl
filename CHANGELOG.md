@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.10.3 - 2016-12-11
+
+### Fixed
+- Fix a LuaRocks install-time warning and potential load path issues.
+
 ## 0.10.2 - 2016-12-07
 
 ### Fixed
