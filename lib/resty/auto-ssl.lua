@@ -56,8 +56,8 @@ function _M.allow_domain(domain) -- luacheck: ignore
 end
 
 function _M.init(self)
-  local init = require "resty.auto-ssl.init"
-  init(self)
+  local init_master = require "resty.auto-ssl.init_master"
+  init_master(self)
 end
 
 function _M.init_worker(self)
