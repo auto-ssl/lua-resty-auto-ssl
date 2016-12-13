@@ -6,7 +6,7 @@ AutoSsl::setup();
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 7 + 2);
+plan tests => repeat_each() * (blocks() * 6 + 10);
 
 check_accum_error_log();
 no_long_string();
