@@ -17,7 +17,7 @@ function deploy_challenge {
     --data-urlencode "domain=$DOMAIN" \
     --data-urlencode "token_filename=$TOKEN_FILENAME" \
     --data-urlencode "token_value=$TOKEN_VALUE" \
-    "http://127.0.0.1:8999/deploy-challenge"
+    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-challenge"
 }
 
 function clean_challenge {
@@ -28,7 +28,7 @@ function clean_challenge {
     --data-urlencode "domain=$DOMAIN" \
     --data-urlencode "token_filename=$TOKEN_FILENAME" \
     --data-urlencode "token_value=$TOKEN_VALUE" \
-    "http://127.0.0.1:8999/clean-challenge" || { echo "hook request failed"; exit 1; }
+    "http://127.0.0.1:$HOOK_SERVER_PORT/clean-challenge" || { echo "hook request failed"; exit 1; }
 }
 
 function deploy_cert {
@@ -44,7 +44,7 @@ function deploy_cert {
     --data-urlencode "privkey=$PRIVKEY" \
     --data-urlencode "cert=$CERT" \
     --data-urlencode "fullchain=$FULLCHAIN" \
-    "http://127.0.0.1:8999/deploy-cert" || { echo "hook request failed"; exit 1; }
+    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-cert" || { echo "hook request failed"; exit 1; }
 }
 
 function unchanged_cert {
