@@ -259,6 +259,21 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   auto_ssl:set("hook_server_port", 90)
   ```
 
+### Advanced Let's Encrypt Configuration
+
+Internally, lua-resty-auto-ssl uses [dehydrated](https://github.com/lukas2511/dehydrated) as it's Let's Encrypt client. If you'd like to adjust lower-level settings, like the private key size, public key algorithm, or your registration e-mail, these settings can be configured in a custom dehydrated configuration file.
+
+- For a full list of supported options, see [dehydrated's example config](https://github.com/lukas2511/dehydrated/blob/v0.4.0/docs/examples/config).
+- Custom dehydrated configuration files can be placed inside the `/etc/resty-auto-ssl/letsencrypt/conf.d` directory by default (or adjust the path if you've changed the default lua-resty-auto-ssl `dir` setting).
+
+Example `/etc/resty-auto-ssl/letsencrypt/conf.d/custom.sh`:
+
+```sh
+KEYSIZE="4096"
+KEY_ALGO="rsa"
+CONTACT_EMAIL="foo@example.com"
+```
+
 ## Precautions
 
 - **Allowed Hosts:** By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
