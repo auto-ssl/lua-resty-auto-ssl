@@ -225,7 +225,7 @@ local function set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, n
   end
 end
 
-return function(auto_ssl_instance, ssl_options)
+local function do_ssl(auto_ssl_instance, ssl_options)
   -- Determine the domain making the SSL request with SNI.
   local request_domain = auto_ssl_instance:get("request_domain")
   local domain, domain_err = request_domain(ssl, ssl_options)
@@ -256,5 +256,12 @@ return function(auto_ssl_instance, ssl_options)
   if set_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - using fallback - ", set_cert_err)
     return
+  end
+end
+
+return function(auto_ssl_instance, ssl_options)
+  local ok, err = pcall(do_ssl, auto_ssl_instance, ssl_options)
+  if not ok then
+    ngx.log(ngx.ERR, "auto-ssl: failed to run do_ssl: ", err)
   end
 end
