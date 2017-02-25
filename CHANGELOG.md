@@ -1,5 +1,11 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.10.4 - 2017-02-25
+
+### Fixed
+- Fix errors not being returned if conversion to DER format failed.
+- Wrap SSL certificate function in more error handling.
+
 ## 0.10.3 - 2016-12-11
 
 ### Fixed
