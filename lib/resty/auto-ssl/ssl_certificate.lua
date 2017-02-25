@@ -8,13 +8,13 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newl
   -- Convert certificate from PEM to DER format.
   local fullchain_der, fullchain_der_err = ssl.cert_pem_to_der(fullchain_pem)
   if not fullchain_der or fullchain_der_err then
-    return nil, nil, "failed to convert certificate chain from PEM to DER: " .. (fullchain_der_err or "")
+    return nil, nil, newly_issued, "failed to convert certificate chain from PEM to DER: " .. (fullchain_der_err or "")
   end
 
   -- Convert private key from PEM to DER format.
   local privkey_der, privkey_der_err = ssl.priv_key_pem_to_der(privkey_pem)
   if not privkey_der or privkey_der_err then
-    return nil, nil, "failed to convert private key from PEM to DER: " .. (privkey_der_err or "")
+    return nil, nil, newly_issued, "failed to convert private key from PEM to DER: " .. (privkey_der_err or "")
   end
 
   -- Cache DER formats in memory for 1 hour (so renewals will get picked up
@@ -245,6 +245,9 @@ return function(auto_ssl_instance, ssl_options)
   local fullchain_der, privkey_der, newly_issued, get_cert_err = get_cert(auto_ssl_instance, domain)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: could not get certificate for ", domain, " - using fallback - ", get_cert_err)
+    return
+  elseif not fullchain_der or not privkey_der then
+    ngx.log(ngx.ERR, "auto-ssl: certificate data unexpectedly missing for ", domain, " - using fallback")
     return
   end
 
