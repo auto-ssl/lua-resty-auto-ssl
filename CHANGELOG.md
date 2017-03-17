@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.10.5 - 2017-03-16
+
+### Fixed
+- Fix potential issue with deploy-cert hanging in some environments. Thanks to [@Adel-Magebinary](https://github.com/Adel-Magebinary)
+
 ## 0.10.4 - 2017-02-25
 
 ### Fixed
