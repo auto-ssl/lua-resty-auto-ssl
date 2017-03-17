@@ -34,9 +34,8 @@ function clean_challenge {
 function deploy_cert {
   local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}" TIMESTAMP="${6}"
 
-  curl  --silent --show-error --fail -XPOST \
+  curl --silent --show-error --fail -XPOST \
     --header "X-Hook-Secret: $HOOK_SECRET" \
-    --silent --show-error --fail -X POST \
     --data-urlencode "domain=$DOMAIN" \
     --data-urlencode "privkey@$KEYFILE" \
     --data-urlencode "cert@$CERTFILE" \
