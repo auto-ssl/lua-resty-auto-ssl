@@ -9,6 +9,91 @@ function _M.new(adapter)
   return setmetatable({ adapter = adapter }, { __index = _M })
 end
 
+function _M.get_domains(self, domain)
+    function tablelength(a)
+      local count = 0
+      for _ in pairs(a) do count = count + 1 end
+      return count
+    end
+
+    function subdomain(a)
+      local x = {}
+      for word in string.gmatch(a, '([^.]+)') do
+          table.insert(x, word)
+      end
+      return x
+    end
+
+    local ar = subdomain(domain)
+    local size = tablelength(ar)
+    local main_domain = ar[size-1] .. "." .. ar[size]
+    if size>2 then
+       return main_domain, domain
+    else
+       return main_domain, nil
+    end
+end
+
+function _M.get_subdomains(self, domain)
+    function tablelength(a)
+      local count = 0
+      for _ in pairs(a) do count = count + 1 end
+      return count
+    end
+
+    function subdomains(a)
+      local x = {}
+      for word in string.gmatch(a, '([^:]+)') do
+          table.insert(x, word)
+      end
+      return x
+    end
+    local json, err = self.adapter:get(domain .. "main")
+    if err then
+       return nil, nil, err
+    elseif not json then
+       return nil
+    end
+    local data = cjson.decode(json)
+    local ar = subdomains(data['subdomain'])
+    local size = tablelength(ar)
+    return ar, size
+end
+
+function _M.set_subdomains(self, domain, subdomain)
+    local x, n, err = self.get_subdomains(self, domain)
+    if err then
+       local data = cjson.encode({domain=domain,
+       subdomain=subdomain})
+       self.adapter:set(domain .. "main", data)
+    else
+       for _, i in pairs(x) do 
+          if i == subdomain then
+              return true
+          end
+       end
+       local sub = table.concat(x, ":")
+       if nil == string.find(sub, subdomain) then
+          local sub = sub .. ":" .. subdomain
+          local data = cjson.encode({domain=domain,
+          subdomain=sub})
+          self.adapter:set(domain .. "main", data)
+       end
+    end
+end
+
+function _M.check_subdomain(self, domain, subdomain)
+  local x, n, err = self.get_subdomains(self, domain)
+  if x then
+    for _, i in pairs(x) do
+      if i == subdomain then
+        return domain
+      end
+    end
+  end
+  return nil
+end
+
 function _M.get_challenge(self, domain, path)
   return self.adapter:get(domain .. ":challenge:" .. path)
 end
@@ -22,7 +107,12 @@ function _M.delete_challenge(self, domain, path)
 end
 
 function _M.get_cert(self, domain)
-  local json, err = self.adapter:get(domain .. ":latest")
+  local d, z = self.get_domains(self, domain)
+  local c = self.check_subdomain(self, d, z)
+  if not c then
+    return nil
+  end
+  local json, err = self.adapter:get(d .. ":latest")
   if err then
     return nil, nil, err
   elseif not json then
@@ -40,6 +130,7 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- a single string (regardless of implementation), and we don't have to worry
   -- about race conditions with the public cert and private key being stored
   -- separately and getting out of sync.
+  local d, z = self.get_domains(self, domain)
   local data = cjson.encode({
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
@@ -49,10 +140,10 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- Store the cert with the current timestamp, so the old certs are preserved
   -- in case something goes wrong.
   local time = ngx.now() * 1000
-  self.adapter:set(domain .. ":" .. time, data)
+  self.adapter:set(d .. ":" .. time, data)
 
   -- Store the cert under the "latest" alias, which is what this app will use.
-  return self.adapter:set(domain .. ":latest", data)
+  return self.adapter:set(d .. ":latest", data)
 end
 
 function _M.all_cert_domains(self)
@@ -82,7 +173,8 @@ end
 -- but in combination with resty-lock, it should prevent the vast majority of
 -- double requests.
 function _M.issue_cert_lock(self, domain)
-  local key = domain .. ":issue_cert_lock"
+  local d, z = self.get_domains(self, domain)
+  local key = d .. ":issue_cert_lock"
   local lock_rand_value = str.to_hex(resty_random.bytes(32))
 
   -- Wait up to 30 seconds for any existing locks to be unlocked.
@@ -110,7 +202,8 @@ function _M.issue_cert_lock(self, domain)
 end
 
 function _M.issue_cert_unlock(self, domain, lock_rand_value)
-  local key = domain .. ":issue_cert_lock"
+  local d, z = self.get_domains(self, domain)
+  local key = d .. ":issue_cert_lock"
 
   -- Remove the existing lock if it matches the expected value.
   local current_value, err = self.adapter:get(key)

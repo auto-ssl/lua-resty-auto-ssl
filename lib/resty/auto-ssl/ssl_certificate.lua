@@ -83,7 +83,10 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   end
 
   ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
-  fullchain_pem, privkey_pem, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+  local storage = auto_ssl_instance:get("storage")
+  local d, s = storage:get_domains(domain)
+  storage:set_subdomains(d, s)
+  fullchain_pem, privkey_pem, err = ssl_provider.issue_cert(auto_ssl_instance, domain)  
   if err then
     ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
   end
@@ -207,7 +210,9 @@ local function set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, n
   end
 
   -- Set OCSP stapling.
-  ok, err = set_ocsp_stapling(domain, fullchain_der, newly_issued)
+  local storage = auto_ssl_instance:get("storage")
+  local d, s = storage:get_domains(domain)
+  ok, err = set_ocsp_stapling(d, fullchain_der, newly_issued)
   if not ok then
     ngx.log(auto_ssl_instance:get("ocsp_stapling_error_level"), "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
   end
