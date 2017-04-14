@@ -50,6 +50,7 @@ end
 
 local function issue_cert(auto_ssl_instance, storage, domain)
   local fullchain_pem, privkey_pem, err
+  local multiname = auto_ssl_instance:get("multiname_cert")
 
   -- Before issuing a cert, create a local lock to ensure multiple workers
   -- don't simultaneously try to register the same cert.
@@ -76,17 +77,16 @@ local function issue_cert(auto_ssl_instance, storage, domain)
 
   -- After obtaining the local and distributed lock, see if the certificate
   -- has already been registered.
-  fullchain_pem, privkey_pem = storage:get_cert(domain)
-  if fullchain_pem and privkey_pem then
-    issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
-    return fullchain_pem, privkey_pem
+  if not multiname then
+    fullchain_pem, privkey_pem = storage:get_cert(domain)
+    if fullchain_pem and privkey_pem then
+      issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+      return fullchain_pem, privkey_pem
+    end
   end
 
   ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
-  local storage = auto_ssl_instance:get("storage")
-  local d, s = storage:get_domains(domain)
-  storage:set_subdomains(d, s)
-  fullchain_pem, privkey_pem, err = ssl_provider.issue_cert(auto_ssl_instance, domain)  
+  fullchain_pem, privkey_pem, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
   if err then
     ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
   end
@@ -210,9 +210,7 @@ local function set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, n
   end
 
   -- Set OCSP stapling.
-  local storage = auto_ssl_instance:get("storage")
-  local d, s = storage:get_domains(domain)
-  ok, err = set_ocsp_stapling(d, fullchain_der, newly_issued)
+  ok, err = set_ocsp_stapling(domain, fullchain_der, newly_issued)
   if not ok then
     ngx.log(auto_ssl_instance:get("ocsp_stapling_error_level"), "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
   end
@@ -244,6 +242,28 @@ local function do_ssl(auto_ssl_instance, ssl_options)
   if not allow_domain(domain) then
     ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed - using fallback - ", domain)
     return
+  end
+
+  local multiname = auto_ssl_instance:get("multiname_cert")
+  if multiname then
+    local storage = auto_ssl_instance:get("storage")
+    domain, sub_domain = storage:get_domains(domain, multiname)
+    local check_subdomain, size = storage:check_subdomain(domain, sub_domain)
+    if size then
+      if size>99 then
+        storage:set_subdomain(domain, sub_domain, sub_domain)
+        storage:set_subdomain(sub_domain, sub_domain)
+      elseif not check_subdomain then
+        storage:set_subdomain(domain, sub_domain, nil)
+        issue_cert(auto_ssl_instance, storage, domain)
+      end
+    elseif not check_subdomain then
+      storage:set_subdomain(domain, sub_domain, nil)
+      issue_cert(auto_ssl_instance, storage, domain)
+    end
+
+    local check_subdomain, size = storage:check_subdomain(domain, sub_domain)
+    domain = check_subdomain
   end
 
   -- Get or issue the certificate for this domain.

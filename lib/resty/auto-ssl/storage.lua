@@ -1,22 +1,21 @@
 local resty_random = require "resty.random"
 local str = require "resty.string"
+local cjson = require "cjson"
 
 local _M = {}
-
-local cjson = require "cjson"
 
 function _M.new(adapter)
   return setmetatable({ adapter = adapter }, { __index = _M })
 end
 
-function _M.get_domains(self, domain)
-    function tablelength(a)
-      local count = 0
-      for _ in pairs(a) do count = count + 1 end
-      return count
-    end
+function tablelength(a)
+  local count = 0
+  for _ in pairs(a) do count = count + 1 end
+  return count
+end
 
-    function subdomain(a)
+function _M.get_domains(self, domain, level)
+    local function subdomain(a)
       local x = {}
       for word in string.gmatch(a, '([^.]+)') do
           table.insert(x, word)
@@ -24,31 +23,53 @@ function _M.get_domains(self, domain)
       return x
     end
 
-    local ar = subdomain(domain)
-    local size = tablelength(ar)
-    local main_domain = ar[size-1] .. "." .. ar[size]
-    if size>2 then
-       return main_domain, domain
-    else
-       return main_domain, nil
-    end
-end
-
-function _M.get_subdomains(self, domain)
-    function tablelength(a)
-      local count = 0
-      for _ in pairs(a) do count = count + 1 end
-      return count
-    end
-
-    function subdomains(a)
-      local x = {}
-      for word in string.gmatch(a, '([^:]+)') do
-          table.insert(x, word)
+    local function get_name(name_list, size, level)
+      if level > size then
+        return nil
+      end
+      x = name_list[size]
+      for i=1, level-1 do
+        x = name_list[size-i] .. "." .. x
       end
       return x
     end
-    local json, err = self.adapter:get(domain .. "main")
+
+    if type(level) ~= "number" then
+      level = 2
+    end
+    local ar = subdomain(domain)
+    local size = tablelength(ar)
+
+    local main_domain = get_name(ar, size, level)
+    if main_domain then
+      return main_domain, domain
+    else
+      return domain, nil
+    end
+end
+
+function _M.get_subdomain(self, domain)
+    local function subdomains(a)
+      local x = {}
+      if a then
+        for word in string.gmatch(a, '([^:]+)') do
+          table.insert(x, word)
+        end
+        return x
+      end
+      return nil
+    end
+
+    local function check_max_len(subdomain_list, size)
+      local x = ((string.len(table.concat(subdomain_list, ":"))) * size) + (10 * size)
+      if x > 1000 then
+        return 100
+      else
+        return size
+      end
+    end
+
+    local json, err = self.adapter:get(domain .. ":main")
     if err then
        return nil, nil, err
     elseif not json then
@@ -56,42 +77,109 @@ function _M.get_subdomains(self, domain)
     end
     local data = cjson.decode(json)
     local ar = subdomains(data['subdomain'])
-    local size = tablelength(ar)
-    return ar, size
+    local extended = subdomains(data['extended'])
+    local size = check_max_len(ar, tablelength(ar))
+    return ar, size, nil, extended
 end
 
-function _M.set_subdomains(self, domain, subdomain)
-    local x, n, err = self.get_subdomains(self, domain)
-    if err then
-       local data = cjson.encode({domain=domain,
-       subdomain=subdomain})
-       self.adapter:set(domain .. "main", data)
-    else
-       for _, i in pairs(x) do 
-          if i == subdomain then
-              return true
-          end
-       end
-       local sub = table.concat(x, ":")
-       if nil == string.find(sub, subdomain) then
-          local sub = sub .. ":" .. subdomain
-          local data = cjson.encode({domain=domain,
-          subdomain=sub})
-          self.adapter:set(domain .. "main", data)
-       end
+function _M.set_subdomain(self, domain, subdomain, extended)
+    local x, n, err, extended_list = self.get_subdomain(self, domain)
+
+    local function check_extended(extended, extended_list)
+      local x = nil
+      if extended_list then
+        x = table.concat(extended_list, ":") .. ":"
+      end
+      if extended then
+        if x then
+          x = x .. extended
+        else
+          x = extended
+        end
+      end
+      return x
     end
+
+    local function set_subdomains(subdomain, subdomain_list, err, extend)
+      local function check_name(subdomain, subdomain_list)
+        for _, i in pairs(subdomain_list) do
+          if i == subdomain then
+            return true
+          end
+        end
+      end
+
+      if err then
+        return subdomain
+      end
+
+      local x = table.concat(subdomain_list, ":")
+      if check_name(subdomain, subdomain_list) then
+        return nil, true
+      elseif nil == string.find(x, subdomain) and extend then
+        return x
+      elseif nil == string.find(x, subdomain) then
+        x = x .. ":" .. subdomain
+        return x
+      end
+    end
+
+    local extend = check_extended(extended, extended_list)
+    local subdomain_list, exists = set_subdomains(subdomain, x, err,  extend)
+    if exists then
+      return
+    end
+    if extend then
+      data = cjson.encode({domain=domain,
+                           subdomain=subdomain_list,
+                           extended=extend})
+    else
+      data = cjson.encode({domain=domain,
+                           subdomain=subdomain_list})
+    end
+    self.adapter:set(domain .. ":main", data)
 end
 
 function _M.check_subdomain(self, domain, subdomain)
-  local x, n, err = self.get_subdomains(self, domain)
-  if x then
-    for _, i in pairs(x) do
-      if i == subdomain then
-        return domain
+  local x, n, err, extended = self.get_subdomain(self, domain)
+
+  local function check_main(domain_list, subdomain)
+    if domain_list then
+      local size = tablelength(domain_list)
+      for _, i in pairs(domain_list) do
+        if i == subdomain then
+          return domain, size
+        end
       end
     end
   end
-  return nil
+
+  local function check_extended(self, extended_list, subdomain)
+    if extended_list then
+      for _, i in pairs(extended_list) do
+        domain, size = self.check_subdomain(self, i, subdomain)
+        if domain then
+          return domain, size
+        end
+      end
+    end
+  end
+
+  local domain, size = check_main(x, subdomain)
+  if domain then
+    return domain, size
+  end
+
+  local domain, size = check_extended(self, extended, subdomain)
+  if domain then
+    return domain, size
+  end
+
+  if n and n>99 then
+    return nil, n
+  end
+
+  return nil, nil
 end
 
 function _M.get_challenge(self, domain, path)
@@ -107,12 +195,7 @@ function _M.delete_challenge(self, domain, path)
 end
 
 function _M.get_cert(self, domain)
-  local d, z = self.get_domains(self, domain)
-  local c = self.check_subdomain(self, d, z)
-  if not c then
-    return nil
-  end
-  local json, err = self.adapter:get(d .. ":latest")
+  local json, err = self.adapter:get(domain .. ":latest")
   if err then
     return nil, nil, err
   elseif not json then
@@ -130,7 +213,6 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- a single string (regardless of implementation), and we don't have to worry
   -- about race conditions with the public cert and private key being stored
   -- separately and getting out of sync.
-  local d, z = self.get_domains(self, domain)
   local data = cjson.encode({
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
@@ -140,10 +222,10 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- Store the cert with the current timestamp, so the old certs are preserved
   -- in case something goes wrong.
   local time = ngx.now() * 1000
-  self.adapter:set(d .. ":" .. time, data)
+  self.adapter:set(domain .. ":" .. time, data)
 
   -- Store the cert under the "latest" alias, which is what this app will use.
-  return self.adapter:set(d .. ":latest", data)
+  return self.adapter:set(domain .. ":latest", data)
 end
 
 function _M.all_cert_domains(self)
@@ -173,8 +255,7 @@ end
 -- but in combination with resty-lock, it should prevent the vast majority of
 -- double requests.
 function _M.issue_cert_lock(self, domain)
-  local d, z = self.get_domains(self, domain)
-  local key = d .. ":issue_cert_lock"
+  local key = domain .. ":issue_cert_lock"
   local lock_rand_value = str.to_hex(resty_random.bytes(32))
 
   -- Wait up to 30 seconds for any existing locks to be unlocked.
@@ -202,8 +283,7 @@ function _M.issue_cert_lock(self, domain)
 end
 
 function _M.issue_cert_unlock(self, domain, lock_rand_value)
-  local d, z = self.get_domains(self, domain)
-  local key = d .. ":issue_cert_lock"
+  local key = domain .. ":issue_cert_lock"
 
   -- Remove the existing lock if it matches the expected value.
   local current_value, err = self.adapter:get(key)
