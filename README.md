@@ -285,7 +285,7 @@ CONTACT_EMAIL="foo@example.com"
 
 ## Development
 
-After checking out the rep, Docker can be used to run the test suite:
+After checking out the repo, Docker can be used to run the test suite:
 
 ```sh
 $ docker-compose run app make test

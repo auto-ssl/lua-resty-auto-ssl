@@ -134,11 +134,11 @@ $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	touch -c $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
-	$< --no-wget -L $(TEST_BUILD_DIR) --reinstall --notest Expect@1.33
+	$< -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Expect@1.33
 	touch -c $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< --no-wget -L $(TEST_BUILD_DIR) --reinstall --notest Test::Nginx@0.26
+	$< -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Test::Nginx@0.26
 	touch -c $@
 
 UNAME := $(shell uname)
