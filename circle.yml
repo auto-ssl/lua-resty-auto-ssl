@@ -1,16 +1,16 @@
 general:
   artifacts:
-    - t/logs
-    - t/logslua52
+    - t/run/logs
+    - t/run/logslua52
 dependencies:
   cache_directories:
     - build
-    - t/build
-    - t/buildlua52
-    - t/tmp
-    - t/tmplua52
-    - t/vendor
-    - t/vendorlua52
+    - t/run/build
+    - t/run/buildlua52
+    - t/run/tmp
+    - t/run/tmplua52
+    - t/run/vendor
+    - t/run/vendorlua52
     - /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.json
     - /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/private_key.pem
     - /tmp/resty-auto-ssl-test/letsencrypt/private_key.json
