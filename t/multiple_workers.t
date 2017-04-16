@@ -4,9 +4,16 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
+# Since master_on is enabled, if the tests are being run as root, then set the
+# nginx "user" to root (so it doesn't default to the separate "nobody" user,
+# which interferes with some of the expected permissions).
 my ($current_user, $current_passwd, $current_uid, $current_gid) = getpwuid($>);
-$ENV{TEST_NGINX_CURRENT_USER} = $current_user;
-$ENV{TEST_NGINX_CURRENT_GROUP} = getgrgid($current_gid);
+if($current_user == "root") {
+  my $current_group = getgrgid($current_gid);
+  $ENV{TEST_NGINX_USER} = "user $current_user $current_group;";
+} else {
+  $ENV{TEST_NGINX_USER} = "";
+}
 
 # Run more times than normal to make sure there's no weird concurrency issues
 # across multiple workers.
@@ -27,7 +34,7 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate when multiple nginx workers are running
 --- main_config
-user $TEST_NGINX_CURRENT_USER $TEST_NGINX_CURRENT_GROUP;
+$TEST_NGINX_USER
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
