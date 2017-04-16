@@ -110,6 +110,10 @@ LUAROCKS=luarocks-$(LUAROCKS_VERSION)
 NGROK_VERSION:=2.2.4
 NGROK:=ngrok-$(NGROK_VERSION)
 
+PERL_EXPECT_VERSION=1.33
+PERL_EXTUTILS_MAKEMAKER_VERSION=7.24
+PERL_TEST_NGINX_VERSION=0.26
+
 PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(TEST_VENDOR_DIR)/$(NGROK):$(PATH)
 
 define test_luarocks_install
@@ -125,7 +129,7 @@ $(TEST_TMP_DIR):
 $(TEST_VENDOR_DIR):
 	mkdir -p $@
 
-$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/$(LUAROCKS)/.installed | $(TEST_VENDOR_DIR)
+$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
 	$(call test_luarocks_install,LUACHECK)
 
 $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
@@ -133,13 +137,20 @@ $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	chmod +x $@
 	touch -c $@
 
-$(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Expect@1.33
-	touch -c $@
+# Install newer version of ExtUtils::MakeMaker for Expect's installation.
+# Without this, older versions of the bundled MakeMaker don't properly install
+# Expect's dependencies.
+$(TEST_TMP_DIR)/stamp-perl-extutils-makemaker-$(PERL_EXTUTILS_MAKEMAKER_VERSION): $(TEST_TMP_DIR)/cpanm
+	$(TEST_TMP_DIR)/cpanm -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest ExtUtils::MakeMaker@$(PERL_EXTUTILS_MAKEMAKER_VERSION)
+	touch $@
 
-$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Test::Nginx@0.26
-	touch -c $@
+$(TEST_TMP_DIR)/stamp-perl-expect-$(PERL_EXPECT_VERSION): $(TEST_TMP_DIR)/stamp-perl-extutils-makemaker-$(PERL_EXTUTILS_MAKEMAKER_VERSION) $(TEST_TMP_DIR)/cpanm
+	$(TEST_TMP_DIR)/cpanm -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Expect@$(PERL_EXPECT_VERSION)
+	touch $@
+
+$(TEST_TMP_DIR)/stamp-perl-test-nginx-$(PERL_TEST_NGINX_VERSION): $(TEST_TMP_DIR)/cpanm
+	$(TEST_TMP_DIR)/cpanm -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Test::Nginx@$(PERL_TEST_NGINX_VERSION)
+	touch $@
 
 UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
@@ -159,7 +170,7 @@ $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && curl -L -O https://www.openssl.org/source/$(OPENSSL).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENSSL).tar.gz
 
-$(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
+$(TEST_TMP_DIR)/stamp-$(OPENRESTY): $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && rm -rf openresty*
 	cd $(TEST_TMP_DIR) && curl -L -O https://github.com/openresty/openresty/releases/download/v$(OPENRESTY_VERSION)/$(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENRESTY).tar.gz
@@ -168,7 +179,7 @@ $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make install
 	touch $@
 
-$(TEST_TMP_DIR)/$(LUAROCKS)/.installed: $(TEST_TMP_DIR)/$(OPENRESTY)/.installed | $(TEST_TMP_DIR)
+$(TEST_TMP_DIR)/stamp-$(LUAROCKS): $(TEST_TMP_DIR)/stamp-$(OPENRESTY) | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && rm -rf luarocks*
 	cd $(TEST_TMP_DIR) && curl -L -O http://luarocks.org/releases/$(LUAROCKS).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(LUAROCKS).tar.gz
@@ -183,10 +194,10 @@ $(TEST_TMP_DIR)/$(LUAROCKS)/.installed: $(TEST_TMP_DIR)/$(OPENRESTY)/.installed 
 test_dependencies: \
 	$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION) \
 	$(TEST_VENDOR_DIR)/$(NGROK)/ngrok \
-	$(TEST_TMP_DIR)/$(OPENRESTY)/.installed \
-	$(TEST_TMP_DIR)/$(LUAROCKS)/.installed \
-	$(TEST_BUILD_DIR)/lib/perl5/Expect.pm \
-	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm
+	$(TEST_TMP_DIR)/stamp-$(OPENRESTY) \
+	$(TEST_TMP_DIR)/stamp-$(LUAROCKS) \
+	$(TEST_TMP_DIR)/stamp-perl-expect-$(PERL_EXPECT_VERSION) \
+	$(TEST_TMP_DIR)/stamp-perl-test-nginx-$(PERL_TEST_NGINX_VERSION)
 
 lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
