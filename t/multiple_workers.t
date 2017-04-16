@@ -8,7 +8,7 @@ AutoSsl::setup();
 # nginx "user" to root (so it doesn't default to the separate "nobody" user,
 # which interferes with some of the expected permissions).
 my ($current_user, $current_passwd, $current_uid, $current_gid) = getpwuid($>);
-if($current_user == "root") {
+if($current_user eq "root") {
   my $current_group = getgrgid($current_gid);
   $ENV{TEST_NGINX_USER} = "user $current_user $current_group;";
 } else {
