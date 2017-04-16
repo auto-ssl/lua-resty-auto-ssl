@@ -1,18 +1,18 @@
 package AutoSsl;
 use strict;
 use warnings;
-use Cwd qw(cwd);
+use Cwd qw(abs_path);
 use Expect;
+use File::Basename;
 use File::Find qw(finddepth);
 use File::Spec::Functions qw(canonpath);
 use File::stat;
 
 sub setup {
-  our $CWD = cwd();
-
-  our $ngrok = Expect->spawn("./t/vendor/ngrok-2.0.25/ngrok http 9080 --log stdout --log-format logfmt --log-level debug");
+  our $ngrok = Expect->spawn("ngrok http 9080 --log stdout --log-format logfmt --log-level debug") or die "failed to spawn ngrok: $!";
   $ngrok->log_stdout(0);
   $ngrok->expect(10, "-re", "Hostname:([a-z0-9]+.ngrok.io)") or die "failed to find hostname for ngrok";
+  $ENV{TEST_NGINX_ROOT_DIR} ||= dirname(dirname(dirname(abs_path(__FILE__))));
   $ENV{TEST_NGINX_NGROK_HOSTNAME} = ($ngrok->matchlist())[0] or die "failed to extract hostname for ngrok";
   $ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR} ||= "/tmp/resty-auto-ssl-test";
   $ENV{TEST_NGINX_RESOLVER} ||= "8.8.8.8 8.8.4.4";

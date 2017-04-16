@@ -4,6 +4,10 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
+my ($current_user, $current_passwd, $current_uid, $current_gid) = getpwuid($>);
+$ENV{TEST_NGINX_CURRENT_USER} = $current_user;
+$ENV{TEST_NGINX_CURRENT_GROUP} = getgrgid($current_gid);
+
 # Run more times than normal to make sure there's no weird concurrency issues
 # across multiple workers.
 repeat_each(10);
@@ -22,6 +26,8 @@ run_tests();
 __DATA__
 
 === TEST 1: issues a new SSL certificate when multiple nginx workers are running
+--- main_config
+user $TEST_NGINX_CURRENT_USER $TEST_NGINX_CURRENT_GROUP;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
@@ -43,8 +49,8 @@ __DATA__
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -74,7 +80,7 @@ __DATA__
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {

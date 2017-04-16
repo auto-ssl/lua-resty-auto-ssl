@@ -6,7 +6,7 @@ require "./t/inc/setup.pl";
 AutoSsl::setup();
 
 make_path("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/redis");
-my $redis = Expect->spawn("redis-server ./t/config/redis.conf");
+my $redis = Expect->spawn("redis-server ./t/config/redis.conf") or die "failed to spawn redis-server: $!";
 $redis->log_stdout(0);
 $redis->expect(10, "now ready") or die "failed to start redis: " . $redis->exp_before();
 
@@ -48,8 +48,8 @@ __DATA__
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -79,7 +79,7 @@ __DATA__
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -181,8 +181,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -212,7 +212,7 @@ auto-ssl: issuing new certificate for
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -310,8 +310,8 @@ issuing new certificate for
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -341,7 +341,7 @@ issuing new certificate for
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -444,8 +444,8 @@ dehydrated succeeded, but certs still missing from storage
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -475,7 +475,7 @@ dehydrated succeeded, but certs still missing from storage
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {

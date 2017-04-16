@@ -3,7 +3,7 @@ local _M = {}
 local shell_execute = require "resty.auto-ssl.utils.shell_execute"
 
 function _M.issue_cert(auto_ssl_instance, domain)
-  local package_root = auto_ssl_instance.package_root
+  local lua_root = auto_ssl_instance.lua_root
   local base_dir = auto_ssl_instance:get("dir")
   local hook_port = auto_ssl_instance:get("hook_server_port")
 
@@ -20,13 +20,13 @@ function _M.issue_cert(auto_ssl_instance, domain)
   -- Disable dehydrated's locking, since we perform our own domain-specific
   -- locking using the storage adapter.
   local command = env_vars .. " " ..
-    package_root .. "/auto-ssl/vendor/dehydrated " ..
+    lua_root .. "/bin/resty-auto-ssl/dehydrated " ..
     "--cron " ..
     "--no-lock " ..
     "--domain " .. domain .. " " ..
     "--challenge http-01 " ..
     "--config " .. base_dir .. "/letsencrypt/config " ..
-    "--hook " .. package_root .. "/auto-ssl/shell/letsencrypt_hooks"
+    "--hook " .. lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks"
   local status, out, err = shell_execute(command)
   if status ~= 0 then
     ngx.log(ngx.ERR, "auto-ssl: dehydrated failed: ", command, " status: ", status, " out: ", out, " err: ", err)
@@ -49,7 +49,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
     ngx.log(ngx.WARN, "auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy - domain: " .. domain)
 
     command = env_vars .. " " ..
-      package_root .. "/auto-ssl/shell/letsencrypt_hooks " ..
+      lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks " ..
       "deploy_cert " ..
       domain .. " " ..
       base_dir .. "/letsencrypt/certs/" .. domain .. "/privkey.pem " ..

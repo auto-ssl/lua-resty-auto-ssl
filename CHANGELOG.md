@@ -1,5 +1,13 @@
 # lua-resty-auto-ssl Change Log
 
+## Unreleased
+
+### Fixed
+- Fix certain installed files not being executable when installed with LuaRocks 2.4+.
+
+### Changed
+- Updated test suite dependencies, and added Docker test setup.
+
 ## 0.10.5 - 2017-03-16
 
 ### Fixed

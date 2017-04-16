@@ -1,0 +1,33 @@
+FROM alpine:latest
+
+RUN \
+  # Test dependencies
+  apk add \
+    --no-cache \
+    build-base \
+    findutils \
+    pcre-dev \
+    perl-dev \
+    procps \
+    redis \
+    sudo \
+    zlib-dev && \
+  # Runtime dependencies
+  apk add \
+    --no-cache \
+    bash \
+    coreutils \
+    curl \
+    diffutils \
+    grep \
+    openssl \
+    sed && \
+  # Even though we install full pkill (via the procps package, which we do for
+  # "-U" support in our tests), the /usr/bin version that symlinks BusyBox's
+  # more limited pkill version takes precedence. So manually remove this
+  # BusyBox symlink to the full pkill version is used.
+  if [ -L /usr/bin/pkill ]; then rm /usr/bin/pkill; fi
+
+RUN mkdir /app
+WORKDIR /app
+COPY . /app

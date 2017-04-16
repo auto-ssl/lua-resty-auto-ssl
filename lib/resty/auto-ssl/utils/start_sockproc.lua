@@ -2,7 +2,7 @@ local auto_ssl = require "resty.auto-ssl"
 local lock = require "resty.lock"
 
 local function start()
-  local exit_status = os.execute("umask 0022 && " .. auto_ssl.package_root .. "/auto-ssl/shell/start_sockproc")
+  local exit_status = os.execute("umask 0022 && " .. auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc")
   -- Lua 5.2+ returns boolean. Prior versions return status code.
   if exit_status == 0 or exit_status == true then
     ngx.shared.auto_ssl:set("sockproc_started", true)

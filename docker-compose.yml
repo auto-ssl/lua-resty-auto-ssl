@@ -1,0 +1,17 @@
+version: "2"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile-test
+    volumes:
+      - .:/app
+      # Use a named volume to store the test and build output, so it's shared
+      # across runs, but more performant than building on the /app host share.
+      - test:/test
+    environment:
+      BUILD_DIR: /test/build
+      TEST_RUN_DIR: /test/run
+      TEST_NGINX_RESOLVER: 127.0.0.11
+volumes:
+  test:

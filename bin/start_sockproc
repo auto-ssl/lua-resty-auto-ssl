@@ -45,5 +45,5 @@ fi
 rm -f $SOCK_FILE || true
 
 # Start the sockproc daemon.
-VENDOR_DIR="$(dirname $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd))/vendor"
-$VENDOR_DIR/sockproc $SOCK_FILE $PID_FILE
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+$BIN_DIR/sockproc $SOCK_FILE $PID_FILE

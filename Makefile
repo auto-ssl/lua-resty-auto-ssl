@@ -1,5 +1,5 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILD_DIR:=$(ROOT_DIR)/build
+BUILD_DIR?=$(ROOT_DIR)/build
 
 DEHYDRATED_VERSION:=v0.3.1
 LUA_RESTY_SHELL_VERSION:=955243d70506c21e7cc29f61d745d1a8a718994f
@@ -18,9 +18,9 @@ $(foreach bin,$(RUNTIME_DEPENDENCIES),\
 	test_dependencies
 
 all: \
-	$(BUILD_DIR)/stamp-dehydrated-$(DEHYDRATED_VERSION) \
+	$(BUILD_DIR)/stamp-dehydrated-2-$(DEHYDRATED_VERSION) \
 	$(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION) \
-	$(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION)
+	$(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION)
 
 install:
 	install -d $(INST_LUADIR)/resty/auto-ssl
@@ -32,9 +32,6 @@ install:
 	install -d $(INST_LUADIR)/resty/auto-ssl/servers
 	install -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
 	install -m 644 lib/resty/auto-ssl/servers/hook.lua $(INST_LUADIR)/resty/auto-ssl/servers/hook.lua
-	install -d $(INST_LUADIR)/resty/auto-ssl/shell
-	install -m 755 lib/resty/auto-ssl/shell/letsencrypt_hooks $(INST_LUADIR)/resty/auto-ssl/shell/letsencrypt_hooks
-	install -m 755 lib/resty/auto-ssl/shell/start_sockproc $(INST_LUADIR)/resty/auto-ssl/shell/start_sockproc
 	install -m 644 lib/resty/auto-ssl/ssl_certificate.lua $(INST_LUADIR)/resty/auto-ssl/ssl_certificate.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/ssl_providers
 	install -m 644 lib/resty/auto-ssl/ssl_providers/lets_encrypt.lua $(INST_LUADIR)/resty/auto-ssl/ssl_providers/lets_encrypt.lua
@@ -47,17 +44,21 @@ install:
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
 	install -m 644 lib/resty/auto-ssl/utils/run_command.lua $(INST_LUADIR)/resty/auto-ssl/utils/run_command.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
-	install -m 755 lib/resty/auto-ssl/vendor/dehydrated $(INST_LUADIR)/resty/auto-ssl/vendor/dehydrated
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
-	install -m 755 lib/resty/auto-ssl/vendor/sockproc $(INST_LUADIR)/resty/auto-ssl/vendor/sockproc
+	install -d $(INST_BINDIR)/resty-auto-ssl
+	install -m 755 bin/letsencrypt_hooks $(INST_BINDIR)/resty-auto-ssl/letsencrypt_hooks
+	install -m 755 bin/start_sockproc $(INST_BINDIR)/resty-auto-ssl/start_sockproc
+	install -m 755 $(BUILD_DIR)/bin/dehydrated $(INST_BINDIR)/resty-auto-ssl/dehydrated
+	install -m 755 $(BUILD_DIR)/bin/sockproc $(INST_BINDIR)/resty-auto-ssl/sockproc
 
 $(BUILD_DIR):
 	mkdir -p $@
 
-$(BUILD_DIR)/stamp-dehydrated-$(DEHYDRATED_VERSION): | $(BUILD_DIR)
+$(BUILD_DIR)/stamp-dehydrated-2-$(DEHYDRATED_VERSION): | $(BUILD_DIR)
 	rm -f $(BUILD_DIR)/stamp-dehydrated-*
-	curl -sSLo $(ROOT_DIR)/lib/resty/auto-ssl/vendor/dehydrated "https://raw.githubusercontent.com/lukas2511/dehydrated/$(DEHYDRATED_VERSION)/dehydrated"
-	chmod +x $(ROOT_DIR)/lib/resty/auto-ssl/vendor/dehydrated
+	mkdir -p $(BUILD_DIR)/bin
+	curl -sSLo $(BUILD_DIR)/bin/dehydrated "https://raw.githubusercontent.com/lukas2511/dehydrated/$(DEHYDRATED_VERSION)/dehydrated"
+	chmod +x $(BUILD_DIR)/bin/dehydrated
 	touch $@
 
 $(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION): | $(BUILD_DIR)
@@ -65,13 +66,14 @@ $(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION): | $(BUILD_DIR)
 	curl -sSLo $(ROOT_DIR)/lib/resty/auto-ssl/vendor/shell.lua "https://raw.githubusercontent.com/juce/lua-resty-shell/$(LUA_RESTY_SHELL_VERSION)/lib/resty/shell.lua"
 	touch $@
 
-$(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION): | $(BUILD_DIR)
+$(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 	rm -f $(BUILD_DIR)/stamp-sockproc-*
+	mkdir -p $(BUILD_DIR)/bin
 	cd $(BUILD_DIR) && curl -sSLo sockproc-$(SOCKPROC_VERSION).tar.gz "https://github.com/juce/sockproc/archive/$(SOCKPROC_VERSION).tar.gz"
 	cd $(BUILD_DIR) && tar -xf sockproc-$(SOCKPROC_VERSION).tar.gz
 	cd $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION) && make
-	cp $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION)/sockproc $(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc
-	chmod +x $(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc
+	cp $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION)/sockproc $(BUILD_DIR)/bin/sockproc
+	chmod +x $(BUILD_DIR)/bin/sockproc
 	touch $@
 
 #
@@ -84,29 +86,31 @@ else
 OPENRESTY_FLAGS:=
 endif
 
-TEST_BUILD_DIR:=$(ROOT_DIR)/t/build$(LUA_MODE)
-TEST_VENDOR_DIR:=$(ROOT_DIR)/t/vendor$(LUA_MODE)
-TEST_TMP_DIR:=$(ROOT_DIR)/t/tmp$(LUA_MODE)
-TEST_LOGS_DIR:=$(ROOT_DIR)/t/logs$(LUA_MODE)
+TEST_RUN_DIR?=$(ROOT_DIR)/t/run
+TEST_BUILD_DIR:=$(TEST_RUN_DIR)/build$(LUA_MODE)
+TEST_VENDOR_DIR:=$(TEST_RUN_DIR)/vendor$(LUA_MODE)
+TEST_TMP_DIR:=$(TEST_RUN_DIR)/tmp$(LUA_MODE)
+TEST_LOGS_DIR:=$(TEST_RUN_DIR)/logs$(LUA_MODE)
 TEST_LUAROCKS_DIR:=$(TEST_VENDOR_DIR)/lib/luarocks/rocks
 TEST_LUA_SHARE_DIR:=$(TEST_VENDOR_DIR)/share/lua/5.1
 TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
-PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(PATH)
 
 LUACHECK:=luacheck
-LUACHECK_VERSION:=0.15.1-1
+LUACHECK_VERSION:=0.19.1-1
 
-OPENSSL_VERSION:=1.0.2j
+OPENSSL_VERSION:=1.0.2k
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
-OPENRESTY_VERSION:=1.9.15.1
+OPENRESTY_VERSION:=1.11.2.2
 OPENRESTY:=openresty-$(OPENRESTY_VERSION)
 
-LUAROCKS_VERSION=2.3.0
+LUAROCKS_VERSION=2.4.2
 LUAROCKS=luarocks-$(LUAROCKS_VERSION)
 
-NGROK_VERSION:=2.0.25
+NGROK_VERSION:=2.2.4
 NGROK:=ngrok-$(NGROK_VERSION)
+
+PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(TEST_VENDOR_DIR)/$(NGROK):$(PATH)
 
 define test_luarocks_install
 	$(eval PACKAGE:=$($(1)))
@@ -130,22 +134,17 @@ $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	touch -c $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --reinstall --notest Expect@1.33
+	$< --no-wget -L $(TEST_BUILD_DIR) --reinstall --notest Expect@1.33
 	touch -c $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --reinstall --notest Test::Nginx@0.25
+	$< --no-wget -L $(TEST_BUILD_DIR) --reinstall --notest Test::Nginx@0.26
 	touch -c $@
-
-# Runtime dependency for Expect.pm
-$(TEST_BUILD_DIR)/stamp-IO-Tty-1.12: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --reinstall --notest IO::Tty@1.12
-	touch $@
 
 UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
 $(TEST_VENDOR_DIR)/$(NGROK)/ngrok: | $(TEST_TMP_DIR) $(TEST_VENDOR_DIR)
-	curl -L -o $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz https://bin.equinox.io/a/2nnnbSQv68d/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
+	curl -L -o $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz https://bin.equinox.io/a/kpdp6Edfc5q/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
 	mkdir -p $(TEST_VENDOR_DIR)/$(NGROK)
 	tar -C $(TEST_VENDOR_DIR)/$(NGROK) -xf $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
 endif
@@ -157,7 +156,7 @@ endif
 
 $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && rm -rf openssl*
-	cd $(TEST_TMP_DIR) && curl -L -O ftp://ftp.openssl.org/source/$(OPENSSL).tar.gz
+	cd $(TEST_TMP_DIR) && curl -L -O https://www.openssl.org/source/$(OPENSSL).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENSSL).tar.gz
 
 $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
@@ -187,8 +186,7 @@ test_dependencies: \
 	$(TEST_TMP_DIR)/$(OPENRESTY)/.installed \
 	$(TEST_TMP_DIR)/$(LUAROCKS)/.installed \
 	$(TEST_BUILD_DIR)/lib/perl5/Expect.pm \
-	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm \
-	$(TEST_BUILD_DIR)/stamp-IO-Tty-1.12
+	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm
 
 lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
@@ -196,14 +194,14 @@ lint: test_dependencies
 test: test_dependencies lint
 	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
 	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
-	sudo rm -rf $(ROOT_DIR)/t/servroot* $(TEST_LOGS_DIR)
+	sudo rm -rf $(TEST_RUN_DIR)/servroot* $(TEST_LOGS_DIR)
 	mkdir -p $(TEST_LOGS_DIR)
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	pkill sockproc || true
 	sudo pkill -U nobody sockproc || true
-	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(TEST_LOGS_DIR)/error-worker-perms.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
+	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(TEST_RUN_DIR)/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(TEST_LOGS_DIR)/error-worker-perms.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
 	sudo pkill -U nobody sockproc || true
-	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(TEST_LOGS_DIR)/error.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
+	TEST_NGINX_SERVROOT=$(TEST_RUN_DIR)/servroot PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(TEST_LOGS_DIR)/error.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test

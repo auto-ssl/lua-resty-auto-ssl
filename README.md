@@ -282,6 +282,15 @@ CONTACT_EMAIL="foo@example.com"
   - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
   - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
 
+
+## Development
+
+After checking out the rep, Docker can be used to run the test suite:
+
+```sh
+$ docker-compose run app make test
+```
+
 ## Credits
 
 **[dehydrated](https://github.com/lukas2511/dehydrated)** is the client used internally that does all the heavy lifting with Let's Encrypt.

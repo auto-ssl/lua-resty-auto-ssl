@@ -38,8 +38,8 @@ __DATA__
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -69,7 +69,7 @@ __DATA__
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -150,8 +150,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -181,7 +181,7 @@ auto-ssl: issuing new certificate for
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -262,8 +262,8 @@ issuing new certificate for
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -293,7 +293,7 @@ issuing new certificate for
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -365,8 +365,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -396,7 +396,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -476,8 +476,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -507,7 +507,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -587,8 +587,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -618,7 +618,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -694,8 +694,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -725,7 +725,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -802,8 +802,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -833,7 +833,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -922,8 +922,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate({ port = 9443 })
     }
@@ -937,8 +937,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9444 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate({ port = 9444 })
     }
@@ -952,8 +952,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9445 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate({ port = 9445 })
     }
@@ -983,7 +983,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -1069,8 +1069,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -1100,7 +1100,7 @@ lua ssl certificate verify error: (18: self signed certificate)
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -1190,8 +1190,8 @@ auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -1221,7 +1221,7 @@ auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {

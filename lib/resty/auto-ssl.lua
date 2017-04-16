@@ -1,10 +1,10 @@
 local _M = {}
 
 local current_file_path = package.searchpath("resty.auto-ssl", package.path)
-_M.package_root = string.match(current_file_path, "(.*)/(.*)")
-if string.sub(_M.package_root, 1, 2) == "./" then
+_M.lua_root = string.match(current_file_path, "(.*)/.*/.*/.*/.*/.*")
+if string.sub(_M.lua_root, 1, 2) == "./" then
   local lfs = require "lfs"
-  _M.package_root = lfs.currentdir() .. string.sub(_M.package_root, 2, -1)
+  _M.lua_root = lfs.currentdir() .. string.sub(_M.lua_root, 2, -1)
 end
 
 function _M.new(options)
