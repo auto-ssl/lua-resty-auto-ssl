@@ -19,14 +19,18 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newl
 
   -- Cache DER formats in memory for 1 hour (so renewals will get picked up
   -- across multiple servers).
-  local _, set_fullchain_err = ngx.shared.auto_ssl:set("domain:fullchain_der:" .. domain, fullchain_der, 3600)
+  local _, set_fullchain_err, set_fullchain_forcible = ngx.shared.auto_ssl:set("domain:fullchain_der:" .. domain, fullchain_der, 3600)
   if set_fullchain_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of certificate chain for " .. domain .. ": ", set_fullchain_err)
+  elseif set_fullchain_forcible then
+    ngx.log(ngx.ERR, "auto-ssl: 'lua_shared_dict auto_ssl' might be too small - consider increasing its configured size (old entries were removed while adding certificate chain for " .. domain .. ")")
   end
 
-  local _, set_privkey_err = ngx.shared.auto_ssl:set("domain:privkey_der:" .. domain, privkey_der, 3600)
+  local _, set_privkey_err, set_privkey_forcible = ngx.shared.auto_ssl:set("domain:privkey_der:" .. domain, privkey_der, 3600)
   if set_privkey_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of private key for " .. domain .. ": ", set_privkey_err)
+  elseif set_privkey_forcible then
+    ngx.log(ngx.ERR, "auto-ssl: 'lua_shared_dict auto_ssl' might be too small - consider increasing its configured size (old entries were removed while adding private key for " .. domain .. ")")
   end
 
   return fullchain_der, privkey_der, newly_issued
@@ -184,9 +188,11 @@ local function set_ocsp_stapling(domain, fullchain_der, newly_issued)
 
     -- Cache the OCSP stapling response for 1 hour (this is what nginx does by
     -- default).
-    local _, set_ocsp_err = ngx.shared.auto_ssl:set("domain:ocsp:" .. domain, ocsp_resp, 3600)
+    local _, set_ocsp_err, set_ocsp_forcible = ngx.shared.auto_ssl:set("domain:ocsp:" .. domain, ocsp_resp, 3600)
     if set_ocsp_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of OCSP response for " .. domain .. ": ", set_ocsp_err)
+    elseif set_ocsp_forcible then
+      ngx.log(ngx.ERR, "auto-ssl: 'lua_shared_dict auto_ssl' might be too small - consider increasing its configured size (old entries were removed while adding OCSP response for " .. domain .. ")")
     end
   end
 
