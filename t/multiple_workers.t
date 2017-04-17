@@ -21,10 +21,10 @@ repeat_each(10);
 
 master_on();
 workers(5);
+worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 7);
+plan tests => repeat_each() * (blocks() * 6);
 
-check_accum_error_log();
 no_long_string();
 no_shuffle();
 
@@ -32,12 +32,13 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: issues a new SSL certificate when multiple nginx workers are running
+=== TEST 1: issues a new SSL certificate when multiple nginx workers are running and concurrent requests are made
 --- main_config
 $TEST_NGINX_USER
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict test_counts 128k;
 
   init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
@@ -63,9 +64,7 @@ $TEST_NGINX_USER
     }
 
     location /foo {
-      server_tokens off;
-      more_clear_headers Date;
-      echo "foo";
+      echo -n "foo";
     }
   }
 
@@ -91,57 +90,96 @@ $TEST_NGINX_USER
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
-      local sock = ngx.socket.tcp()
-      sock:settimeout(30000)
-      local ok, err = sock:connect("127.0.0.1:9443")
-      if not ok then
-        ngx.say("failed to connect: ", err)
-        return
-      end
+      local host = "$TEST_NGINX_NGROK_HOSTNAME"
 
-      local sess, err = sock:sslhandshake(nil, "$TEST_NGINX_NGROK_HOSTNAME", true)
-      if not sess then
-        ngx.say("failed to do SSL handshake: ", err)
-        return
-      end
+      -- Since repeat_each is being used, clear the cached information across
+      -- test runs so we try to issue a new cert each time.
+      ngx.log(ngx.DEBUG, "auto-ssl: delete: domain:fullchain_der:" .. host)
+      ngx.shared.auto_ssl:delete("domain:fullchain_der:" .. host)
+      ngx.shared.auto_ssl:delete("domain:privkey_der:" .. host)
+      ngx.shared.auto_ssl:delete("domain:ocsp:" .. host)
+      ngx.shared.test_counts:flush_all()
+      os.execute("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/*")
 
-      local req = "GET /foo HTTP/1.0\r\nHost: $TEST_NGINX_NGROK_HOSTNAME\r\nConnection: close\r\n\r\n"
-      local bytes, err = sock:send(req)
-      if not bytes then
-        ngx.say("failed to send http request: ", err)
-        return
-      end
+      local http = require "resty.http"
 
-      while true do
-        local line, err = sock:receive()
-        if not line then
-          break
+      local function make_http_requests()
+        local httpc = http.new()
+
+        local _, err = httpc:set_timeout(30000)
+        if err then ngx.say("http set_timeout error", err); return end
+        local _, err = httpc:connect("127.0.0.1", 9443)
+        if err then ngx.say("http connect error: ", err); return end
+        local _, err = httpc:ssl_handshake(nil, host, true)
+        if err then ngx.say("http ssl_handshake error: ", err); return end
+
+        -- Make pipelined requests on this connection to test behavior across
+        -- the same connection.
+        local requests = {}
+        for i = 1, 10 do
+          table.insert(requests, {
+            path = "/foo",
+            headers = { ["Host"] = host },
+          })
         end
 
-        ngx.say("received: ", line)
+        local responses, err = httpc:request_pipeline(requests)
+        if err then ngx.say("http error: ", err); return end
+
+        for _, res in ipairs(responses) do
+          local body, err = res:read_body()
+          if err then ngx.say("http read_body error: ", err); return end
+
+          -- Keep track of the total number of successful requests across all
+          -- the parallel requests.
+          if res.status == 200 and body == "foo" then
+            local _, err = ngx.shared.test_counts:incr("successes", 1)
+            if err then ngx.say("incr error: ", err); return end
+          else
+            ngx.say("Unexpected Response: " .. res.status .. " Body: " .. body)
+          end
+        end
+
+        local _, err = httpc:close()
+        if err then ngx.say("http close error: ", err); return end
       end
 
-      local ok, err = sock:close()
-      if not ok then
-        ngx.say("failed to close: ", err)
-        return
+      local _, err = ngx.shared.test_counts:set("successes", 0)
+      if err then ngx.say("set error: ", err); return end
+
+      -- Make 50 concurrent requests to see how separate connections are
+      -- handled during initial registration.
+      local threads = {}
+      for i = 1, 50 do
+        table.insert(threads, ngx.thread.spawn(make_http_requests))
       end
+      for _, thread in ipairs(threads) do
+        ngx.thread.wait(thread)
+      end
+
+      -- Make some more concurrent requests after waiting for the first batch
+      -- to succeed. All of these should then be dealing with the cached certs.
+      local threads = {}
+      for i = 1, 50 do
+        table.insert(threads, ngx.thread.spawn(make_http_requests))
+      end
+      for _, thread in ipairs(threads) do
+        ngx.thread.wait(thread)
+      end
+
+      -- Report the total number of successful requests across all the parallel
+      -- requests to make sure it matches what's expected.
+      ngx.say("Successes: ", ngx.shared.test_counts:get("successes"))
     }
   }
 --- timeout: 30s
 --- request
 GET /t
 --- response_body
-received: HTTP/1.1 200 OK
-received: Server: openresty
-received: Content-Type: text/plain
-received: Connection: close
-received: 
-received: foo
+Successes: 1000
 --- error_log
 auto-ssl: issuing new certificate for
 --- no_error_log
-[warn]
 [error]
 [alert]
 [emerg]
