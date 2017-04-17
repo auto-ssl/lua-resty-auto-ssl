@@ -3,9 +3,11 @@
 ## Unreleased
 
 ### Fixed
-- Fix certain installed files not being executable when installed with LuaRocks 2.4+.
+- Fix installation under LuaRocks 2.4+ (executable files were not installed as executable).
+- Fix inability to register new certificates if the configured `lua_shared_dict` ran out of memory.
 
 ### Changed
+- Additional error logging to warn admins when the configured `lua_shared_dict` has run out of memory.
 - Updated test suite dependencies, and added Docker test setup.
 
 ## 0.10.5 - 2017-03-16
