@@ -21,12 +21,12 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newl
   -- across multiple servers).
   local _, set_fullchain_err = ngx.shared.auto_ssl:set("domain:fullchain_der:" .. domain, fullchain_der, 3600)
   if set_fullchain_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of certificate chain for " .. domain, set_fullchain_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of certificate chain for " .. domain .. ": ", set_fullchain_err)
   end
 
   local _, set_privkey_err = ngx.shared.auto_ssl:set("domain:privkey_der:" .. domain, privkey_der, 3600)
   if set_privkey_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of private key for " .. domain, set_privkey_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of private key for " .. domain .. ": ", set_privkey_err)
   end
 
   return fullchain_der, privkey_der, newly_issued
@@ -184,7 +184,10 @@ local function set_ocsp_stapling(domain, fullchain_der, newly_issued)
 
     -- Cache the OCSP stapling response for 1 hour (this is what nginx does by
     -- default).
-    ngx.shared.auto_ssl:set("domain:ocsp:" .. domain, ocsp_resp, 3600)
+    local _, set_ocsp_err = ngx.shared.auto_ssl:set("domain:ocsp:" .. domain, ocsp_resp, 3600)
+    if set_ocsp_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of OCSP response for " .. domain .. ": ", set_ocsp_err)
+    end
   end
 
   -- Set the OCSP stapling response.

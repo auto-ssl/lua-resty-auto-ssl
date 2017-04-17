@@ -30,7 +30,7 @@ end
 local function generate_hook_sever_secret()
   -- Generate the secret token.
   local random = resty_random.bytes(32)
-  ngx.shared.auto_ssl:set("hook_server:secret", str.to_hex(random))
+  AUTO_SSL_HOOK_SECRET = str.to_hex(random)
 end
 
 local function generate_config(auto_ssl_instance)

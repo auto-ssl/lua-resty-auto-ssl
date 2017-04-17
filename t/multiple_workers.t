@@ -95,9 +95,7 @@ $TEST_NGINX_USER
       -- Since repeat_each is being used, clear the cached information across
       -- test runs so we try to issue a new cert each time.
       ngx.log(ngx.DEBUG, "auto-ssl: delete: domain:fullchain_der:" .. host)
-      ngx.shared.auto_ssl:delete("domain:fullchain_der:" .. host)
-      ngx.shared.auto_ssl:delete("domain:privkey_der:" .. host)
-      ngx.shared.auto_ssl:delete("domain:ocsp:" .. host)
+      ngx.shared.auto_ssl:flush_all()
       ngx.shared.test_counts:flush_all()
       os.execute("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/*")
 
