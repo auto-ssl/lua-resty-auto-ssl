@@ -170,7 +170,7 @@ $TEST_NGINX_USER
       ngx.say("Successes: ", ngx.shared.test_counts:get("successes"))
     }
   }
---- timeout: 30s
+--- timeout: 120s
 --- request
 GET /t
 --- response_body
