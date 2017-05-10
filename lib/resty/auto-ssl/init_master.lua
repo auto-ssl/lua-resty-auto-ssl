@@ -30,7 +30,12 @@ end
 local function generate_hook_sever_secret()
   -- Generate the secret token.
   local random = resty_random.bytes(32)
-  AUTO_SSL_HOOK_SECRET = str.to_hex(random)
+  local _, set_err, set_forcible = ngx.shared.auto_ssl_settings:set("hook_server:secret", str.to_hex(random))
+  if set_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to set shdict for hook_server:secret: ", set_err)
+  elseif set_forcible then
+    ngx.log(ngx.ERR, "auto-ssl: 'lua_shared_dict auto_ssl_settings' might be too small - consider increasing its configured size (old entries were removed while adding hook_server:secret)")
+  end
 end
 
 local function generate_config(auto_ssl_instance)

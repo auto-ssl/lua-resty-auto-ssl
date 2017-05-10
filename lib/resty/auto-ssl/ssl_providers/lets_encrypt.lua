@@ -15,7 +15,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   assert(type(hook_port) == "number", "hook_port must be a number")
   assert(hook_port <= 65535, "hook_port must be below 65536")
 
-  local hook_secret = AUTO_SSL_HOOK_SECRET
+  local hook_secret = ngx.shared.auto_ssl_settings:get("hook_server:secret")
   assert(type(hook_secret) == "string", "hook_server:secret must be a string")
 
   local env_vars =

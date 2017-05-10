@@ -1,5 +1,4 @@
 globals = {
-  "AUTO_SSL_HOOK_SECRET",
   "ngx",
 }
 
