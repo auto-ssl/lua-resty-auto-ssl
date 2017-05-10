@@ -28,6 +28,7 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 1m;
 
   init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({

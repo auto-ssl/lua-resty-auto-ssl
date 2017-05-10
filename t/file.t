@@ -20,6 +20,7 @@ __DATA__
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 1m;
 
   init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
@@ -144,6 +145,7 @@ auto-ssl: issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 1m;
 
   init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({

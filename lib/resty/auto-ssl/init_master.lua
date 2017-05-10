@@ -82,6 +82,10 @@ local function setup_storage(auto_ssl_instance)
 end
 
 return function(auto_ssl_instance)
+  if not ngx.shared.auto_ssl_settings then
+      ngx.log(ngx.ERR, "auto-ssl: dict auto_ssl_settings could not be found. Please add it to your configuration: `lua_shared_dict auto_ssl_settings 64k;`")
+  end
+
   check_dependencies()
   generate_hook_sever_secret()
   generate_config(auto_ssl_instance)

@@ -38,6 +38,7 @@ $TEST_NGINX_USER
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 1m;
   lua_shared_dict test_counts 128k;
 
   init_by_lua_block {
