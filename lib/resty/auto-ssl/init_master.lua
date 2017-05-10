@@ -28,6 +28,13 @@ end
 -- secret token is an extra precaution to ensure the server is not accidentally
 -- opened up or proxied to the outside world.
 local function generate_hook_sever_secret()
+  if ngx.shared.auto_ssl_settings:get("hook_server:secret") then
+    -- if we've already got a secret token, do not overwrite it, as this causes
+    -- problems in reload-heavy envrionments.
+    -- See https://github.com/GUI/lua-resty-auto-ssl/issues/66
+    return
+  end
+
   -- Generate the secret token.
   local random = resty_random.bytes(32)
   local _, set_err, set_forcible = ngx.shared.auto_ssl_settings:set("hook_server:secret", str.to_hex(random))
