@@ -291,6 +291,8 @@ After checking out the repo, Docker can be used to run the test suite:
 $ docker-compose run app make test
 ```
 
+The test suite is implemented using nginx' [`Test::Nginx`](http://search.cpan.org/~agent/Test-Nginx-0.24/lib/Test/Nginx/Socket.pm) cpan module.
+
 ## Credits
 
 **[dehydrated](https://github.com/lukas2511/dehydrated)** is the client used internally that does all the heavy lifting with Let's Encrypt.
