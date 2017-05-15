@@ -44,7 +44,7 @@ auto-ssl: dict auto_ssl_settings could not be found. Please add it to your confi
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
-  lua_shared_dict auto_ssl_settings 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
     auto_ssl = (require "lib.resty.auto-ssl").new({
