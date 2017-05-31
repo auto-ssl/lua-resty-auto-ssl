@@ -5,11 +5,9 @@ local function start()
   local exit_status = os.execute("umask 0022 && " .. auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc")
   -- Lua 5.2+ returns boolean. Prior versions return status code.
   if exit_status == 0 or exit_status == true then
-    local _, set_err, set_forcible = ngx.shared.auto_ssl_settings:set("sockproc_started", true)
+    local _, set_err = ngx.shared.auto_ssl_settings:safe_set("sockproc_started", true)
     if set_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set shdict for sockproc_started: ", set_err)
-    elseif set_forcible then
-      ngx.log(ngx.ERR, "auto-ssl: 'lua_shared_dict auto_ssl_settings' might be too small - consider increasing its configured size (old entries were removed while adding sockproc_started)")
     end
   else
     ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc")
