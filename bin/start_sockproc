@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-SOCK_FILE=/tmp/shell.sock
-PID_FILE=/tmp/auto-ssl-sockproc.pid
+sock_file=/tmp/shell.sock
+pid_file=/tmp/auto-ssl-sockproc.pid
 
 # We want to launch sockproc from inside nginx using os.execute (mainly just to
 # simplify the deployment of auto-ssl, so you don't have to worry about running
@@ -17,11 +17,11 @@ PID_FILE=/tmp/auto-ssl-sockproc.pid
 # http://stackoverflow.com/a/4839945/222487
 # http://stackoverflow.com/a/23104923/222487
 if [ -d /proc ]; then
-  SELF=$BASHPID
-  FILE_DESCRIPTORS=$(find /proc/$SELF/fd -type l -exec basename {} ';')
-  for FD in $FILE_DESCRIPTORS; do
-    if ((FD > 2)); then
-      eval "exec $FD>&-"
+  current_pid=$BASHPID
+  file_descriptors=$(find /proc/$current_pid/fd -type l -exec basename {} ';')
+  for fd in $file_descriptors; do
+    if ((fd > 2)); then
+      eval "exec $fd>&-"
     fi
   done
 
@@ -29,21 +29,21 @@ if [ -d /proc ]; then
 # to wipe file descriptors > 2.
 else
   END=255
-  for ((FD=3; FD <= END; FD++)); do
-    eval "exec $FD>&-"
+  for ((fd=3; fd <= END; fd++)); do
+    eval "exec $fd>&-"
   done
 fi
 
 # When nginx shuts down, the sockproc daemon continues to run. So when nginx
 # subsequently starts again, we'll also make sure we restart sockproc.
-if [ -e $PID_FILE ]; then
-  PID=$(cat $PID_FILE)
-  kill $PID || true
+if [ -e "$pid_file" ]; then
+  PID=$(cat "$pid_file")
+  kill "$PID" || true
 fi
 
 # Just make sure the socket file is cleaned up.
-rm -f $SOCK_FILE || true
+rm -f "$sock_file" || true
 
 # Start the sockproc daemon.
-BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-$BIN_DIR/sockproc $SOCK_FILE $PID_FILE
+bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$bin_dir"/sockproc "$sock_file" "$pid_file"
