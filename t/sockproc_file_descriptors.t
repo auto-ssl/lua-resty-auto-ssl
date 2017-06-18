@@ -98,7 +98,7 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
       end
 
       local function print_file_descriptors(as_user)
-        local _, output, err = run_command("lsof -n -P -l -R -c sockproc -a -d '0-255' -F pnf | sed -n '1!p' | sed -e 's/ type=STREAM//g'")
+        local _, output, err = run_command("lsof -n -P -l -R -c sockproc -a -d '0-255' -F pnf | sed -n '1!p' | sed -e 's/ type=STREAM//g' | sed -e 's#^n/.*logs/error.log$#n/dev/null#g'")
         if err then
           ngx.say("failed to run lsof: ", err)
           return nil, err
