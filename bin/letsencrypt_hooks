@@ -7,7 +7,7 @@
 # adapter. This allows for setting the data on non-local storage so challenges
 # and certs can work in a multi-server, load balanced environment.
 
-set -e -u -x
+set -e -u
 
 function deploy_challenge {
   local DOMAIN="${1}" TOKEN_FILENAME="${2}" TOKEN_VALUE="${3}"
@@ -17,7 +17,7 @@ function deploy_challenge {
     --data-urlencode "domain=$DOMAIN" \
     --data-urlencode "token_filename=$TOKEN_FILENAME" \
     --data-urlencode "token_value=$TOKEN_VALUE" \
-    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-challenge"
+    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-challenge" || { echo "hook request (deploy_challenge) failed" 1>&2; exit 1; }
 }
 
 function clean_challenge {
@@ -28,7 +28,7 @@ function clean_challenge {
     --data-urlencode "domain=$DOMAIN" \
     --data-urlencode "token_filename=$TOKEN_FILENAME" \
     --data-urlencode "token_value=$TOKEN_VALUE" \
-    "http://127.0.0.1:$HOOK_SERVER_PORT/clean-challenge" || { echo "hook request failed"; exit 1; }
+    "http://127.0.0.1:$HOOK_SERVER_PORT/clean-challenge" || { echo "hook request (clean_challenge) failed" 1>&2; exit 1; }
 }
 
 function deploy_cert {
@@ -40,7 +40,7 @@ function deploy_cert {
     --data-urlencode "privkey@$KEYFILE" \
     --data-urlencode "cert@$CERTFILE" \
     --data-urlencode "fullchain@$FULLCHAINFILE" \
-    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-cert" || { echo "hook request failed"; exit 1; }
+    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-cert" || { echo "hook request (deploy_cert) failed" 1>&2; exit 1; }
 }
 
 function unchanged_cert {
