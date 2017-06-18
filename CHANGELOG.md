@@ -1,6 +1,6 @@
 # lua-resty-auto-ssl Change Log
 
-## Unreleased
+## 0.10.6 - 2017-04-16
 
 ### Fixed
 - Fix installation under LuaRocks 2.4+ (executable files were not installed as executable).
