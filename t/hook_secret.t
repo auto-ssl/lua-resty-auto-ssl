@@ -21,7 +21,7 @@ __DATA__
   lua_shared_dict auto_ssl 1m;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
     })
@@ -47,7 +47,7 @@ auto-ssl: dict auto_ssl_settings could not be found. Please add it to your confi
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
     })

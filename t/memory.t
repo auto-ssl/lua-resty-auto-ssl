@@ -22,7 +22,7 @@ __DATA__
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -131,7 +131,7 @@ auto-ssl: issuing new certificate for
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)

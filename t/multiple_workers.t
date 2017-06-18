@@ -42,7 +42,7 @@ $TEST_NGINX_USER
   lua_shared_dict test_counts 128k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)

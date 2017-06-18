@@ -23,7 +23,7 @@ __DATA__
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -136,7 +136,7 @@ auto-ssl: issuing new certificate for
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -249,7 +249,7 @@ issuing new certificate for
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -356,7 +356,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
     })
@@ -460,7 +460,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -573,7 +573,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new()
+    auto_ssl = (require "resty.auto-ssl").new()
     auto_ssl:set("dir", "$TEST_NGINX_RESTY_AUTO_SSL_DIR")
     auto_ssl:set("ca", "https://acme-staging.api.letsencrypt.org/directory")
     auto_ssl:set("allow_domain", function(domain)
@@ -685,7 +685,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -794,7 +794,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -903,7 +903,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       request_domain = function(ssl, ssl_options)
@@ -1063,7 +1063,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -1184,7 +1184,7 @@ auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to
   lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       hook_server_port = 9888,
       ca = "https://acme-staging.api.letsencrypt.org/directory",
