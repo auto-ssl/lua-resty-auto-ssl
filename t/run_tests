@@ -7,13 +7,13 @@ set -e -u -x
 luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 
 # Clean the test files before each run.
-sudo rm -rf "$TEST_RUN_DIR"/servroot* "$TEST_LOGS_DIR"/*
+sudo rm -rf "$TEST_RUN_DIR"/servroot/* "$TEST_LOGS_DIR"/*
 mkdir -p "$TEST_LOGS_DIR"
 
 # Default environment
 export PERL5LIB=$TEST_BUILD_DIR/lib/perl5
 export TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test
-export TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot
+export TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot/default
 export TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error.log
 
 cleanup_sockproc() {
@@ -32,7 +32,7 @@ worker_env=(
   "PATH=$PATH"
   "PERL5LIB=$PERL5LIB"
   "TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms"
-  "TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot-worker-perms"
+  "TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot/worker-perms"
   "TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error-worker-perms.log"
   "TEST_NGINX_RESOLVER=${TEST_NGINX_RESOLVER:-}"
 )

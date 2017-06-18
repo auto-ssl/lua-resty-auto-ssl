@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile-test
     volumes:
       - .:/app
+      - ./t/run/logs:/test/run/logs
       # Use a named volume to store the test and build output, so it's shared
       # across runs, but more performant than building on the /app host share.
       - test:/test

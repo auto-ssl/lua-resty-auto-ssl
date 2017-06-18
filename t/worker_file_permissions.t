@@ -8,7 +8,7 @@ my ($nobody_user, $nobody_passwd, $nobody_uid, $nobody_gid) = getpwnam "nobody";
 $ENV{TEST_NGINX_NOBODY_USER} = $nobody_user;
 $ENV{TEST_NGINX_NOBODY_GROUP} = getgrgid($nobody_gid);
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 7);
 

@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 7 + 2);
 

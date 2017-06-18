@@ -10,7 +10,7 @@ my $redis = Expect->spawn("redis-server ./t/config/redis.conf") or die "failed t
 $redis->log_stdout(0);
 $redis->expect(10, "now ready") or die "failed to start redis: " . $redis->exp_before();
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 7 + 5);
 
