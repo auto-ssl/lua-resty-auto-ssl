@@ -60,6 +60,8 @@ __DATA__
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -169,6 +171,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
