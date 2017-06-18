@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 
-SOCK_FILE=/tmp/shell.sock
-PID_FILE=/tmp/auto-ssl-sockproc.pid
+set -u
+
+sock_file=/tmp/shell.sock
+pid_file=/tmp/auto-ssl-sockproc.pid
+
+# This script inherits the current directory from wherever nginx is launched,
+# which may be a private directory. To prevent the "find" command below from
+# generating "failed to restore initial working directory: Permission denied"
+# errors, change to the root directory where the nginx user will have
+# permissions.
+cd / || (echo "WARNING: start_sockproc could not set current directory to /" 1>&2)
 
 # We want to launch sockproc from inside nginx using os.execute (mainly just to
 # simplify the deployment of auto-ssl, so you don't have to worry about running
@@ -16,34 +25,39 @@ PID_FILE=/tmp/auto-ssl-sockproc.pid
 # See:
 # http://stackoverflow.com/a/4839945/222487
 # http://stackoverflow.com/a/23104923/222487
+file_descriptors_cleared="false"
 if [ -d /proc ]; then
-  SELF=$BASHPID
-  FILE_DESCRIPTORS=$(find /proc/$SELF/fd -type l -exec basename {} ';')
-  for FD in $FILE_DESCRIPTORS; do
-    if ((FD > 2)); then
-      eval "exec $FD>&-"
+  current_pid=$BASHPID
+  file_descriptors=$(find /proc/"$current_pid"/fd -type l)
+  for fd_path in $file_descriptors; do
+    # Extract just the fd number from the end of the path.
+    fd=${fd_path##*/}
+    if ((fd > 2)); then
+      eval "exec $fd>&-" && file_descriptors_cleared="true"
     fi
   done
+fi
 
-# If /proc isn't supported (eg, OS X), fallback to a simpler, naive mechanism
-# to wipe file descriptors > 2.
-else
+# If /proc isn't supported (eg, OS X), or an error occurred during the
+# proc-based "find", then fallback to a simpler, naive mechanism to wipe file
+# descriptors > 2.
+if [ "$file_descriptors_cleared" != "true" ]; then
   END=255
-  for ((FD=3; FD <= END; FD++)); do
-    eval "exec $FD>&-"
+  for ((fd=3; fd <= END; fd++)); do
+    eval "exec $fd>&-"
   done
 fi
 
 # When nginx shuts down, the sockproc daemon continues to run. So when nginx
 # subsequently starts again, we'll also make sure we restart sockproc.
-if [ -e $PID_FILE ]; then
-  PID=$(cat $PID_FILE)
-  kill $PID || true
+if [ -e "$pid_file" ]; then
+  PID=$(cat "$pid_file")
+  kill "$PID" || true
 fi
 
 # Just make sure the socket file is cleaned up.
-rm -f $SOCK_FILE || true
+rm -f "$sock_file" || true
 
 # Start the sockproc daemon.
-BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-$BIN_DIR/sockproc $SOCK_FILE $PID_FILE
+bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$bin_dir"/sockproc "$sock_file" "$pid_file"

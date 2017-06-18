@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -e -u -x
+
+# Install the library via luarocks (so we test an installed version to ensure
+# all the files are part of the install process).
+luarocks make ./lua-resty-auto-ssl-git-1.rockspec
+
+# Clean the test files before each run.
+sudo rm -rf "$TEST_RUN_DIR"/servroot* "$TEST_LOGS_DIR"/*
+mkdir -p "$TEST_LOGS_DIR"
+
+# Default environment
+export PERL5LIB=$TEST_BUILD_DIR/lib/perl5
+export TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test
+export TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot
+export TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error.log
+
+cleanup_sockproc() {
+  # Cleanup sockproc in between tests, since we run some tests as root, and
+  # others as the current user, which can lead to the sockproc files being
+  # owned by different users (but in a real production environment, this
+  # shouldn't be an issue, since it will typically run as a single user).
+  sudo pkill sockproc || true
+  sudo rm -f /tmp/shell.sock /tmp/auto-ssl-sockproc.pid
+}
+
+# Environment variables to pass along when we run tests as root with nginx
+# workers (we use different directories for these tests, so the file
+# permissions don't conflict with the tests run as the current user).
+worker_env=(
+  "PATH=$PATH"
+  "PERL5LIB=$PERL5LIB"
+  "TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms"
+  "TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot-worker-perms"
+  "TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error-worker-perms.log"
+  "TEST_NGINX_RESOLVER=${TEST_NGINX_RESOLVER:-}"
+)
+
+# Create the worker-perms test directory with the proper permissions.
+sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
+sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
+
+# Run tests as root that test the behavior when nginx has a master process
+# running as root, and worker processes running as a less privileged user.
+cleanup_sockproc
+sudo env "${worker_env[@]}" prove t/worker_file_permissions.t
+
+# Check the behavior of how sockproc gets started (both as the current user and
+# as root with worker processes), to ensure that sockproc doesn't inherit
+# nginx's file descriptors.
+cleanup_sockproc
+sudo env "${worker_env[@]}" prove t/sockproc_file_descriptors.t
+
+# Ensure file descriptors don't get inherited when nginx is started from a
+# directory that the worker processes won't have permissions to (there was
+# previously a bug with how we started sockproc that led to the descriptors not
+# being cleared if the nginx worker user didn't have permissions to the pwd of
+# nginx's master process).
+cleanup_sockproc
+sudo env "${worker_env[@]}" sh -c "cd /root && prove $ROOT_DIR/t/sockproc_file_descriptors.t"
+
+cleanup_sockproc
+find "$ROOT_DIR"/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t" -not -name "sockproc_file_descriptors.t" -print0 | xargs -r0 prove
