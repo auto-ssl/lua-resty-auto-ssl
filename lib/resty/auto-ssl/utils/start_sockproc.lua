@@ -2,7 +2,13 @@ local auto_ssl = require "resty.auto-ssl"
 local lock = require "resty.lock"
 
 local function start()
+  local _, set_false_err = ngx.shared.auto_ssl_settings:safe_set("sockproc_started", false)
+  if set_false_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to set shdict for sockproc_started: ", set_false_err)
+  end
+
   ngx.log(ngx.NOTICE, "auto-ssl: starting sockproc")
+
   local exit_status = os.execute("umask 0022 && " .. auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc")
   -- Lua 5.2+ returns boolean. Prior versions return status code.
   if exit_status == 0 or exit_status == true then
@@ -21,7 +27,7 @@ return function(force)
   end
 
   -- Add lock to ensure only a single start command is attempted at a time.
-  local start_lock, new_lock_err = lock:new("auto_ssl", { exptime = 600, timeout = 0 })
+  local start_lock, new_lock_err = lock:new("auto_ssl_settings", { exptime = 600, timeout = 0 })
   if new_lock_err then
     ngx.log(ngx.ERR, "Failed to create lock: ", new_lock_err)
     return

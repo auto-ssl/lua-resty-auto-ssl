@@ -17,6 +17,7 @@ return function(command)
       wait_time = wait_time + sleep_time
 
       if wait_time > max_time then
+        ngx.log(ngx.ERR, "auto-ssl: sockproc did not start in expected amount of time")
         break
       end
     end
