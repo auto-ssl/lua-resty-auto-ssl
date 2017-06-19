@@ -1,5 +1,39 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.11.0 - 2017-06-18
+
+### Upgrade Notes
+
+This update mostly fixes bugs related to edge-case situations, so upgrading is recommended. However, it requires a couple of small adjustments to your nginx configuration, so if you're upgrading, be sure to make the following changes:
+
+1. Add this line to nginx's `http` block:
+
+   ```
+   lua_shared_dict auto_ssl_settings 64k;
+   ```
+
+   (This is in addition to the existing `lua_shared_dict auto_ssl` you should already have.)
+2. Add these 2 lines to the `server` block that is listening on port 8999:
+
+   ```
+   client_body_buffer_size 128k;
+   client_max_body_size 128k;
+   ```
+
+See the [README](https://github.com/GUI/lua-resty-auto-ssl#installation) for a full example of the updated config.
+
+### Fixed
+- Fix potential for failed requests if nginx is reloaded at the same time new certificates are being issued. Many thanks to [@luto](https://github.com/luto). ([#66](https://github.com/GUI/lua-resty-auto-ssl/issues/66), [#68](https://github.com/GUI/lua-resty-auto-ssl/pull/68))
+- Fix possibility of sockproc inheriting nginx's sockets, which could lead to nginx hanging after reloading or restarting. ([#75](https://github.com/GUI/lua-resty-auto-ssl/pull/75))
+- Fix race condition on nginx reload if the `lua_shared_dict` ran out of memory that could lead to sockproc trying to be started twice. ([#76](https://github.com/GUI/lua-resty-auto-ssl/pull/76))
+- Increase the suggested body buffer size configuration, to prevent SSL registration from failing if nginx's default was too small. ([#65](https://github.com/GUI/lua-resty-auto-ssl/issues/65]), [#77](https://github.com/GUI/lua-resty-auto-ssl/pull/77))
+
+### Security
+- Fix possibility of certificate private keys being logged to nginx's error log when unexpected errors occur (this has actually been fixed since v0.10.5, but somewhat by accident—further steps have been taken to reduce debug output in this release). ([#64](https://github.com/GUI/lua-resty-auto-ssl/issues/64))
+
+### Added
+- Add documentation and link about test suite used. Thanks to [@luto](https://github.com/luto). ([#69](https://github.com/GUI/lua-resty-auto-ssl/pull/69))
+
 ## 0.10.6 - 2017-04-16
 
 ### Fixed
