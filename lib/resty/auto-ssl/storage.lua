@@ -3,7 +3,7 @@ local str = require "resty.string"
 
 local _M = {}
 
-local json = require "json"
+local json = require "resty.auto-ssl.json"
 
 function _M.new(adapter)
   return setmetatable({ adapter = adapter }, { __index = _M })
