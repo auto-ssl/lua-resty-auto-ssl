@@ -29,7 +29,7 @@ function _M.get_cert(self, domain)
     return nil
   end
 
-  local data = json.decode(json)
+  local data = json.decode(j)
   return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
 end
 
