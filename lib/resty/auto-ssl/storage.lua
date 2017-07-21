@@ -3,7 +3,7 @@ local str = require "resty.string"
 
 local _M = {}
 
-local cjson = require "cjson"
+local json = require "json"
 
 function _M.new(adapter)
   return setmetatable({ adapter = adapter }, { __index = _M })
@@ -22,14 +22,14 @@ function _M.delete_challenge(self, domain, path)
 end
 
 function _M.get_cert(self, domain)
-  local json, err = self.adapter:get(domain .. ":latest")
+  local j, err = self.adapter:get(domain .. ":latest")
   if err then
     return nil, nil, err
-  elseif not json then
+  elseif not j then
     return nil
   end
 
-  local data = cjson.decode(json)
+  local data = json.decode(json)
   return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
 end
 
@@ -40,7 +40,7 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- a single string (regardless of implementation), and we don't have to worry
   -- about race conditions with the public cert and private key being stored
   -- separately and getting out of sync.
-  local data = cjson.encode({
+  local data = json.encode({
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
     cert_pem = cert_pem,
