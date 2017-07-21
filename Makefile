@@ -36,6 +36,7 @@ install:
 	install -d $(INST_LUADIR)/resty/auto-ssl/ssl_providers
 	install -m 644 lib/resty/auto-ssl/ssl_providers/lets_encrypt.lua $(INST_LUADIR)/resty/auto-ssl/ssl_providers/lets_encrypt.lua
 	install -m 644 lib/resty/auto-ssl/storage.lua $(INST_LUADIR)/resty/auto-ssl/storage.lua
+	install -m 644 lib/resty/auto-ssl/json.lua $(INST_LUADIR)/resty/auto-ssl/json.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/storage_adapters
 	install -m 644 lib/resty/auto-ssl/storage_adapters/file.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/file.lua
 	install -m 644 lib/resty/auto-ssl/storage_adapters/redis.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/redis.lua
