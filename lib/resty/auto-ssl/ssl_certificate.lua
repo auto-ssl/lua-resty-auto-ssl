@@ -3,6 +3,7 @@ local lock = require "resty.lock"
 local ocsp = require "ngx.ocsp"
 local ssl = require "ngx.ssl"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
+local verify_domain = require "resty.auto-ssl.utils.verify_domain"
 
 local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newly_issued)
   -- Convert certificate from PEM to DER format.
@@ -110,6 +111,12 @@ local function get_cert(auto_ssl_instance, domain)
   local fullchain_pem, privkey_pem = storage:get_cert(domain)
   if fullchain_pem and privkey_pem then
     return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, false)
+  end
+
+  -- Next, Check to ensure the domain is one we allow.
+  local valid, verify_domain_err = verify_domain(auto_ssl_instance, domain)
+  if not valid then
+    return nil, nil, nil, verify_domain_err
   end
 
   -- Finally, issue a new certificate if one hasn't been found yet.

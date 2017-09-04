@@ -30,10 +30,14 @@ function _M.get_cert(self, domain)
   end
 
   local data = cjson.decode(json)
-  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
+  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"], data["expiry"]
 end
 
-function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
+function _M.delete_cert(self, domain)
+  return self.adapter:delete(domain .. ":latest")
+end
+
+function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   -- Store the public certificate and private key as a single JSON string.
   --
   -- We use a single JSON string so that the storage adapter just has to store
@@ -44,12 +48,8 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
     cert_pem = cert_pem,
+    expiry = expiry,
   })
-
-  -- Store the cert with the current timestamp, so the old certs are preserved
-  -- in case something goes wrong.
-  local time = ngx.now() * 1000
-  self.adapter:set(domain .. ":" .. time, data)
 
   -- Store the cert under the "latest" alias, which is what this app will use.
   return self.adapter:set(domain .. ":latest", data)

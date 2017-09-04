@@ -1,6 +1,7 @@
 local lock = require "resty.lock"
 local run_command = require "resty.auto-ssl.utils.run_command"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
+local verify_domain = require "resty.auto-ssl.utils.verify_domain"
 
 local _M = {}
 
@@ -45,6 +46,34 @@ local function renew_check_cert_unlock(domain, storage, local_lock, distributed_
 end
 
 local function renew_check_cert(auto_ssl_instance, storage, domain)
+  -- Check if the expiry date is comming.
+  local _, _, _, expiry = storage:get_cert(domain)
+  if not expiry then
+    ngx.log(ngx.ERR, "auto-ssl: failed to get expiry date: ", domain)
+    return
+  end
+
+  local now = ngx.now()
+
+  ngx.log(ngx.NOTICE, "now:" .. tostring(now))
+  ngx.log(ngx.NOTICE, "expiry:" .. tostring(expiry))
+  if now + (30 * 24 * 60 * 60) < expiry then
+    return
+  end
+
+  if now > expiry then
+    storage:delete_cert(domain)
+    ngx.log(ngx.ERR, "auto-ssl: this cert is expired and deleted: ", domain)
+    return
+  end
+
+  -- Check to ensure the domain is one we allow again.
+  local valid, verify_domain_err = verify_domain(auto_ssl_instance, domain)
+  if not valid then
+    ngx.log(ngx.ERR, "auto-ssl: this domain seems to have been invalid: ", verify_domain_err)
+    return
+  end
+
   -- Before issuing a cert, create a local lock to ensure multiple workers
   -- don't simultaneously try to register the same cert.
   local local_lock, new_local_lock_err = lock:new("auto_ssl", { exptime = 30, timeout = 30 })
