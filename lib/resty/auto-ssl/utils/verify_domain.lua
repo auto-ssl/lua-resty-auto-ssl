@@ -10,11 +10,12 @@ return function(auto_ssl_instance, domain)
     return true, nil
   end
 
-  url = url .. "d=" .. domain
+  url = url .. "?d=" .. domain
   httpc:set_timeout(10000)
   local res, req_err = httpc:request_uri(url, {
-    method = "GET"
-  })
+   ssl_verify = false,
+   method = "GET"
+ })
 
   if not res then
     return false, "Verification failed (" .. (url or "") .. "): " .. (req_err or "")
