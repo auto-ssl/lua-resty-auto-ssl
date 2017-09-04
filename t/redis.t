@@ -280,14 +280,14 @@ received: Connection: close
 received: 
 received: foo
 --- error_log
-(Longer than 30 days). Skipping
-auto-ssl: checking certificate renewals for
 --- no_error_log
 [warn]
 [error]
 [alert]
 [emerg]
 issuing new certificate for
+(Longer than 30 days). Skipping
+auto-ssl: checking certificate renewals for
 
 === TEST 3: issues a new SSL certificate and stores it in redis with a prefix
 --- http_config
@@ -549,8 +549,6 @@ received: Connection: close
 received: 
 received: foo
 --- error_log
-(Longer than 30 days). Skipping
-auto-ssl: checking certificate renewals for
 --- no_error_log
 [warn]
 [error]
@@ -558,4 +556,6 @@ auto-ssl: checking certificate renewals for
 [emerg]
 attempting to renew certificate for domain without certificates in storage
 issuing new certificate for
+(Longer than 30 days). Skipping
+auto-ssl: checking certificate renewals for
 
