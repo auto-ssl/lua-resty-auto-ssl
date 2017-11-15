@@ -27,6 +27,13 @@ local function get_redis_instance(self)
     end
   end
 
+  if self.options["db"] then
+    ok, err = instance:select(self.options["db"])
+    if not ok then
+      return false, err
+    end
+  end
+
   ngx.ctx.auto_ssl_redis_instance = instance
   return instance
 end
