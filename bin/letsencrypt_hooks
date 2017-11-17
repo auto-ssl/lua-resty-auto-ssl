@@ -9,7 +9,7 @@
 
 set -e -u
 
-function deploy_challenge {
+deploy_challenge() {
   local DOMAIN="${1}" TOKEN_FILENAME="${2}" TOKEN_VALUE="${3}"
 
   curl --silent --show-error --fail -XPOST \
@@ -20,7 +20,7 @@ function deploy_challenge {
     "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-challenge" || { echo "hook request (deploy_challenge) failed" 1>&2; exit 1; }
 }
 
-function clean_challenge {
+clean_challenge() {
   local DOMAIN="${1}" TOKEN_FILENAME="${2}" TOKEN_VALUE="${3}"
 
   curl --silent --show-error --fail -XPOST \
@@ -31,7 +31,7 @@ function clean_challenge {
     "http://127.0.0.1:$HOOK_SERVER_PORT/clean-challenge" || { echo "hook request (clean_challenge) failed" 1>&2; exit 1; }
 }
 
-function deploy_cert {
+deploy_cert() {
   local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}" TIMESTAMP="${6}"
 
   curl --silent --show-error --fail -XPOST \
@@ -43,8 +43,24 @@ function deploy_cert {
     "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-cert" || { echo "hook request (deploy_cert) failed" 1>&2; exit 1; }
 }
 
-function unchanged_cert {
+unchanged_cert() {
   local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}"
+}
+
+invalid_challenge() {
+  local DOMAIN="${1}" RESPONSE="${2}"
+  echo "Invalid challenge: DOMAIN=${DOMAIN} RESPONSE=${RESPONSE}"
+  exit 1
+}
+
+request_failure() {
+  local STATUSCODE="${1}" REASON="${2}" REQTYPE="${3}"
+  echo "Failure: STATUSCODESTATUSCODE} REASON=${REASON} REQTYPE=${REQTYPE}"
+  exit 1
+}
+
+exit_hook() {
+  :
 }
 
 HANDLER=$1; shift; $HANDLER "$@"
