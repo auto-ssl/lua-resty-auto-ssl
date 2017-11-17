@@ -298,7 +298,7 @@ CONTACT_EMAIL="foo@example.com"
 After checking out the repo, Docker can be used to run the test suite:
 
 ```sh
-$ docker-compose run app make test
+$ docker-compose run --rm app make test
 ```
 
 The test suite is implemented using nginx' [`Test::Nginx`](https://metacpan.org/pod/Test::Nginx::Socket) cpan module.
