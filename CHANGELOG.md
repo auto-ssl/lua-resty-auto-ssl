@@ -1,5 +1,10 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.11.1 - 2017-11-17
+
+### Fixed
+- Update dehydrated to v0.4.0 to account for new [Let's Encrypt Subscriber Agreement](https://letsencrypt.org/documents/2017.11.15-LE-SA-v1.2.pdf) as of November 15, 2017. This would lead to certificate registration errors for new users (but should not have affected existing lua-resty-auto-ssl users). ([#13](https://github.com/GUI/lua-resty-auto-ssl/issues/13), [#104](https://github.com/GUI/lua-resty-auto-ssl/issues/104))
+
 ## 0.11.0 - 2017-06-18
 
 ### Upgrade Notes
