@@ -30,6 +30,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   local command = env_vars .. " " ..
     lua_root .. "/bin/resty-auto-ssl/dehydrated " ..
     "--cron " ..
+    "--accept-terms " ..
     "--no-lock " ..
     "--domain " .. domain .. " " ..
     "--challenge http-01 " ..
