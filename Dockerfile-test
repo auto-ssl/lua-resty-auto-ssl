@@ -1,32 +1,28 @@
-FROM alpine:latest
+FROM debian:jessie
 
 RUN \
+  apt-get update && \
   # Test dependencies
-  apk add \
-    --no-cache \
-    build-base \
+  apt-get -y install \
+    build-essential \
     findutils \
-    pcre-dev \
-    perl-dev \
+    libpcre3-dev \
+    lsof \
+    perl \
     procps \
-    redis \
+    redis-server \
     sudo \
-    zlib-dev && \
+    unzip \
+    zlib1g-dev  && \
   # Runtime dependencies
-  apk add \
-    --no-cache \
+  apt-get -y install \
     bash \
     coreutils \
     curl \
     diffutils \
     grep \
     openssl \
-    sed && \
-  # Even though we install full pkill (via the procps package, which we do for
-  # "-U" support in our tests), the /usr/bin version that symlinks BusyBox's
-  # more limited pkill version takes precedence. So manually remove this
-  # BusyBox symlink to the full pkill version is used.
-  if [ -L /usr/bin/pkill ]; then rm /usr/bin/pkill; fi
+    sed
 
 RUN mkdir /app
 WORKDIR /app
