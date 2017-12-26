@@ -113,11 +113,13 @@ local function get_cert(auto_ssl_instance, domain, ssl_options)
   end
 
   -- Finally, issue a new certificate if one hasn't been found yet.
-  if ssl_options and ssl_options["generate_certs"] ~= false then
+  if not ssl_options or ssl_options["generate_certs"] ~= false then
     fullchain_pem, privkey_pem = issue_cert(auto_ssl_instance, storage, domain)
     if fullchain_pem and privkey_pem then
       return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, true)
     end
+  else
+    return nil, nil, nil, "did not issue certificate, because the generate_certs setting is false"
   end
 
   -- Return an error if issuing the certificate failed.
