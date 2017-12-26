@@ -275,6 +275,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   *Default:* true
 
   This variable can be used to disable generating certs on a per server block location.
+
   *Example:*
 
   ```lua
