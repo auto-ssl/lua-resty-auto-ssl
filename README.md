@@ -199,7 +199,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   - `port`
   - `socket` (for unix socket paths)
   - `auth`
-  - `db` (the number of db auto-ssl used to save certificates)
+  - `db` (the [Redis database number](https://redis.io/commands/select) used by lua-resty-auto-ssl to save certificates)
   - `prefix`
 
   *Example:*
