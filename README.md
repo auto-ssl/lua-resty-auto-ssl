@@ -281,7 +281,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   *Example:*
 
   ```lua
-  auto_ssl:ssl_certificate({ generate_certs=false })
+  auto_ssl:ssl_certificate({ generate_certs = false })
   ```
 
 
