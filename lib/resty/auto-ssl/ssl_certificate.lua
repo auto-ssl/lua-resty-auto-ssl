@@ -96,7 +96,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   return fullchain_pem, privkey_pem, err
 end
 
-local function get_cert(auto_ssl_instance, domain)
+local function get_cert(auto_ssl_instance, domain, ssl_options)
   -- Look for the certificate in shared memory first.
   local fullchain_der = ngx.shared.auto_ssl:get("domain:fullchain_der:" .. domain)
   local privkey_der = ngx.shared.auto_ssl:get("domain:privkey_der:" .. domain)
@@ -113,9 +113,13 @@ local function get_cert(auto_ssl_instance, domain)
   end
 
   -- Finally, issue a new certificate if one hasn't been found yet.
-  fullchain_pem, privkey_pem = issue_cert(auto_ssl_instance, storage, domain)
-  if fullchain_pem and privkey_pem then
-    return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, true)
+  if not ssl_options or ssl_options["generate_certs"] ~= false then
+    fullchain_pem, privkey_pem = issue_cert(auto_ssl_instance, storage, domain)
+    if fullchain_pem and privkey_pem then
+      return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, true)
+    end
+  else
+    return nil, nil, nil, "did not issue certificate, because the generate_certs setting is false"
   end
 
   -- Return an error if issuing the certificate failed.
@@ -251,7 +255,7 @@ local function do_ssl(auto_ssl_instance, ssl_options)
   end
 
   -- Get or issue the certificate for this domain.
-  local fullchain_der, privkey_der, newly_issued, get_cert_err = get_cert(auto_ssl_instance, domain)
+  local fullchain_der, privkey_der, newly_issued, get_cert_err = get_cert(auto_ssl_instance, domain, ssl_options)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: could not get certificate for ", domain, " - using fallback - ", get_cert_err)
     return

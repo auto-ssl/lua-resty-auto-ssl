@@ -133,7 +133,7 @@ http {
 }
 ```
 
-## Configuration
+## `auto_ssl` Configuration
 
 Additional configuration options can be set on the `auto_ssl` instance that is created:
 
@@ -270,6 +270,20 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   ```lua
   auto_ssl:set("hook_server_port", 90)
   ```
+
+### `ssl_certificate` Configuration
+
+- **`generate_certs`**
+  *Default:* true
+
+  This variable can be used to disable generating certs on a per server block location.
+
+  *Example:*
+
+  ```lua
+  auto_ssl:ssl_certificate({ generate_certs=false })
+  ```
+
 
 ### Advanced Let's Encrypt Configuration
 
