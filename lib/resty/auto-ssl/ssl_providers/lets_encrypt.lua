@@ -39,7 +39,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   local status, out, err = shell_execute(command)
   if status ~= 0 then
     ngx.log(ngx.ERR, "auto-ssl: dehydrated failed: ", command, " status: ", status, " out: ", out, " err: ", err)
-    return nil, nil, "dehydrated failure"
+    return nil, "dehydrated failure"
   end
 
   ngx.log(ngx.DEBUG, "auto-ssl: dehydrated output: " .. out)
@@ -47,7 +47,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
   local storage = auto_ssl_instance:get("storage")
-  local fullchain_pem, privkey_pem, _, get_cert_err = storage:get_cert(domain)
+  local cert, get_cert_err = storage:get_cert(domain)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
   end
@@ -57,7 +57,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   -- storage, but still exist in dehydrated's certs directory. If this
   -- occurs, try to manually fire the deploy_cert hook again to populate our
   -- storage with dehydrated's local copies.
-  if not fullchain_pem or not privkey_pem then
+  if not cert or not cert["fullchain_pem"] or not cert["privkey_pem"] then
     ngx.log(ngx.WARN, "auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy - domain: " .. domain)
 
     command = env_vars .. " " ..
@@ -72,22 +72,22 @@ function _M.issue_cert(auto_ssl_instance, domain)
     status, out, err = shell_execute(command)
     if status ~= 0 then
       ngx.log(ngx.ERR, "auto-ssl: dehydrated manual hook.sh failed: ", command, " status: ", status, " out: ", out, " err: ", err)
-      return nil, nil, "dehydrated failure"
+      return nil, "dehydrated failure"
     end
 
     -- Try fetching again.
-    fullchain_pem, privkey_pem, _, get_cert_err = storage:get_cert(domain)
+    cert, get_cert_err = storage:get_cert(domain)
     if get_cert_err then
       ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
     end
   end
 
   -- Return error if things are still unexpectedly missing.
-  if not fullchain_pem or not privkey_pem then
-    return nil, nil, "dehydrated succeeded, but no certs present"
+  if not cert or not cert["fullchain_pem"] or not cert["privkey_pem"] then
+    return nil, "dehydrated succeeded, but no certs present"
   end
 
-  return fullchain_pem, privkey_pem
+  return cert
 end
 
 return _M

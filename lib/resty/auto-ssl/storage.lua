@@ -22,17 +22,17 @@ end
 function _M.get_cert(self, domain)
   local json, err = self.storage_adapter:get(domain .. ":latest")
   if err then
-    return nil, nil, nil, err
+    return nil, err
   elseif not json then
     return nil
   end
 
   local data, json_err = self.json_adapter:decode(json)
   if json_err then
-    return nil, nil, nil, json_err
+    return nil, json_err
   end
 
-  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"], data["expiry"]
+  return data
 end
 
 function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
