@@ -69,7 +69,11 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   end
 
   -- Fetch the current certificate.
-  local fullchain_pem, _, cert_pem = storage:get_cert(domain)
+  local fullchain_pem, _, cert_pem, get_cert_err = storage:get_cert(domain)
+  if get_cert_err then
+    ngx.log(ngx.ERR, "auto-ssl: renewal error fetching certificate from storage for ", domain, ": ", get_cert_err)
+  end
+
   if not fullchain_pem then
     ngx.log(ngx.ERR, "auto-ssl: attempting to renew certificate for domain without certificates in storage: ", domain)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)

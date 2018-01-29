@@ -16,6 +16,7 @@ sub setup {
   $ENV{TEST_NGINX_NGROK_HOSTNAME} = ($ngrok->matchlist())[0] or die "failed to extract hostname for ngrok";
   $ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR} ||= "/tmp/resty-auto-ssl-test";
   $ENV{TEST_NGINX_RESOLVER} ||= "8.8.8.8 8.8.4.4";
+  $ENV{TEST_NGINX_LUA_SHARE_DIR} ||= $ENV{TEST_LUA_SHARE_DIR};
 
   # If the tests have previously been run, wipe out any test data.
   if(-d $ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}) {

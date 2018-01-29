@@ -272,6 +272,20 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   auto_ssl:set("hook_server_port", 90)
   ```
 
+- **`json_adapter`**
+  *Default:* `resty.auto-ssl.json_adapters.cjson`
+  *Options:* `resty.auto-ssl.json_adapters.cjson`, `resty.auto-ssl.json_adapters.dkjson`
+
+  The JSON adapter to use for encoding and decoding JSON. Defaults to using [cjson](https://github.com/openresty/lua-cjson), which is bundled with OpenResty installations and should probably be used in most cases. However, an adapter using the pure Lua [dkjson](https://luarocks.org/modules/dhkolf/dkjson) can be used for environments where cjson may not be available (you will need to manually install the dkjson dependency via luarocks to use this adapter).
+
+  cjson and dkjson json adapters are supplied, but custom external adapters may also be specified (the value simply needs to be on the `lua_package_path`).
+
+  *Example:*
+
+  ```lua
+  auto_ssl:set("json_adapter", "resty.auto-ssl.json_adapters.dkjson")
+  ```
+
 ### `ssl_certificate` Configuration
 
 - **`generate_certs`**

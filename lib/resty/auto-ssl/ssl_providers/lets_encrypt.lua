@@ -47,7 +47,10 @@ function _M.issue_cert(auto_ssl_instance, domain)
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
   local storage = auto_ssl_instance:get("storage")
-  local fullchain_pem, privkey_pem = storage:get_cert(domain)
+  local fullchain_pem, privkey_pem, _, get_cert_err = storage:get_cert(domain)
+  if get_cert_err then
+    ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
+  end
 
   -- If dehydrated said it succeeded, but we still don't have any certs in
   -- storage, the issue is likely that the certs have been deleted out of our
@@ -73,7 +76,10 @@ function _M.issue_cert(auto_ssl_instance, domain)
     end
 
     -- Try fetching again.
-    fullchain_pem, privkey_pem = storage:get_cert(domain)
+    fullchain_pem, privkey_pem, _, get_cert_err = storage:get_cert(domain)
+    if get_cert_err then
+      ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
+    end
   end
 
   -- Return error if things are still unexpectedly missing.

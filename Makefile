@@ -28,6 +28,9 @@ install:
 	install -m 644 lib/resty/auto-ssl/init_master.lua $(INST_LUADIR)/resty/auto-ssl/init_master.lua
 	install -m 644 lib/resty/auto-ssl/init_worker.lua $(INST_LUADIR)/resty/auto-ssl/init_worker.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/jobs
+	install -d $(INST_LUADIR)/resty/auto-ssl/json_adapters
+	install -m 644 lib/resty/auto-ssl/json_adapters/cjson.lua $(INST_LUADIR)/resty/auto-ssl/json_adapters/cjson.lua
+	install -m 644 lib/resty/auto-ssl/json_adapters/dkjson.lua $(INST_LUADIR)/resty/auto-ssl/json_adapters/dkjson.lua
 	install -m 644 lib/resty/auto-ssl/jobs/renewal.lua $(INST_LUADIR)/resty/auto-ssl/jobs/renewal.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/servers
 	install -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
@@ -98,6 +101,9 @@ TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
 LUACHECK:=luacheck
 LUACHECK_VERSION:=0.19.1-1
 
+DKJSON:=dkjson
+DKJSON_VERSION:=2.5-2
+
 OPENSSL_VERSION:=1.0.2k
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
@@ -131,6 +137,9 @@ $(TEST_VENDOR_DIR):
 
 $(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
 	$(call test_luarocks_install,LUACHECK)
+
+$(TEST_LUAROCKS_DIR)/$(DKJSON)/$(DKJSON_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
+	$(call test_luarocks_install,DKJSON)
 
 $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	curl -o $@ -L http://cpanmin.us
@@ -193,6 +202,7 @@ $(TEST_TMP_DIR)/stamp-$(LUAROCKS): $(TEST_TMP_DIR)/stamp-$(OPENRESTY) | $(TEST_T
 
 test_dependencies: \
 	$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION) \
+	$(TEST_LUAROCKS_DIR)/$(DKJSON)/$(DKJSON_VERSION) \
 	$(TEST_VENDOR_DIR)/$(NGROK)/ngrok \
 	$(TEST_TMP_DIR)/stamp-$(OPENRESTY) \
 	$(TEST_TMP_DIR)/stamp-$(LUAROCKS) \

@@ -3,33 +3,35 @@ local str = require "resty.string"
 
 local _M = {}
 
-local cjson = require "cjson"
-
-function _M.new(adapter)
-  return setmetatable({ adapter = adapter }, { __index = _M })
+function _M.new(options)
+  return setmetatable(options, { __index = _M })
 end
 
 function _M.get_challenge(self, domain, path)
-  return self.adapter:get(domain .. ":challenge:" .. path)
+  return self.storage_adapter:get(domain .. ":challenge:" .. path)
 end
 
 function _M.set_challenge(self, domain, path, value)
-  return self.adapter:set(domain .. ":challenge:" .. path, value)
+  return self.storage_adapter:set(domain .. ":challenge:" .. path, value)
 end
 
 function _M.delete_challenge(self, domain, path)
-  return self.adapter:delete(domain .. ":challenge:" .. path)
+  return self.storage_adapter:delete(domain .. ":challenge:" .. path)
 end
 
 function _M.get_cert(self, domain)
-  local json, err = self.adapter:get(domain .. ":latest")
+  local json, err = self.storage_adapter:get(domain .. ":latest")
   if err then
     return nil, nil, err
   elseif not json then
     return nil
   end
 
-  local data = cjson.decode(json)
+  local data, json_err = self.json_adapter:decode(json)
+  if json_err then
+    return nil, nil, nil, json_err
+  end
+
   return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
 end
 
@@ -40,23 +42,26 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
   -- a single string (regardless of implementation), and we don't have to worry
   -- about race conditions with the public cert and private key being stored
   -- separately and getting out of sync.
-  local data = cjson.encode({
+  local string, err = self.json_adapter:encode({
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
     cert_pem = cert_pem,
   })
+  if err then
+    return nil, err
+  end
 
   -- Store the cert with the current timestamp, so the old certs are preserved
   -- in case something goes wrong.
   local time = ngx.now() * 1000
-  self.adapter:set(domain .. ":" .. time, data)
+  self.storage_adapter:set(domain .. ":" .. time, string)
 
   -- Store the cert under the "latest" alias, which is what this app will use.
-  return self.adapter:set(domain .. ":latest", data)
+  return self.storage_adapter:set(domain .. ":latest", string)
 end
 
 function _M.all_cert_domains(self)
-  local keys, err = self.adapter:keys_with_suffix(":latest")
+  local keys, err = self.storage_adapter:keys_with_suffix(":latest")
   if err then
     return nil, err
   end
@@ -91,7 +96,7 @@ function _M.issue_cert_lock(self, domain)
   local sleep_time = 0.5
   local max_time = 30
   repeat
-    local existing_value = self.adapter:get(key)
+    local existing_value = self.storage_adapter:get(key)
     if not existing_value then
       unlocked = true
     else
@@ -101,7 +106,7 @@ function _M.issue_cert_lock(self, domain)
   until unlocked or wait_time > max_time
 
   -- Create a new lock.
-  local ok, err = self.adapter:set(key, lock_rand_value, { exptime = 30 })
+  local ok, err = self.storage_adapter:set(key, lock_rand_value, { exptime = 30 })
   if not ok then
     return nil, err
   else
@@ -113,9 +118,9 @@ function _M.issue_cert_unlock(self, domain, lock_rand_value)
   local key = domain .. ":issue_cert_lock"
 
   -- Remove the existing lock if it matches the expected value.
-  local current_value, err = self.adapter:get(key)
+  local current_value, err = self.storage_adapter:get(key)
   if lock_rand_value == current_value then
-    return self.adapter:delete(key)
+    return self.storage_adapter:delete(key)
   elseif current_value then
     return false, "lock does not match expected value"
   else

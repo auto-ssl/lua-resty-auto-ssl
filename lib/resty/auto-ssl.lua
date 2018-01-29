@@ -32,6 +32,10 @@ function _M.new(options)
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
   end
 
+  if not options["json_adapter"] then
+    options["json_adapter"] = "resty.auto-ssl.json_adapters.cjson"
+  end
+
   if not options["ocsp_stapling_error_level"] then
     options["ocsp_stapling_error_level"] = ngx.ERR
   end

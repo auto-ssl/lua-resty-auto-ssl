@@ -36,6 +36,7 @@ worker_env=(
   "TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot/worker-perms"
   "TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error-worker-perms.log"
   "TEST_NGINX_RESOLVER=${TEST_NGINX_RESOLVER:-}"
+  "TEST_LUA_SHARE_DIR=${TEST_LUA_SHARE_DIR:-}"
 )
 
 # Create the worker-perms test directory with the proper permissions.

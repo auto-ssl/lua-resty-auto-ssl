@@ -26,9 +26,9 @@ return function(auto_ssl_instance)
   start_sockproc()
 
   local storage = auto_ssl_instance:get("storage")
-  local adapter = storage.adapter
-  if adapter.setup_worker then
-    adapter:setup_worker()
+  local storage_adapter = storage.storage_adapter
+  if storage_adapter.setup_worker then
+    storage_adapter:setup_worker()
   end
 
   renewal_job.spawn(auto_ssl_instance)

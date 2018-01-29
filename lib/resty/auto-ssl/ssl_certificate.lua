@@ -80,7 +80,11 @@ local function issue_cert(auto_ssl_instance, storage, domain)
 
   -- After obtaining the local and distributed lock, see if the certificate
   -- has already been registered.
-  fullchain_pem, privkey_pem = storage:get_cert(domain)
+  fullchain_pem, privkey_pem, _, err = storage:get_cert(domain)
+  if err then
+    ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", err)
+  end
+
   if fullchain_pem and privkey_pem then
     issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return fullchain_pem, privkey_pem
@@ -107,7 +111,11 @@ local function get_cert(auto_ssl_instance, domain, ssl_options)
   -- Next, look for the certificate in permanent storage (which can be shared
   -- across servers depending on the storage).
   local storage = auto_ssl_instance:get("storage")
-  local fullchain_pem, privkey_pem = storage:get_cert(domain)
+  local fullchain_pem, privkey_pem, _, get_cert_err = storage:get_cert(domain)
+  if get_cert_err then
+    ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
+  end
+
   if fullchain_pem and privkey_pem then
     return convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, false)
   end
