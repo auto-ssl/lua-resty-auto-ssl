@@ -27,7 +27,7 @@ Requirements:
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
 - gcc, make (for initial install via LuaRocks)
-- bash, curl, diff, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
+- bash, curl, diff, find, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
 
 
 ```sh
