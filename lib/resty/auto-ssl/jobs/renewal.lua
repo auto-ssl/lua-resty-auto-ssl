@@ -45,19 +45,6 @@ local function renew_check_cert_unlock(domain, storage, local_lock, distributed_
 end
 
 local function renew_check_cert(auto_ssl_instance, storage, domain)
-  ngx.log(ngx.NOTICE, "auto-ssl: checking certificate renewals for ", domain)
-
-  -- Attempt to retrieve expiry date from storage. If it is not found try renewal.
-  -- If expiry date is found, we attempt renewal if it's within 30 days.
-  local _, _, _, expiry = storage:get_cert(domain)
-  if expiry then
-    local now = ngx.now()
-    if now + (30 * 24 * 60 * 60) < expiry then
-      ngx.log(ngx.NOTICE, "auto-ssl: expiry date is more than 30 days out, skipping renewal: ", domain)
-      return
-    end
-  end
-
   -- Before issuing a cert, create a local lock to ensure multiple workers
   -- don't simultaneously try to register the same cert.
   local local_lock, new_local_lock_err = lock:new("auto_ssl", { exptime = 30, timeout = 30 })
@@ -81,10 +68,23 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     return
   end
 
+  ngx.log(ngx.NOTICE, "auto-ssl: checking certificate renewals for ", domain)
+
   -- Fetch the current certificate.
-  local fullchain_pem, _, cert_pem, get_cert_err = storage:get_cert(domain)
+  local fullchain_pem, _, cert_pem, expiry, get_cert_err = storage:get_cert(domain)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: renewal error fetching certificate from storage for ", domain, ": ", get_cert_err)
+  end
+
+  -- Attempt to retrieve expiry date from storage. If it is not found try renewal.
+  -- If expiry date is found, we attempt renewal if it's within 30 days.
+  if expiry then
+    local now = ngx.now()
+    if now + (30 * 24 * 60 * 60) < expiry then
+      ngx.log(ngx.NOTICE, "auto-ssl: expiry date is more than 30 days out, skipping renewal: ", domain)
+      renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+      return
+    end
   end
 
   if not fullchain_pem then
