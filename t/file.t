@@ -263,8 +263,8 @@ received: Connection: close
 received: 
 received: foo
 --- error_log
-(Longer than 30 days). Skipping
 auto-ssl: checking certificate renewals for
+auto-ssl: expiry date is more than 30 days out
 --- no_error_log
 [warn]
 [error]

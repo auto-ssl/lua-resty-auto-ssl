@@ -33,6 +33,10 @@ clean_challenge() {
 
 deploy_cert() {
   local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}" TIMESTAMP="${6}"
+  local EXPIRY
+  if ! EXPIRY=$(date --date="$(openssl x509 -enddate -noout -in "$CERTFILE"|cut -d= -f 2)" +%s); then
+    echo "failed to get the expiry date"
+  fi
 
   curl --silent --show-error --fail -XPOST \
     --header "X-Hook-Secret: $HOOK_SECRET" \
@@ -40,6 +44,7 @@ deploy_cert() {
     --data-urlencode "privkey@$KEYFILE" \
     --data-urlencode "cert@$CERTFILE" \
     --data-urlencode "fullchain@$FULLCHAINFILE" \
+    --data-urlencode "expiry=$EXPIRY" \
     "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-cert" || { echo "hook request (deploy_cert) failed" 1>&2; exit 1; }
 }
 
