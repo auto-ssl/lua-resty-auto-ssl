@@ -32,10 +32,10 @@ function _M.get_cert(self, domain)
     return nil, nil, nil, json_err
   end
 
-  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
+  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"], data["expiry"]
 end
 
-function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
+function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   -- Store the public certificate and private key as a single JSON string.
   --
   -- We use a single JSON string so that the storage adapter just has to store
@@ -46,6 +46,7 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
     cert_pem = cert_pem,
+    expiry = expiry,
   })
   if err then
     return nil, err
