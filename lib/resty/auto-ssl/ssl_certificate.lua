@@ -127,6 +127,12 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
     return cert_der
   end
 
+  -- Check to ensure the domain is one we allow for handling SSL.
+  local allow_domain = auto_ssl_instance:get("allow_domain")
+  if not allow_domain(domain) then
+    return nil, nil, nil, "domain not allowed"
+  end
+
   -- Finally, issue a new certificate if one hasn't been found yet.
   if not ssl_options or ssl_options["generate_certs"] ~= false then
     cert = issue_cert(auto_ssl_instance, storage, domain)
@@ -261,13 +267,6 @@ local function do_ssl(auto_ssl_instance, ssl_options)
   local domain, domain_err = request_domain(ssl, ssl_options)
   if not domain or domain_err then
     ngx.log(ngx.WARN, "auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - " .. (domain_err or ""))
-    return
-  end
-
-  -- Check to ensure the domain is one we allow for handling SSL.
-  local allow_domain = auto_ssl_instance:get("allow_domain")
-  if not allow_domain(domain) then
-    ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed - using fallback - ", domain)
     return
   end
 
