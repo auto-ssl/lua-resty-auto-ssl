@@ -72,7 +72,6 @@ function _M.get(self, key)
   local res, err = redis_instance:get(prefixed_key(self, key))
   if res == ngx.null then
     res = nil
-    err = "not found"
   end
 
   return res, err

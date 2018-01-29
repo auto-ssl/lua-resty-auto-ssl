@@ -22,7 +22,7 @@ end
 function _M.get_cert(self, domain)
   local json, err = self.storage_adapter:get(domain .. ":latest")
   if err then
-    return nil, nil, err
+    return nil, nil, nil, err
   elseif not json then
     return nil
   end
