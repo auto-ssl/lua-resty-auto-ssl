@@ -1,6 +1,6 @@
 # lua-resty-auto-ssl Change Log
 
-## 0.12.0 - 2017-02-03
+## 0.12.0 - 2017-02-04
 
 ### Added
 - Allow for the Redis `db` number to be configured. Thanks to [@RainFlying](https://github.com/RainFlying). ([#103](https://github.com/GUI/lua-resty-auto-ssl/pull/103))
@@ -12,6 +12,7 @@
 - Make the renewal process more efficient so the dehydrated shell script is only executed when certificates are up for renewal (rather than every night). This can reduce CPU usage in environments with lots of certificates. Thanks to [@brianlund](https://github.com/brianlund). ([#111](https://github.com/GUI/lua-resty-auto-ssl/pull/111), [#110](https://github.com/GUI/lua-resty-auto-ssl/issues/110))
 - Only call the `allow_domain` callback if a certificate is not present in shared memory. This may improve efficiency in cases where the `allow_domain` callback is more costly or takes longer. Thanks to [@gohai](https://github.com/gohai). ([#107](https://github.com/GUI/lua-resty-auto-ssl/pull/107))
 - Upgrade dehydrated to latest version from master to fix redirect issues on the Let's Encrypt staging server.
+- The internal APIs for `storage:get_cert()` and `ssl_provider.issue_cert()` has changed to return a single table of data instead of multiple values (so it's easier to pass along other metadata).
 
 ### Deprecated
 - If accessing the storage object off of the auto-ssl instance, use `auto_ssl.storage` instead of `auto_ssl:get("storage")`.
