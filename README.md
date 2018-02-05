@@ -138,16 +138,18 @@ http {
 Additional configuration options can be set on the `auto_ssl` instance that is created:
 
 ### `allow_domain`
-*Default:* `function(domain) return false end`
+*Default:* `function(domain, auto_ssl) return false end`
 
 A function that determines whether the incoming domain should automatically issue a new SSL certificate.
 
 By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
 
+When using the Redis storage adapter, you can access the current Redis connection inside the `allow_domain` callback by accessing `auto_ssl.storage.adapter:get_connection()`.
+
 *Example:*
 
 ```lua
-auto_ssl:set("allow_domain", function(domain)
+auto_ssl:set("allow_domain", function(domain, auto_ssl)
   return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
 end)
 ```

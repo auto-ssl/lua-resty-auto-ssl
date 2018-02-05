@@ -25,8 +25,8 @@ return function(auto_ssl_instance)
   -- background process, which would be nice.
   start_sockproc()
 
-  local storage = auto_ssl_instance:get("storage")
-  local storage_adapter = storage.storage_adapter
+  local storage = auto_ssl_instance.storage
+  local storage_adapter = storage.adapter
   if storage_adapter.setup_worker then
     storage_adapter:setup_worker()
   end

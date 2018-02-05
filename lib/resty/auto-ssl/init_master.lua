@@ -91,10 +91,10 @@ local function setup_storage(auto_ssl_instance)
 
   local storage = require "resty.auto-ssl.storage"
   local storage_instance = storage.new({
-    storage_adapter = storage_adapter_instance,
+    adapter = storage_adapter_instance,
     json_adapter = json_adapter_instance,
   })
-  auto_ssl_instance:set("storage", storage_instance)
+  auto_ssl_instance.storage = storage_instance
 end
 
 return function(auto_ssl_instance)

@@ -46,7 +46,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
 
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   local cert, get_cert_err = storage:get_cert(domain)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)

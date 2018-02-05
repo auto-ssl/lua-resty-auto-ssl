@@ -52,14 +52,25 @@ function _M.new(options)
 end
 
 function _M.set(self, key, value)
+  if key == "storage" then
+    ngx.log(ngx.ERR, "auto-ssl: DEPRECATED: Don't use auto_ssl:set() for the 'storage' instance. Set directly with auto_ssl.storage.")
+    self.storage = value
+    return
+  end
+
   self.options[key] = value
 end
 
 function _M.get(self, key)
+  if key == "storage" then
+    ngx.log(ngx.ERR, "auto-ssl: DEPRECATED: Don't use auto_ssl:get() for the 'storage' instance. Get directly with auto_ssl.storage.")
+    return self.storage
+  end
+
   return self.options[key]
 end
 
-function _M.allow_domain(domain) -- luacheck: ignore
+function _M.allow_domain(domain, auto_ssl) -- luacheck: ignore
   return false
 end
 

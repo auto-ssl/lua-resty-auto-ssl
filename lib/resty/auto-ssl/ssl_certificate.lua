@@ -122,13 +122,13 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
   -- We may want to consider caching the results of allow_domain lookups
   -- (including negative caching or disallowed domains).
   local allow_domain = auto_ssl_instance:get("allow_domain")
-  if not allow_domain(domain) then
+  if not allow_domain(domain, auto_ssl_instance) then
     return nil, "domain not allowed"
   end
 
   -- Next, look for the certificate in permanent storage (which can be shared
   -- across servers depending on the storage).
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   local cert, get_cert_err = storage:get_cert(domain)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)

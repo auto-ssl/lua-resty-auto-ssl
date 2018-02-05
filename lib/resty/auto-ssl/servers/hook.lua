@@ -17,7 +17,7 @@ return function(auto_ssl_instance)
   end
 
   local path = ngx.var.request_uri
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   if path == "/deploy-challenge" then
     assert(params["domain"])
     assert(params["token_filename"])

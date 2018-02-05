@@ -136,7 +136,7 @@ end
 
 local function renew_all_domains(auto_ssl_instance)
   -- Loop through all known domains and check to see if they should be renewed.
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   local domains, domains_err = storage:all_cert_domains()
   if domains_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to fetch all certificate domains: ", domains_err)

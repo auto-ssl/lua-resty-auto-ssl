@@ -4,6 +4,7 @@
 
 ### Added
 - Allow for the Redis `db` number to be configured. Thanks to [@RainFlying](https://github.com/RainFlying). ([#103](https://github.com/GUI/lua-resty-auto-ssl/pull/103))
+- Expose the storage adapter instance in the `allow_domain` callback so the Redis connection can be reused. ([#38](https://github.com/GUI/lua-resty-auto-ssl/issues/38))
 - Add `generate_certs` option to allow for disabling SSL certification generation within specific server blocks. Thanks to [@mklauber](https://github.com/mklauber). ([#91](https://github.com/GUI/lua-resty-auto-ssl/issues/91), [#92](https://github.com/GUI/lua-resty-auto-ssl/pull/92))
 - Add `json_adapter` option for choosing a different JSON encoder/decoder library. Thanks to [@meyskens](https://github.com/meyskens). ([#85](https://github.com/GUI/lua-resty-auto-ssl/pull/85), [#84](https://github.com/GUI/lua-resty-auto-ssl/issues/84))
 
@@ -11,6 +12,9 @@
 - Make the renewal process more efficient so the dehydrated shell script is only executed when certificates are up for renewal (rather than every night). This can reduce CPU usage in environments with lots of certificates. Thanks to [@brianlund](https://github.com/brianlund). ([#111](https://github.com/GUI/lua-resty-auto-ssl/pull/111), [#110](https://github.com/GUI/lua-resty-auto-ssl/issues/110))
 - Only call the `allow_domain` callback if a certificate is not present in shared memory. This may improve efficiency in cases where the `allow_domain` callback is more costly or takes longer. Thanks to [@gohai](https://github.com/gohai). ([#107](https://github.com/GUI/lua-resty-auto-ssl/pull/107))
 - Upgrade dehydrated to latest version from master to fix redirect issues on the Let's Encrypt staging server.
+
+### Deprecated
+- If accessing the storage object off of the auto-ssl instance, use `auto_ssl.storage` instead of `auto_ssl:get("storage")`.
 
 ### Fixed
 - Fix renewals when using the file adapter and too many certificate files were present for shell globbing ([#109](https://github.com/GUI/lua-resty-auto-ssl/issues/109))
