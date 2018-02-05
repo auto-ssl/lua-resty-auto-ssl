@@ -171,6 +171,8 @@ permissions:
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK/account_key.pem nobody nobody 600
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK/registration_info.json nobody nobody 600
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/certs nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/chains nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/chains/0a3654cf.chain nobody nobody 600
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/conf.d root root 755
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/config root root 644
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/locks nobody nobody 755

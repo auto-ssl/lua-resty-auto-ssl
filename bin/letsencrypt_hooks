@@ -64,6 +64,10 @@ request_failure() {
   exit 1
 }
 
+startup_hook() {
+  :
+}
+
 exit_hook() {
   :
 }
