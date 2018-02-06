@@ -1,6 +1,6 @@
 # lua-resty-auto-ssl Change Log
 
-## 0.12.0 - 2017-02-04
+## 0.12.0 - 2018-02-04
 
 ### Added
 - Allow for the Redis `db` number to be configured. Thanks to [@RainFlying](https://github.com/RainFlying). ([#103](https://github.com/GUI/lua-resty-auto-ssl/pull/103))
