@@ -51,7 +51,7 @@ http {
   # hold your certificate data. 1MB of storage holds certificates for
   # approximately 100 separate domains.
   lua_shared_dict auto_ssl 1m;
-  # The "auto_ssl" shared dict is used to temporarily store various settings
+  # The "auto_ssl_settings" shared dict is used to temporarily store various settings
   # like the secret used by the hook server on port 8999. Do not change or
   # omit it.
   lua_shared_dict auto_ssl_settings 64k;
