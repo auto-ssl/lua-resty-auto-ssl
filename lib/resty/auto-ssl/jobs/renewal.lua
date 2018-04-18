@@ -129,6 +129,27 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   local _, issue_err = ssl_provider.issue_cert(auto_ssl_instance, domain)
   if issue_err then
     ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", err)
+    -- Give up on renewing this certificate if we didn't manage to renew
+    -- it before the expiration date
+    if cert["expiry"] then
+      if cert["expiry"] < now then
+        ngx.log(ngx.ERR, "auto-ssl: existing certificate is expired, deleting: ", domain)
+        storage:delete_cert(domain)
+      end
+    else
+      local renewal_count = storage:get_renewal_count(domain)
+      if 30 < renewal_count then
+        ngx.log(ngx.ERR, "auto-ssl: renewal has failed for 31 times, deleting: ", domain)
+        storage:delete_cert(domain)
+        storage:delete_renewal_count(domain)
+      else
+        renewal_count = renewal_count + 1
+        storage:set_renewal_count(domain, renewal_count)
+      end
+    end
+  else
+    -- Zero the renewal count
+    storage:delete_renewal_count(domain)
   end
 
   renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
