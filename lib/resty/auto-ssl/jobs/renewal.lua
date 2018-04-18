@@ -79,8 +79,43 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     cert = {}
   end
 
-  -- Attempt to retrieve expiry date from storage. If it is not found try renewal.
-  -- If expiry date is found, we attempt renewal if it's within 30 days.
+  if not cert["fullchain_pem"] then
+    ngx.log(ngx.ERR, "auto-ssl: attempting to renew certificate for domain without certificates in storage: ", domain)
+    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+    return
+  end
+
+  -- If we don't have an expiry date yet, try to update the stored cert
+  -- with a date based on backup timestamps
+  if not cert["expiry"] then
+    local keys, err = storage.adapter:keys_with_prefix(domain .. ":")
+    if err then
+      ngx.log(ngx.ERR, "auto-ssl: error fetching certificate backups from storage for ", domain, ": ", err)
+    else
+      local most_recent = 0
+      for _, key in ipairs(keys) do
+        local timestamp = string.sub(key, string.find(key, ":") + 1)
+        timestamp = tonumber(timestamp)
+        if timestamp and most_recent < timestamp then
+          most_recent = timestamp
+        end
+      end
+      if most_recent ~= 0 then
+        -- Backup timestamp used milliseconds, convert to seconds
+        cert["expiry"] = math.floor(most_recent/1000) + (90 * 24 * 60 * 60)
+        -- Update stored certificate to include expiry information
+        ngx.log(ngx.NOTICE, "auto-ssl: setting expiration date of ",  domain, " to ", cert["expiry"])
+        local _, err = storage:set_cert(domain, cert["fullchain_pem"], cert["privkey_pem"], cert["cert_pem"], cert["expiry"])
+        if err then
+          ngx.log(ngx.ERR, "auto-ssl: failed to update cert: ", err)
+        end
+      else
+        ngx.log(ngx.ERR, "auto-ssl: no certificate backups in storage for ", domain, ", unable to set expiration date")
+      end
+    end
+  end
+
+  -- If expiry date is known, attempt renewal if it's within 30 days.
   if cert["expiry"] then
     local now = ngx.now()
     if now + (30 * 24 * 60 * 60) < cert["expiry"] then
@@ -88,12 +123,6 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
       renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
       return
     end
-  end
-
-  if not cert["fullchain_pem"] then
-    ngx.log(ngx.ERR, "auto-ssl: attempting to renew certificate for domain without certificates in storage: ", domain)
-    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
-    return
   end
 
   -- We didn't previously store the cert.pem (since it can be derived from the

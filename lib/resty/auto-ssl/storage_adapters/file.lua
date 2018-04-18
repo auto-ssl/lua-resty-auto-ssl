@@ -72,6 +72,23 @@ function _M.delete(self, key)
   end
 end
 
+function _M.keys_with_prefix(self, prefix)
+  local base_dir = self.options["dir"]
+  local _, output, err = run_command("find " .. base_dir .. "/storage/file -name '" .. ngx.escape_uri(prefix) .. "*'")
+  if err then
+    return nil, err
+  end
+
+  local keys = {}
+  for path in string.gmatch(output, "[^\r\n]+") do
+    local filename = ngx.re.sub(path, ".*/", "")
+    local key = ngx.unescape_uri(filename)
+    table.insert(keys, key)
+  end
+
+  return keys
+end
+
 function _M.keys_with_suffix(self, suffix)
   local base_dir = self.options["dir"]
   local _, output, err = run_command("find " .. base_dir .. "/storage/file -name '*" .. ngx.escape_uri(suffix) .. "'")
