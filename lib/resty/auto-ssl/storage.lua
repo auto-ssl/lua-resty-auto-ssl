@@ -65,6 +65,10 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   return self.adapter:set(domain .. ":latest", string)
 end
 
+function _M.delete_cert(self, domain)
+  return self.adapter:delete(domain .. ":latest")
+end
+
 function _M.all_cert_domains(self)
   local keys, err = self.adapter:keys_with_suffix(":latest")
   if err then
@@ -131,6 +135,25 @@ function _M.issue_cert_unlock(self, domain, lock_rand_value)
   else
     return false, err
   end
+end
+
+function _M.get_renewal_count(self, domain)
+  local value, err = self.adapter:get(domain .. ":renewal_count")
+  if err then
+    return 0
+  elseif not value then
+    return 0
+  else
+    return tonumber(value)
+  end
+end
+
+function _M.set_renewal_count(self, domain, value)
+  return self.adapter:set(domain .. ":renewal_count", value)
+end
+
+function _M.delete_renewal_count(self, domain)
+  return self.adapter:delete(domain .. ":renewal_count")
 end
 
 return _M
