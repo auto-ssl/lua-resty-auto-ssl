@@ -70,10 +70,6 @@ function _M.get(self, key)
   return self.options[key]
 end
 
-function _M.allow_domain(domain, auto_ssl) -- luacheck: ignore
-  return false
-end
-
 function _M.init(self)
   local init_master = require "resty.auto-ssl.init_master"
   init_master(self)
