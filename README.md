@@ -144,17 +144,21 @@ A function that determines whether the incoming domain should automatically issu
 
 By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
 
+The callback function's arguments are:
+
+- `domain`: The domain of the incoming request.
+- `auto_ssl`: The current auto-ssl instance.
+- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_configuration` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis (see example in [`request_domain`](#request_domain)).
+
 When using the Redis storage adapter, you can access the current Redis connection inside the `allow_domain` callback by accessing `auto_ssl.storage.adapter:get_connection()`.
 
 *Example:*
 
 ```lua
-auto_ssl:set("allow_domain", function(domain, auto_ssl)
+auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options)
   return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
 end)
 ```
-
-Use `ssl_options` to make the behavior vary based on port - see the example in listed for `request_domain` for details.
 
 ### `dir`
 *Default:* `/etc/resty-auto-ssl`
@@ -218,6 +222,11 @@ auto_ssl:set("redis", {
 *Default:* `function(ssl, ssl_options) return ssl.server_name() end`
 
 A function that determines the hostname of the request. By default, the SNI domain is used, but a custom function can be implemented to determine the domain name for non-SNI requests (by basing the domain on something that can be determined outside of SSL, like the port or IP address that received the request).
+
+The callback function's arguments are:
+
+- `ssl`: An instance of the [`ngx.ssl`](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md) module.
+- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_configuration` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis.
 
 *Example:*
 
@@ -292,6 +301,10 @@ auto_ssl:set("json_adapter", "resty.auto-ssl.json_adapters.dkjson")
 
 ## `ssl_certificate` Configuration
 
+The `ssl_certificate` function accepts an optional table of configuration options. These options can be used to customize and control the SSL behavior on a per nginx `server` basis. Some built-in options may control the default behavior of lua-resty-auto-ssl, but any other custom data can be given as options, which will then be passed along to the [`allow_domain`](#allow_domain) and [`request_domain`](#request_domain) callback functions.
+
+Built-in configuration options:
+
 ### `generate_certs`
 *Default:* true
 
@@ -299,10 +312,14 @@ This variable can be used to disable generating certs on a per server block loca
 
 *Example:*
 
-```lua
-auto_ssl:ssl_certificate({ generate_certs = false })
+```nginx
+server {
+  listen 8443 ssl;
+  ssl_certificate_by_lua_block {
+    auto_ssl:ssl_certificate({ generate_certs = false })
+  }
+}
 ```
-
 
 ### Advanced Let's Encrypt Configuration
 
