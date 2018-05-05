@@ -138,7 +138,7 @@ http {
 Additional configuration options can be set on the `auto_ssl` instance that is created:
 
 ### `allow_domain`
-*Default:* `function(domain, auto_ssl) return false end`
+*Default:* `function(domain, auto_ssl, ssl_options) return false end`
 
 A function that determines whether the incoming domain should automatically issue a new SSL certificate.
 
@@ -153,6 +153,8 @@ auto_ssl:set("allow_domain", function(domain, auto_ssl)
   return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
 end)
 ```
+
+Use `ssl_options` to make the behavior vary based on port - see the example in listed for `request_domain` for details.
 
 ### `dir`
 *Default:* `/etc/resty-auto-ssl`
