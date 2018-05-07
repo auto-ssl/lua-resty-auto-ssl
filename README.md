@@ -205,7 +205,7 @@ If the `redis` storage adapter is being used, then additional connection options
 
 - `host`
 - `port`
-- `socket` (for unix socket paths)
+- `socket` (for unix socket paths, in the format of `"unix:/path/to/unix.sock"`)
 - `auth`
 - `db` (the [Redis database number](https://redis.io/commands/select) used by lua-resty-auto-ssl to save certificates)
 - `prefix`
