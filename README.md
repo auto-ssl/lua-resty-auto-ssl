@@ -299,6 +299,16 @@ cjson and dkjson json adapters are supplied, but custom external adapters may al
 auto_ssl:set("json_adapter", "resty.auto-ssl.json_adapters.dkjson")
 ```
 
+### `proxy_addr`
+
+ The `proxy_addr` specify address of proxy which will be used for requests to issue SSL certificates.
+
+*Example:*
+
+```lua
+auto_ssl:set("proxy_addr", "http://localhost:3128")
+```
+
 ## `ssl_certificate` Configuration
 
 The `ssl_certificate` function accepts an optional table of configuration options. These options can be used to customize and control the SSL behavior on a per nginx `server` basis. Some built-in options may control the default behavior of lua-resty-auto-ssl, but any other custom data can be given as options, which will then be passed along to the [`allow_domain`](#allow_domain) and [`request_domain`](#request_domain) callback functions.
