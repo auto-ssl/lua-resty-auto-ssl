@@ -94,6 +94,7 @@ end
 function _M.issue_cert_lock(self, domain)
   local key = domain .. ":issue_cert_lock"
   local lock_rand_value = str.to_hex(resty_random.bytes(32))
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: storage:issue_cert_lock: key=" .. key .. " lock_rand_value=" .. (lock_rand_value or ""))
 
   -- Wait up to 30 seconds for any existing locks to be unlocked.
   local unlocked = false
@@ -110,6 +111,10 @@ function _M.issue_cert_lock(self, domain)
     end
   until unlocked or wait_time > max_time
 
+  if not unlocked then
+    ngx.log(ngx.ERR, "auto-ssl: DEBUG: storage:issue_cert_lock: key=" .. key .. " - not unlocked")
+  end
+
   -- Create a new lock.
   local ok, err = self.adapter:set(key, lock_rand_value, { exptime = 30 })
   if not ok then
@@ -121,14 +126,25 @@ end
 
 function _M.issue_cert_unlock(self, domain, lock_rand_value)
   local key = domain .. ":issue_cert_lock"
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: storage:issue_cert_unlock: key=" .. key .. " lock_rand_value=" .. (lock_rand_value or ""))
 
   -- Remove the existing lock if it matches the expected value.
   local current_value, err = self.adapter:get(key)
   if lock_rand_value == current_value then
     return self.adapter:delete(key)
   elseif current_value then
-    return false, "lock does not match expected value"
+    local _, delete_err = self.adapter:delete(key)
+    if delete_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to delete distributed lock for " .. (key or ""))
+    end
+
+    return false, "lock does not match expected value (expected=" .. (lock_rand_value or "") .. " actual=" .. (current_value or "") .. ")"
   else
+    local _, delete_err = self.adapter:delete(key)
+    if delete_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to delete distributed lock for " .. (key or ""))
+    end
+
     return false, err
   end
 end

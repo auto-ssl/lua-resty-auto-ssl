@@ -40,7 +40,9 @@ local function convert_to_der_and_cache(domain, cert)
 end
 
 local function issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: Cert unlock for: " .. domain)
   if local_lock then
+    ngx.log(ngx.ERR, "auto-ssl: DEBUG: Cert unlock local for: " .. domain)
     local _, local_unlock_err = local_lock:unlock()
     if local_unlock_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
@@ -48,6 +50,7 @@ local function issue_cert_unlock(domain, storage, local_lock, distributed_lock_v
   end
 
   if distributed_lock_value then
+    ngx.log(ngx.ERR, "auto-ssl: DEBUG: Cert unlock distributed for: " .. domain)
     local _, distributed_unlock_err = storage:issue_cert_unlock(domain, distributed_lock_value)
     if distributed_unlock_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", distributed_unlock_err)
@@ -56,6 +59,8 @@ local function issue_cert_unlock(domain, storage, local_lock, distributed_lock_v
 end
 
 local function issue_cert(auto_ssl_instance, storage, domain)
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: Issuing cert for: " .. domain)
+
   -- Before issuing a cert, create a local lock to ensure multiple workers
   -- don't simultaneously try to register the same cert.
   local local_lock, new_local_lock_err = lock:new("auto_ssl", { exptime = 30, timeout = 30 })
@@ -63,6 +68,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
     ngx.log(ngx.ERR, "auto-ssl: failed to create lock: ", new_local_lock_err)
     return
   end
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: Creating local lock for: " .. domain)
   local _, local_lock_err = local_lock:lock("issue_cert:" .. domain)
   if local_lock_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", local_lock_err)
@@ -72,12 +78,15 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   -- Also add a lock to the configured storage adapter, which allows for a
   -- distributed lock across multiple servers (depending on the storage
   -- adapter).
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: Creating distributed lock for: " .. domain)
   local distributed_lock_value, distributed_lock_err = storage:issue_cert_lock(domain)
   if distributed_lock_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", distributed_lock_err)
     issue_cert_unlock(domain, storage, local_lock, nil)
     return
   end
+
+  ngx.log(ngx.ERR, "auto-ssl: DEBUG: Locks obtained for: " .. domain)
 
   -- After obtaining the local and distributed lock, see if the certificate
   -- has already been registered.
