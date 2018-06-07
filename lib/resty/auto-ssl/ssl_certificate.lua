@@ -102,9 +102,16 @@ local function issue_cert(auto_ssl_instance, storage, domain)
 end
 
 local function get_cert_der(auto_ssl_instance, domain, ssl_options)
-  -- Look for the certificate in shared memory first.
-  local fullchain_der = ngx.shared.auto_ssl:get("domain:fullchain_der:" .. domain)
-  local privkey_der = ngx.shared.auto_ssl:get("domain:privkey_der:" .. domain)
+  local fullchain_der, privkey_der
+  if ssl_options["fullchain_der"] and ssl_options["privkey_der"] then
+    -- Look in ssl_options first in case request_domain has set it
+    fullchain_der = ssl_options["fullchain_der"]
+    privkey_der = ssl_options["privkey_der"]
+  else
+    -- Look for the certificate in shared memory first.
+    fullchain_der = ngx.shared.auto_ssl:get("domain:fullchain_der:" .. domain)
+    privkey_der = ngx.shared.auto_ssl:get("domain:privkey_der:" .. domain)
+  end
   if fullchain_der and privkey_der then
     return {
       fullchain_der = fullchain_der,
