@@ -1,7 +1,19 @@
 local resty_random = require "resty.random"
 local str = require "resty.string"
-
 local _M = {}
+
+function string:split(delimiter)
+  local result = { }
+  local from  = 1
+  local delim_from, delim_to = string.find( self, delimiter, from  )
+  while delim_from do
+    table.insert( result, string.sub( self, from , delim_from-1 ) )
+    from  = delim_to + 1
+    delim_from, delim_to = string.find( self, delimiter, from  )
+  end
+  table.insert( result, string.sub( self, from  ) )
+  return result
+end
 
 function _M.new(options)
   assert(options)
@@ -24,6 +36,8 @@ function _M.delete_challenge(self, domain, path)
 end
 
 function _M.get_cert(self, domain)
+  -- Multiple domains can be inside the string, only check for the first one
+  domain = domain:split(" ")[1]
   local json, err = self.adapter:get(domain .. ":latest")
   if err then
     return nil, err
