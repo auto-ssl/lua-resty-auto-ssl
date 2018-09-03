@@ -32,7 +32,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--cron " ..
     "--accept-terms " ..
     "--no-lock " ..
-    "--domain " .. domain .. " " ..
+    "--domain \"" .. domain .. "\" " ..
     "--challenge http-01 " ..
     "--config " .. base_dir .. "/letsencrypt/config " ..
     "--hook " .. lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks"
