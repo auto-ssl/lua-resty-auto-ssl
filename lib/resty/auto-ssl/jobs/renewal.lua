@@ -134,6 +134,14 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
 end
 
+local function shuffle(tbl)
+  for i = #tbl, 1, -1 do
+    local rand = math.random(i)
+    tbl[i], tbl[rand] = tbl[rand], tbl[i]
+  end
+  return tbl
+end
+
 local function renew_all_domains(auto_ssl_instance)
   -- Loop through all known domains and check to see if they should be renewed.
   local storage = auto_ssl_instance.storage
@@ -141,6 +149,7 @@ local function renew_all_domains(auto_ssl_instance)
   if domains_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to fetch all certificate domains: ", domains_err)
   else
+    domains = shuffle(domains)
     for _, domain in ipairs(domains) do
       renew_check_cert(auto_ssl_instance, storage, domain)
     end
