@@ -24,8 +24,6 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate and stores it in redis
 --- http_config
-  lua_package_path '$TEST_NGINX_LUA_SHARE_DIR/?.lua;;';
-
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
   lua_shared_dict auto_ssl_settings 64k;

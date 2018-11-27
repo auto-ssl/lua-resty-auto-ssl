@@ -1,29 +1,16 @@
-FROM debian:jessie
+FROM openresty/openresty:1.13.6.2-2-centos
 
-RUN \
-  apt-get update && \
-  # Test dependencies
-  apt-get -y install \
-    build-essential \
-    findutils \
-    libpcre3-dev \
-    lsof \
-    perl \
-    procps \
-    redis-server \
-    sudo \
-    unzip \
-    zlib1g-dev  && \
-  # Runtime dependencies
-  apt-get -y install \
-    bash \
-    coreutils \
-    curl \
-    diffutils \
-    grep \
-    openssl \
-    sed
+# Build dependencies.
+RUN yum -y install make
+
+# Dependencies for the release process.
+RUN yum -y install git zip
 
 RUN mkdir /app
 WORKDIR /app
+
+COPY Makefile /app/Makefile
+RUN make install-test-deps-yum
+RUN make install-test-deps
+
 COPY . /app

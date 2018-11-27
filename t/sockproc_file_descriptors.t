@@ -88,6 +88,7 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
+      local ngx_re = require "ngx.re"
       local run_command = require "resty.auto-ssl.utils.run_command"
 
       local function cleanup_sockproc()
@@ -99,13 +100,40 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
         end
       end
 
-      local function print_file_descriptors(as_user)
-        local _, output, err = run_command("lsof -n -P -l -R -c sockproc -a -d '0-255' -F pnf | sed -n '1!p' | sed -e 's/ type=STREAM//g' | sed -e 's#^n/.*logs/error.log$#n/dev/null#g'")
-        if err then
+      local function print_file_descriptors(as_user, expect_no_results)
+        -- Run in bash login subshell, since when running as the "nobody" user,
+        -- there may not be a default PATH set, in which case, lsof installed
+        -- in /usr/sbin may not be picked up (but this behavior varies
+        -- depending on distro).
+        local _, output, err = run_command("bash -l -c 'lsof -n -P -l -R -c sockproc -a -d 0-255 -F pnf'")
+        if expect_no_results == true then
+          if err and output == "" then
+            ngx.say("")
+            return
+          else
+            ngx.say("expected lsof to return nothing, but returned: ", output, err)
+            return nil, err
+          end
+        elseif err then
           ngx.say("failed to run lsof: ", err)
           return nil, err
         end
-        ngx.say(output)
+
+        local lines, err = ngx_re.split(output, "\n")
+        if err then
+          ngx.say("failed to split file descriptors output ", err)
+          return nil, err
+        end
+
+        for index, line in ipairs(lines) do
+          if index > 1 then
+            local line, _, err = ngx.re.sub(line, "  type=STREAM", "")
+            local line, _, err = ngx.re.sub(line, "^n/.*logs/error.log$", "n/dev/null")
+            ngx.say(line)
+          end
+        end
+
+        ngx.say("")
       end
 
       ngx.say("already running:")
@@ -113,7 +141,7 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
 
       cleanup_sockproc()
       ngx.say("none running:")
-      print_file_descriptors("root")
+      print_file_descriptors("root", true)
 
       ngx.say("current dir as current user:")
       cleanup_sockproc()
