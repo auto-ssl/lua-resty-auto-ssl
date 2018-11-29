@@ -1,6 +1,7 @@
 local renewal_job = require "resty.auto-ssl.jobs.renewal"
 local run_command = require "resty.auto-ssl.utils.run_command"
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
+local random = require "resty.random"
 
 return function(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
@@ -12,6 +13,8 @@ return function(auto_ssl_instance)
   if mkdir_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/locks dir: ", mkdir_locks_err)
   end
+
+  math.randomseed(random.number(1, 1048576))
 
   -- Startup sockproc. This background process allows for non-blocking shell
   -- commands with resty.shell.
