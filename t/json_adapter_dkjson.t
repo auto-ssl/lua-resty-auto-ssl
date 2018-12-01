@@ -8,7 +8,7 @@ AutoSsl::setup();
 make_path("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/redis");
 my $redis = Expect->spawn("redis-server ./t/config/redis.conf") or die "failed to spawn redis-server: $!";
 $redis->log_stdout(0);
-$redis->expect(10, "now ready") or die "failed to start redis: " . $redis->exp_before();
+$redis->expect(10, "-re", "(now ready|Ready to accept)") or die "failed to start redis: " . $redis->exp_before();
 
 repeat_each(1);
 
@@ -24,8 +24,6 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate and stores it in redis
 --- http_config
-  lua_package_path '$TEST_NGINX_LUA_SHARE_DIR/?.lua;;';
-
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
   lua_shared_dict auto_ssl_settings 64k;

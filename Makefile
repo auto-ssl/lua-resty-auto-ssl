@@ -5,24 +5,31 @@ DEHYDRATED_VERSION:=0bc0bd13d6abdc027c58bec12f7c2d3198d3a677
 LUA_RESTY_SHELL_VERSION:=955243d70506c21e7cc29f61d745d1a8a718994f
 SOCKPROC_VERSION:=680121312d16dc20456b5d0fed00e2b0e160e0db
 
-RUNTIME_DEPENDENCIES:=bash curl diff grep mktemp openssl sed
-$(foreach bin,$(RUNTIME_DEPENDENCIES),\
-	$(if $(shell command -v $(bin) 2> /dev/null),,$(error `$(bin)` was not found in PATH. Please install `$(bin)` first)))
+RUNTIME_DEPENDENCIES:=bash curl cut date diff grep mktemp openssl sed
 
-.PHONY:
+.PHONY: \
 	all \
+	check-dependencies \
 	grind \
 	install \
+	install-test-deps \
+	install-test-deps-apk \
+	install-test-deps-apt \
+	install-test-deps-yum \
 	lint \
-	test \
-	test_dependencies
+	test
 
 all: \
+	check-dependencies \
 	$(BUILD_DIR)/stamp-dehydrated-2-$(DEHYDRATED_VERSION) \
 	$(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION) \
 	$(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION)
 
-install:
+check-dependencies:
+	$(foreach bin,$(RUNTIME_DEPENDENCIES),\
+		$(if $(shell command -v $(bin) 2> /dev/null),,$(error `$(bin)` was not found in PATH. Please install `$(bin)` first)))
+
+install: check-dependencies
 	install -d $(INST_LUADIR)/resty/auto-ssl
 	install -m 644 lib/resty/auto-ssl.lua $(INST_LUADIR)/resty/auto-ssl.lua
 	install -m 644 lib/resty/auto-ssl/init_master.lua $(INST_LUADIR)/resty/auto-ssl/init_master.lua
@@ -83,137 +90,57 @@ $(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 # Testing
 #
 
-ifeq ("$(LUA_MODE)", "lua52")
-OPENRESTY_FLAGS:="--with-luajit-xcflags='-DLUAJIT_ENABLE_LUA52COMPAT'"
-else
-OPENRESTY_FLAGS:=
-endif
+install-test-deps-apk:
+	apk add --no-cache \
+		coreutils \
+		findutils \
+		gcc \
+		lsof \
+		openssl \
+		procps \
+		perl-app-cpanminus \
+		perl-dev \
+		redis \
+		sudo \
+		wget
+	curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/iVLSfdAz1X4/ngrok-2.2.8-linux-amd64.tar.gz
+	tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/
+	rm -f /tmp/ngrok.tar.gz
+	chmod +x /usr/local/bin/ngrok
 
-TEST_RUN_DIR?=$(ROOT_DIR)/t/run
-TEST_BUILD_DIR:=$(TEST_RUN_DIR)/build$(LUA_MODE)
-TEST_VENDOR_DIR:=$(TEST_RUN_DIR)/vendor$(LUA_MODE)
-TEST_TMP_DIR:=$(TEST_RUN_DIR)/tmp$(LUA_MODE)
-TEST_LOGS_DIR:=$(TEST_RUN_DIR)/logs$(LUA_MODE)
-TEST_LUAROCKS_DIR:=$(TEST_VENDOR_DIR)/lib/luarocks/rocks
-TEST_LUA_SHARE_DIR:=$(TEST_VENDOR_DIR)/share/lua/5.1
-TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
+install-test-deps-apt:
+	apt-get update
+	apt-get -y install \
+		lsof \
+		cpanminus \
+		redis-server \
+		sudo
+	curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/mRgETDaBsGt/ngrok-2.2.8-linux-amd64.deb
+	dpkg -i /tmp/ngrok.deb || apt-get -fy install
+	rm -f /tmp/ngrok.deb
 
-LUACHECK:=luacheck
-LUACHECK_VERSION:=0.21.2-1
+install-test-deps-yum:
+	yum -y install epel-release
+	yum -y install \
+		gcc \
+		lsof \
+		procps-ng \
+		perl-App-cpanminus \
+		redis \
+		sudo \
+		https://bin.equinox.io/a/8eF5UNUMwxo/ngrok-2.2.8-linux-amd64.rpm
 
-DKJSON:=dkjson
-DKJSON_VERSION:=2.5-2
+install-test-deps:
+	luarocks install dkjson 2.5-2
+	luarocks install luacheck 0.22.1-1
+	cpanm --notest Expect@1.35
+	cpanm --notest Test::Nginx@0.26
 
-OPENSSL_VERSION:=1.0.2k
-OPENSSL:=openssl-$(OPENSSL_VERSION)
+lint:
+	luacheck lib
 
-OPENRESTY_VERSION:=1.11.2.3
-OPENRESTY:=openresty-$(OPENRESTY_VERSION)
-
-LUAROCKS_VERSION=2.4.2
-LUAROCKS=luarocks-$(LUAROCKS_VERSION)
-
-NGROK_VERSION:=2.2.4
-NGROK:=ngrok-$(NGROK_VERSION)
-
-PERL_EXPECT_VERSION=1.33
-PERL_EXTUTILS_MAKEMAKER_VERSION=7.24
-PERL_TEST_NGINX_VERSION=0.26
-
-PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(TEST_VENDOR_DIR)/$(NGROK):$(PATH)
-
-define test_luarocks_install
-	$(eval PACKAGE:=$($(1)))
-	$(eval PACKAGE_VERSION:=$($(1)_VERSION))
-	luarocks --tree=$(TEST_VENDOR_DIR) install $(PACKAGE) $(PACKAGE_VERSION)
-	touch $@
-endef
-
-$(TEST_TMP_DIR):
-	mkdir -p $@
-
-$(TEST_VENDOR_DIR):
-	mkdir -p $@
-
-$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
-	$(call test_luarocks_install,LUACHECK)
-
-$(TEST_LUAROCKS_DIR)/$(DKJSON)/$(DKJSON_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
-	$(call test_luarocks_install,DKJSON)
-
-$(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
-	curl -o $@ -L http://cpanmin.us
-	chmod +x $@
-	touch -c $@
-
-# Install newer version of ExtUtils::MakeMaker for Expect's installation.
-# Without this, older versions of the bundled MakeMaker don't properly install
-# Expect's dependencies.
-$(TEST_TMP_DIR)/stamp-perl-extutils-makemaker-$(PERL_EXTUTILS_MAKEMAKER_VERSION): $(TEST_TMP_DIR)/cpanm
-	$(TEST_TMP_DIR)/cpanm -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest ExtUtils::MakeMaker@$(PERL_EXTUTILS_MAKEMAKER_VERSION)
-	touch $@
-
-$(TEST_TMP_DIR)/stamp-perl-expect-$(PERL_EXPECT_VERSION): $(TEST_TMP_DIR)/stamp-perl-extutils-makemaker-$(PERL_EXTUTILS_MAKEMAKER_VERSION) $(TEST_TMP_DIR)/cpanm
-	$(TEST_TMP_DIR)/cpanm -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Expect@$(PERL_EXPECT_VERSION)
-	touch $@
-
-$(TEST_TMP_DIR)/stamp-perl-test-nginx-$(PERL_TEST_NGINX_VERSION): $(TEST_TMP_DIR)/cpanm
-	$(TEST_TMP_DIR)/cpanm -L $(TEST_BUILD_DIR) --no-wget --verbose --reinstall --notest Test::Nginx@$(PERL_TEST_NGINX_VERSION)
-	touch $@
-
-UNAME := $(shell uname)
-ifeq ($(UNAME), Linux)
-$(TEST_VENDOR_DIR)/$(NGROK)/ngrok: | $(TEST_TMP_DIR) $(TEST_VENDOR_DIR)
-	curl -L -o $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz https://bin.equinox.io/a/kpdp6Edfc5q/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
-	mkdir -p $(TEST_VENDOR_DIR)/$(NGROK)
-	tar -C $(TEST_VENDOR_DIR)/$(NGROK) -xf $(TEST_TMP_DIR)/ngrok-$(NGROK_VERSION)-linux-amd64.tar.gz
-endif
-ifeq ($(UNAME), Darwin)
-$(TEST_VENDOR_DIR)/$(NGROK)/ngrok: | $(TEST_TMP_DIR) $(TEST_VENDOR_DIR)
-	curl -L -o $(TEST_TMP_DIR)/ngrok_$(NGROK_VERSION)-darwin-amd64.zip https://bin.equinox.io/a/jhmzSv18UeY/ngrok-$(NGROK_VERSION)-darwin-amd64.zip
-	unzip $(TEST_TMP_DIR)/ngrok_$(NGROK_VERSION)-darwin-amd64.zip -d $(TEST_VENDOR_DIR)/$(NGROK)
-endif
-
-$(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
-	cd $(TEST_TMP_DIR) && rm -rf openssl*
-	cd $(TEST_TMP_DIR) && curl -L -O https://www.openssl.org/source/$(OPENSSL).tar.gz
-	cd $(TEST_TMP_DIR) && tar -xf $(OPENSSL).tar.gz
-
-$(TEST_TMP_DIR)/stamp-$(OPENRESTY): $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
-	cd $(TEST_TMP_DIR) && rm -rf openresty*
-	cd $(TEST_TMP_DIR) && curl -L -O https://github.com/openresty/openresty/releases/download/v$(OPENRESTY_VERSION)/$(OPENRESTY).tar.gz
-	cd $(TEST_TMP_DIR) && tar -xf $(OPENRESTY).tar.gz
-	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-debug --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL) $(OPENRESTY_FLAGS)
-	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make
-	cd $(TEST_TMP_DIR)/$(OPENRESTY) && make install
-	touch $@
-
-$(TEST_TMP_DIR)/stamp-$(LUAROCKS): $(TEST_TMP_DIR)/stamp-$(OPENRESTY) | $(TEST_TMP_DIR)
-	cd $(TEST_TMP_DIR) && rm -rf luarocks*
-	cd $(TEST_TMP_DIR) && curl -L -O http://luarocks.org/releases/$(LUAROCKS).tar.gz
-	cd $(TEST_TMP_DIR) && tar -xf $(LUAROCKS).tar.gz
-	cd $(TEST_TMP_DIR)/$(LUAROCKS) && ./configure \
-		--prefix=$(TEST_BUILD_DIR)/luajit \
-		--with-lua=$(TEST_BUILD_DIR)/luajit \
-		--with-lua-include=$(TEST_BUILD_DIR)/luajit/include/luajit-2.1 \
-		--lua-suffix=jit-2.1.0-beta2
-	cd $(TEST_TMP_DIR)/$(LUAROCKS) && make bootstrap
-	touch $@
-
-test_dependencies: \
-	$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION) \
-	$(TEST_LUAROCKS_DIR)/$(DKJSON)/$(DKJSON_VERSION) \
-	$(TEST_VENDOR_DIR)/$(NGROK)/ngrok \
-	$(TEST_TMP_DIR)/stamp-$(OPENRESTY) \
-	$(TEST_TMP_DIR)/stamp-$(LUAROCKS) \
-	$(TEST_TMP_DIR)/stamp-perl-expect-$(PERL_EXPECT_VERSION) \
-	$(TEST_TMP_DIR)/stamp-perl-test-nginx-$(PERL_TEST_NGINX_VERSION)
-
-lint: test_dependencies
-	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
-
-test: test_dependencies lint
-	PATH=$(PATH) ROOT_DIR=$(ROOT_DIR) TEST_RUN_DIR=$(TEST_RUN_DIR) TEST_BUILD_DIR=$(TEST_BUILD_DIR) TEST_LOGS_DIR=$(TEST_LOGS_DIR) TEST_LUA_SHARE_DIR=$(TEST_LUA_SHARE_DIR) TEST_LUA_LIB_DIR=$(TEST_LUA_LIB_DIR) t/run_tests
+test: lint
+	PATH=$(PATH) ROOT_DIR=$(ROOT_DIR) t/run_tests
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test
