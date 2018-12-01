@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  openresty-1.13:
+  default:
     docker:
       - image: openresty/openresty:1.13.6.2-2-centos
     steps:
@@ -9,18 +9,25 @@ jobs:
       - run: make install-test-deps-yum
       - run: make install-test-deps
       - run: make test
-  openresty-1.13-alpine:
+  alpine:
     docker:
       - image: openresty/openresty:1.13.6.2-2-alpine-fat
     steps:
       - checkout
-      - run: yum -y install make
       - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  ubuntu:
+    docker:
+      - image: openresty/openresty:1.13.6.2-2-bionic
+    steps:
+      - checkout
+      - run: make install-test-deps-apt
       - run: make install-test-deps
       - run: make test
   # Test in older version before LUAJIT_ENABLE_LUA52COMPAT was enabled (to test
   # under LuaJIT's 5.1 mode).
-  openresty-1.11.2.1:
+  lua51:
     docker:
       - image: openresty/openresty:1.11.2.1-centos
     environment:
@@ -36,5 +43,7 @@ workflows:
   version: 2
   build:
     jobs:
-      - openresty-1.13
-      - openresty-1.11.2.1
+      - default
+      - alpine
+      - ubuntu
+      - lua51

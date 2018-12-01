@@ -5,7 +5,7 @@ DEHYDRATED_VERSION:=0bc0bd13d6abdc027c58bec12f7c2d3198d3a677
 LUA_RESTY_SHELL_VERSION:=955243d70506c21e7cc29f61d745d1a8a718994f
 SOCKPROC_VERSION:=680121312d16dc20456b5d0fed00e2b0e160e0db
 
-RUNTIME_DEPENDENCIES:=bash curl diff grep mktemp openssl sed
+RUNTIME_DEPENDENCIES:=bash curl cut date diff grep mktemp openssl sed
 
 .PHONY: \
 	all \
@@ -92,6 +92,8 @@ $(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 
 install-test-deps-apk:
 	apk add --no-cache \
+		coreutils \
+		findutils \
 		gcc \
 		lsof \
 		openssl \
@@ -105,6 +107,17 @@ install-test-deps-apk:
 	tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/
 	rm -f /tmp/ngrok.tar.gz
 	chmod +x /usr/local/bin/ngrok
+
+install-test-deps-apt:
+	apt-get update
+	apt-get -y install \
+		lsof \
+		cpanminus \
+		redis-server \
+		sudo
+	curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/mRgETDaBsGt/ngrok-2.2.8-linux-amd64.deb
+	dpkg -i /tmp/ngrok.deb || apt-get -fy install
+	rm -f /tmp/ngrok.deb
 
 install-test-deps-yum:
 	yum -y install epel-release

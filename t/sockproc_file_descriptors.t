@@ -88,7 +88,6 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
-      local ngx_re = require "ngx.re"
       local run_command = require "resty.auto-ssl.utils.run_command"
 
       local function cleanup_sockproc()
@@ -119,15 +118,14 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
           return nil, err
         end
 
-        local lines, err = ngx_re.split(output, "\n")
-        if err then
-          ngx.say("failed to split file descriptors output ", err)
-          return nil, err
+        local lines = {}
+        for line in string.gmatch(output, "[^\n]+") do
+          table.insert(lines, line)
         end
 
         for index, line in ipairs(lines) do
           if index > 1 then
-            local line, _, err = ngx.re.sub(line, "  type=STREAM", "")
+            local line, _, err = ngx.re.sub(line, "\\s*type=STREAM", "")
             local line, _, err = ngx.re.sub(line, "^n/.*logs/error.log$", "n/dev/null")
             ngx.say(line)
           end
