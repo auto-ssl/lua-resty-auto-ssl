@@ -47,3 +47,16 @@ workflows:
       - alpine
       - ubuntu
       - lua51
+
+  # Also run one job every night, just to ensure we catch any potential Let's
+  # Encrypt API changes.
+  nightly:
+    triggers:
+      - schedule:
+          cron: "10 16 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - default
