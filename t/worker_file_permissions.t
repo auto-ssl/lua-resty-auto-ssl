@@ -85,7 +85,7 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
-      local run_command = require "resty.auto-ssl.utils.run_command"
+      local shell_blocking = require "shell-games"
       local sock = ngx.socket.tcp()
       sock:settimeout(30000)
       local ok, err = sock:connect("127.0.0.1:9443")
@@ -132,13 +132,13 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
       file:close()
       ngx.say("latest cert: " .. type(content))
 
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR -not -path '*ngrok.io*' -printf '%p %u %g %m\n'")
+      local result, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR]], "-not", "-path", "*ngrok.io*", "-printf", [[%p %u %g %m\n]] })
       if err then
         ngx.say("failed to find file permissions: ", err)
         return nil, err
       end
       ngx.say("permissions:")
-      output = string.gsub(output, "%s+$", "")
+      local output = string.gsub(result["output"], "%s+$", "")
       local lines = {}
       for line in string.gmatch(output, "[^\n]+") do
         table.insert(lines, line)

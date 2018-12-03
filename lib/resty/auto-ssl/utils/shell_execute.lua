@@ -1,7 +1,8 @@
 local shell = require "resty.auto-ssl.vendor.shell"
+local shell_join = require("shell-games").join
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
 
-return function(command)
+return function(args)
   -- Make sure the sockproc has started before trying to execute any commands
   -- (since it's started by only a single worker in init_worker, it's possible
   -- other workers have already finished their init_worker phases before the
@@ -24,6 +25,7 @@ return function(command)
   end
 
   local options = { timeout = 60000 }
+  local command = shell_join(args)
   local status, out, err = shell.execute(command, options)
 
   -- If the script fails due to a missing sockproc socket, try starting up
@@ -34,5 +36,9 @@ return function(command)
     status, out, err = shell.execute(command, options)
   end
 
-  return status, out, err
+  return {
+    command = command,
+    status = status,
+    output = out,
+  }, err
 end

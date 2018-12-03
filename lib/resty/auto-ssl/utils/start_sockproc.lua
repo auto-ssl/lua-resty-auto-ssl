@@ -1,5 +1,6 @@
 local auto_ssl = require "resty.auto-ssl"
 local lock = require "resty.lock"
+local shell_blocking = require "shell-games"
 
 local function start()
   local _, set_false_err = ngx.shared.auto_ssl_settings:safe_set("sockproc_started", false)
@@ -9,15 +10,14 @@ local function start()
 
   ngx.log(ngx.NOTICE, "auto-ssl: starting sockproc")
 
-  local exit_status = os.execute("umask 0022 && " .. auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc")
-  -- Lua 5.2+ returns boolean. Prior versions return status code.
-  if exit_status == 0 or exit_status == true then
+  local _, run_err = shell_blocking.capture_combined({ auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc" }, { umask = "0022" })
+  if run_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc: ", run_err)
+  else
     local _, set_err = ngx.shared.auto_ssl_settings:safe_set("sockproc_started", true)
     if set_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set shdict for sockproc_started: ", set_err)
     end
-  else
-    ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc")
   end
 end
 

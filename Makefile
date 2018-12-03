@@ -52,7 +52,6 @@ install: check-dependencies
 	install -d $(INST_LUADIR)/resty/auto-ssl/utils
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
-	install -m 644 lib/resty/auto-ssl/utils/run_command.lua $(INST_LUADIR)/resty/auto-ssl/utils/run_command.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
 	install -d $(INST_BINDIR)/resty-auto-ssl

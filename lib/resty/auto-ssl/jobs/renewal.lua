@@ -1,5 +1,5 @@
 local lock = require "resty.lock"
-local run_command = require "resty.auto-ssl.utils.run_command"
+local shell_blocking = require "shell-games"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local _M = {}
@@ -107,7 +107,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- Write out the cert.pem value to the location dehydrated expects it for
   -- checking.
   local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
-  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. dir)
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", dir }, { umask = "0022" })
   if mkdir_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/certs dir: ", mkdir_err)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)

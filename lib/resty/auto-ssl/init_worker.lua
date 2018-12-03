@@ -1,14 +1,14 @@
 local renewal_job = require "resty.auto-ssl.jobs.renewal"
-local run_command = require "resty.auto-ssl.utils.run_command"
+local shell_blocking = require "shell-games"
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
 
 return function(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
-  local _, _, mkdir_challenges_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/letsencrypt/.acme-challenges")
+  local _, mkdir_challenges_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/.acme-challenges" }, { umask = "0022" })
   if mkdir_challenges_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/.acme-challenges dir: ", mkdir_challenges_err)
   end
-  local _, _, mkdir_locks_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/letsencrypt/locks")
+  local _, mkdir_locks_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/locks" }, { umask = "0022" })
   if mkdir_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/locks dir: ", mkdir_locks_err)
   end
