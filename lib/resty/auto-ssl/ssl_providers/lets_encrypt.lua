@@ -5,6 +5,14 @@ local shell_execute = require "resty.auto-ssl.utils.shell_execute"
 function _M.issue_cert(auto_ssl_instance, domain)
   assert(type(domain) == "string", "domain must be a string")
 
+  local domains = "--domain ".. domain .. " "
+  local bundle = auto_ssl_instance:get("bundles")[domain]
+  if bundle ~= nil then
+    for _, subdomain in pairs(bundle) do
+      domains = domains .. "--domain ".. subdomain .. "."..domain.." "
+    end
+  end
+
   local lua_root = auto_ssl_instance.lua_root
   assert(type(lua_root) == "string", "lua_root must be a string")
 
@@ -32,7 +40,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--cron " ..
     "--accept-terms " ..
     "--no-lock " ..
-    "--domain " .. domain .. " " ..
+    domains ..
     "--challenge http-01 " ..
     "--config " .. base_dir .. "/letsencrypt/config " ..
     "--hook " .. lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks"

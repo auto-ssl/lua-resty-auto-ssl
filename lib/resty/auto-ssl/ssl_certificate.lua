@@ -268,13 +268,47 @@ local function set_response_cert(auto_ssl_instance, domain, cert_der)
   end
 end
 
+
+local function get_bundle(auto_ssl_instance, domain)
+  local bundles = auto_ssl_instance:get("bundles")
+
+  -- TODO Performance improvements
+  for base_domain, bundle in pairs(bundles) do
+    if base_domain == domain then
+      ngx.log(ngx.NOTICE, "auto-ssl: domain is the bundle - " .. domain)
+      return base_domain
+    end
+    if domain:sub(-#base_domain) == base_domain then
+      for _,v in pairs(bundle) do
+        if v .. "." .. base_domain == domain then
+          ngx.log(ngx.NOTICE, "auto-ssl: subdomain should be bundled - " .. domain)
+          return base_domain
+        end
+      end
+    end
+  end
+
+  ngx.log(ngx.NOTICE, "auto-ssl: domain not bundled - " .. domain)
+  return nil
+
+end
+
 local function do_ssl(auto_ssl_instance, ssl_options)
   -- Determine the domain making the SSL request with SNI.
   local request_domain = auto_ssl_instance:get("request_domain")
-  local domain, domain_err = request_domain(ssl, ssl_options)
-  if not domain or domain_err then
+  local full_domain, domain_err = request_domain(ssl, ssl_options)
+  if not full_domain or domain_err then
     ngx.log(ngx.WARN, "auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - " .. (domain_err or ""))
     return
+  end
+
+  -- Check if domain is a bundle
+  local bundle = get_bundle(auto_ssl_instance, full_domain)
+  local domain
+  if bundle ~= nil then
+    domain = bundle
+  else
+    domain = full_domain
   end
 
   -- Get or issue the certificate for this domain.
@@ -292,7 +326,7 @@ local function do_ssl(auto_ssl_instance, ssl_options)
   end
 
   -- Set the certificate on the response.
-  local _, set_response_cert_err = set_response_cert(auto_ssl_instance, domain, cert_der)
+  local _, set_response_cert_err = set_response_cert(auto_ssl_instance, full_domain, cert_der)
   if set_response_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - using fallback - ", set_response_cert_err)
     return

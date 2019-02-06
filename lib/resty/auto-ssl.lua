@@ -16,6 +16,10 @@ function _M.new(options)
     options["dir"] = "/etc/resty-auto-ssl"
   end
 
+  if not options["bundles"] then
+    options["bundles"] = {}
+  end
+
   if not options["request_domain"] then
     options["request_domain"] = function(ssl, ssl_options) -- luacheck: ignore
       return ssl.server_name()
