@@ -182,6 +182,19 @@ How frequently (in seconds) all of the domains should be checked for certificate
 auto_ssl:set("renew_check_interval", 172800)
 ```
 
+### `bundles`
+*Default:* `{}`
+
+Which subdomains should be bundled into one certificate. This can be useful for avoiding rate limiting by Let's Encrypt.  
+
+*Example:*
+
+```lua
+auto_ssl:set("bundles", {
+    ["example.com"] = { "sub1", "sub2" }
+})
+```
+
 ### `storage_adapter`
 *Default:* `resty.auto-ssl.storage_adapters.file`<br>
 *Options:* `resty.auto-ssl.storage_adapters.file`, `resty.auto-ssl.storage_adapters.redis`
