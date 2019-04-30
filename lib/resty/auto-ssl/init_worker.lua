@@ -1,7 +1,7 @@
+local random_seed = require "resty.auto-ssl.utils.random_seed"
 local renewal_job = require "resty.auto-ssl.jobs.renewal"
 local run_command = require "resty.auto-ssl.utils.run_command"
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
-local random = require "resty.random"
 
 return function(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
@@ -14,7 +14,10 @@ return function(auto_ssl_instance)
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/locks dir: ", mkdir_locks_err)
   end
 
-  math.randomseed(random.number(1, 1048576))
+  -- random_seed was called during the "init" master phase, but we want to
+  -- ensure each worker process's random seed is different, so force another
+  -- call in the init_worker phase.
+  random_seed()
 
   -- Startup sockproc. This background process allows for non-blocking shell
   -- commands with resty.shell.

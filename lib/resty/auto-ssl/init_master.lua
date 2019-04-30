@@ -1,3 +1,4 @@
+require "resty.auto-ssl.utils.random_seed"
 local resty_random = require "resty.random"
 local run_command = require "resty.auto-ssl.utils.run_command"
 local str = require "resty.string"
