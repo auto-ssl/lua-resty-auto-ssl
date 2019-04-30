@@ -1,5 +1,6 @@
 local lock = require "resty.lock"
 local run_command = require "resty.auto-ssl.utils.run_command"
+local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local _M = {}
@@ -141,6 +142,12 @@ local function renew_all_domains(auto_ssl_instance)
   if domains_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to fetch all certificate domains: ", domains_err)
   else
+    -- Randomize the renewal order so that if nginx is reloaded during renewals
+    -- or rate limits are hit, the renewals are attempted in a different order
+    -- each time (which may allow things to eventually succeed over multiple
+    -- renewal attempts).
+    shuffle_table(domains)
+
     for _, domain in ipairs(domains) do
       renew_check_cert(auto_ssl_instance, storage, domain)
     end
