@@ -310,9 +310,11 @@ client intended to send too large body
 GET /t
 --- response_body
 Status: 500
---- error_log
-a client request body is buffered to a temporary file
-auto-ssl: failed to parse POST args: request body in temp file not supported
+--- error_log eval
+[
+  "a client request body is buffered to a temporary file",
+  qr/auto-ssl: failed to parse POST args: (request|requesty) body in temp file not supported/,
+]
 --- no_error_log
 [alert]
 [emerg]

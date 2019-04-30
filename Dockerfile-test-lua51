@@ -1,0 +1,18 @@
+FROM openresty/openresty:1.11.2.1-centos
+
+# Build dependencies.
+RUN yum -y install make
+
+ENV PATH /usr/local/openresty/luajit/bin:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV TEST_NGINX_RESOLVER 127.0.0.11 ipv6=off
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY Makefile /app/Makefile
+RUN make install-test-deps-yum
+RUN make install-test-deps
+
+COPY . /app
+
+ENTRYPOINT []

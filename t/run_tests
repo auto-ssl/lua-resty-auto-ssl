@@ -2,20 +2,23 @@
 
 set -e -u -x
 
+if [ -z "$ROOT_DIR" ]; then
+  echo "ROOT_DIR cannot be empty"
+  exit 1
+fi
+
 # Install the library via luarocks (so we test an installed version to ensure
 # all the files are part of the install process).
 luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 
 # Clean the test files before each run.
-sudo rm -rf "$TEST_RUN_DIR"/servroot/* "$TEST_LOGS_DIR"/*
-mkdir -p "$TEST_RUN_DIR"/servroot
-mkdir -p "$TEST_LOGS_DIR"
+sudo rm -rf "$ROOT_DIR/t/tmp"
+mkdir -p "$ROOT_DIR/t/tmp/servroot" "$ROOT_DIR/t/tmp/logs"
 
 # Default environment
-export PERL5LIB=$TEST_BUILD_DIR/lib/perl5
 export TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test
-export TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot/default
-export TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error.log
+export TEST_NGINX_SERVROOT=$ROOT_DIR/t/tmp/servroot/default
+export TEST_NGINX_ERROR_LOG=$ROOT_DIR/t/tmp/logs/error.log
 
 cleanup_sockproc() {
   # Cleanup sockproc in between tests, since we run some tests as root, and
@@ -31,12 +34,10 @@ cleanup_sockproc() {
 # permissions don't conflict with the tests run as the current user).
 worker_env=(
   "PATH=$PATH"
-  "PERL5LIB=$PERL5LIB"
   "TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms"
-  "TEST_NGINX_SERVROOT=$TEST_RUN_DIR/servroot/worker-perms"
-  "TEST_NGINX_ERROR_LOG=$TEST_LOGS_DIR/error-worker-perms.log"
+  "TEST_NGINX_SERVROOT=$ROOT_DIR/t/tmp/servroot/worker-perms"
+  "TEST_NGINX_ERROR_LOG=$ROOT_DIR/t/tmp/logs/error-worker-perms.log"
   "TEST_NGINX_RESOLVER=${TEST_NGINX_RESOLVER:-}"
-  "TEST_LUA_SHARE_DIR=${TEST_LUA_SHARE_DIR:-}"
 )
 
 # Create the worker-perms test directory with the proper permissions.
