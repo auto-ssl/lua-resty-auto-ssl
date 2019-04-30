@@ -1,3 +1,5 @@
+local run_command = require "resty.auto-ssl.utils.run_command"
+
 -- This server provides an internal-only API for the dehydrated bash hook
 -- script to call. This allows for storing the tokens or certificates in the
 -- configured storage adapter (which allows for non-local storage mechanisms
@@ -45,6 +47,11 @@ return function(auto_ssl_instance)
       ngx.log(ngx.ERR, "auto-ssl: failed to set cert: ", err)
       return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
+    -- remove the extra copy of the certificate files in dehydrated's cert directory
+    assert(string.find(params["domain"], "/") == nil)
+    assert(string.find(params["domain"], "%.%.") == nil)
+    local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. params["domain"]
+    run_command("rm -rf " .. dir)
   else
     ngx.log(ngx.ERR, "auto-ssl: unknown request to hook server: ", path)
     return ngx.exit(ngx.HTTP_NOT_FOUND)
