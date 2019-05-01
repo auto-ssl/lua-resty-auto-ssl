@@ -6,7 +6,7 @@ AutoSsl::setup();
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 7 + 7);
+plan tests => repeat_each() * (blocks() * 7 + 12);
 
 check_accum_error_log();
 no_long_string();
@@ -1539,3 +1539,283 @@ received: foo
 --- no_error_log
 [alert]
 [emerg]
+
+=== TEST 13: fills in missing expiry dates in storage from certificate expiration on renewal
+--- http_config
+  resolver $TEST_NGINX_RESOLVER;
+  lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
+
+  init_by_lua_block {
+    auto_ssl = (require "resty.auto-ssl").new({
+      dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      storage_adapter = "resty.auto-ssl.storage_adapters.file",
+      allow_domain = function(domain)
+        return true
+      end,
+      renew_check_interval = 1,
+    })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+--- config
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
+  lua_ssl_verify_depth 5;
+  location /t {
+    content_by_lua_block {
+      local cjson = require "cjson"
+
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "r")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      local content = file:read("*all")
+      file:close()
+
+      local data = cjson.decode(content)
+      local original_expiry = data["expiry"]
+      ngx.say("cert expiry 1: " .. type(data["expiry"]))
+
+      data["expiry"] = nil
+      ngx.say("cert expiry 2: " .. type(data["expiry"]))
+
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "w")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      file:write(cjson.encode(data))
+      file:close()
+
+      -- Wait for scheduled renewals to happen (since the check interval is
+      -- every 1 second).
+      ngx.sleep(5)
+
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "r")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      local content = file:read("*all")
+      file:close()
+
+      local data = cjson.decode(content)
+      ngx.say("cert expiry 3: " .. type(data["expiry"]))
+      ngx.say("cert expiry equal: " .. tostring(original_expiry == data["expiry"]))
+    }
+  }
+--- timeout: 30s
+--- request
+GET /t
+--- response_body
+cert expiry 1: number
+cert expiry 2: nil
+cert expiry 3: number
+cert expiry equal: true
+--- error_log
+auto-ssl: checking certificate renewals for
+auto-ssl: setting expiration date of
+auto-ssl: expiry date is more than 30 days out
+--- no_error_log
+[warn]
+[error]
+[alert]
+[emerg]
+issuing new certificate for
+auto-ssl: existing certificate is expired, deleting
+
+=== TEST 14: removes cert if expiration has expired and renewal fails
+--- http_config
+  resolver $TEST_NGINX_RESOLVER;
+  lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
+
+  init_by_lua_block {
+    auto_ssl = (require "resty.auto-ssl").new({
+      dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      storage_adapter = "resty.auto-ssl.storage_adapters.file",
+      allow_domain = function(domain)
+        return true
+      end,
+      renew_check_interval = 1,
+    })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+--- config
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
+  lua_ssl_verify_depth 5;
+  location /t {
+    content_by_lua_block {
+      local cjson = require "cjson"
+
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "r")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      local content = file:read("*all")
+      file:close()
+
+      local data = cjson.decode(content)
+      ngx.say("cert expiry 1: " .. type(data["expiry"]))
+
+      -- Set the expiration time to some time in the past.
+      data["expiry"] = 1000
+
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "w")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      file:write(cjson.encode(data))
+      file:close()
+
+      -- Wait for scheduled renewals to happen (since the check interval is
+      -- every 1 second).
+      ngx.sleep(5)
+
+      -- Since this cert renewal is still valid, it should still remain despite
+      -- being marked as expired.
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "r")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      local content = file:read("*all")
+      file:close()
+
+      local data = cjson.decode(content)
+      ngx.say("cert expiry 2: " .. data["expiry"])
+
+      -- Copy the cert to an unresolvable domain to verify that failed renewals
+      -- will be removed.
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("unresolvable-sdjfklsdjf.example:latest"), "w")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      file:write(cjson.encode(data))
+      file:close()
+
+      -- Wait for scheduled renewals to happen (since the check interval is
+      -- every 1 second).
+      ngx.sleep(5)
+
+      -- Verify that the valid cert still remains (despite being marked as
+      -- expired).
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"), "r")
+      if err then
+        ngx.say("failed to open file: ", err)
+        return nil, err
+      end
+      local content = file:read("*all")
+      file:close()
+
+      local data = cjson.decode(content)
+      ngx.say("cert expiry 3: " .. data["expiry"])
+
+      -- Verify that the failed renewal gets deleted.
+      local file, err = io.open("$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("unresolvable-sdjfklsdjf.example:latest"), "r")
+      if err then
+        ngx.say("failed to open file")
+      else
+        ngx.say("unexpectedly found file remaining")
+      end
+    }
+  }
+--- timeout: 30s
+--- request
+GET /t
+--- response_body
+cert expiry 1: number
+cert expiry 2: 1000
+cert expiry 3: 1000
+failed to open file
+--- error_log
+auto-ssl: checking certificate renewals for
+auto-ssl: issuing renewal certificate failed
+auto-ssl: existing certificate is expired, deleting
+--- no_error_log
+[alert]
+[emerg]
+issuing new certificate for

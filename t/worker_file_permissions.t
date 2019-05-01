@@ -176,6 +176,7 @@ permissions:
 /tmp/resty-auto-ssl-test-worker-perms/letsencrypt/locks nobody nobody 755
 /tmp/resty-auto-ssl-test-worker-perms/storage nobody nobody 755
 /tmp/resty-auto-ssl-test-worker-perms/storage/file nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/tmp root root 777
 --- error_log
 auto-ssl: issuing new certificate for
 --- no_error_log
