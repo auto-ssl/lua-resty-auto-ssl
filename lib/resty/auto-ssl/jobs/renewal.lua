@@ -1,5 +1,5 @@
 local lock = require "resty.lock"
-local run_command = require "resty.auto-ssl.utils.run_command"
+local shell_blocking = require "shell-games"
 local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
@@ -97,11 +97,11 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
       file:write(cert["fullchain_pem"])
       file:close()
 
-      local _, date_output, date_err = run_command('date --date="$(openssl x509 -enddate -noout -in "' .. cert_pem_path .. '"|cut -d= -f 2)" +%s')
+      local date_result, date_err = shell_blocking.run_raw('date --date="$(openssl x509 -enddate -noout -in "' .. shell_blocking.quote(cert_pem_path) .. '"|cut -d= -f 2)" +%s', { capture = true, stderr = "&1" })
       if date_err then
         ngx.log(ngx.ERR, "auto-ssl: failed to extract expiry date from cert: ", date_err)
       else
-        cert["expiry"] = tonumber(date_output)
+        cert["expiry"] = tonumber(date_result["output"])
         if cert["expiry"] then
           -- Update stored certificate to include expiry information
           ngx.log(ngx.NOTICE, "auto-ssl: setting expiration date of ",  domain, " to ", cert["expiry"])
@@ -140,7 +140,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- Write out the cert.pem value to the location dehydrated expects it for
   -- checking.
   local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
-  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. dir)
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", dir }, { umask = "0022" })
   if mkdir_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/certs dir: ", mkdir_err)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)

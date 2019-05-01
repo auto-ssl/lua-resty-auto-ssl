@@ -93,6 +93,8 @@ $TEST_NGINX_USER
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
+      local shell_blocking = require "shell-games"
+
       local host = "$TEST_NGINX_NGROK_HOSTNAME"
 
       -- Since repeat_each is being used, clear the cached information across
@@ -100,7 +102,8 @@ $TEST_NGINX_USER
       ngx.log(ngx.DEBUG, "auto-ssl: delete: domain:fullchain_der:" .. host)
       ngx.shared.auto_ssl:flush_all()
       ngx.shared.test_counts:flush_all()
-      os.execute("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/*")
+      local _, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file]], "-mindepth", "1", "-delete" })
+      if err then ngx.say("failed to remove storage files: ", err); return end
 
       local http = require "resty.http"
 

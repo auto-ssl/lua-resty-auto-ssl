@@ -1,4 +1,4 @@
-local run_command = require "resty.auto-ssl.utils.run_command"
+local shell_blocking = require "shell-games"
 
 local _M = {}
 
@@ -16,11 +16,11 @@ end
 
 function _M.setup_worker(self)
   local base_dir = self.options["dir"]
-  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/storage/file")
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/storage/file" }, { umask = "0022" })
   if mkdir_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create storage directory: ", mkdir_err)
   end
-  local _, _, chmod_err = run_command("chmod 700 " .. base_dir .. "/storage/file")
+  local _, chmod_err = shell_blocking.capture_combined({ "chmod", "700", base_dir .. "/storage/file" })
   if chmod_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set storage directory permissions: ", chmod_err)
   end
@@ -74,13 +74,13 @@ end
 
 function _M.keys_with_suffix(self, suffix)
   local base_dir = self.options["dir"]
-  local _, output, err = run_command("find " .. base_dir .. "/storage/file -name '*" .. ngx.escape_uri(suffix) .. "'")
+  local result, err = shell_blocking.capture_combined({ "find", base_dir .. "/storage/file", "-name", "*" .. ngx.escape_uri(suffix) })
   if err then
     return nil, err
   end
 
   local keys = {}
-  for path in string.gmatch(output, "[^\r\n]+") do
+  for path in string.gmatch(result["output"], "[^\r\n]+") do
     local filename = ngx.re.sub(path, ".*/", "")
     local key = ngx.unescape_uri(filename)
     table.insert(keys, key)

@@ -186,13 +186,16 @@ auto-ssl: issuing new certificate for
     content_by_lua_block {
       local http = require "resty.http"
       local resty_random = require "resty.random"
+      local shell_blocking = require "shell-games"
       local str = require "resty.string"
 
       -- Completely wipe certs from storage, to simulate a new registration
       -- after completely running out of memory.
       ngx.shared.auto_ssl:flush_all()
-      os.execute("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/*")
-      os.execute("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs/*")
+      local _, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file]], "-mindepth", "1", "-delete" })
+      if err then ngx.say("failed to remove storage files: ", err); return end
+      local _, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs]], "-mindepth", "1", "-delete" })
+      if err then ngx.say("failed to remove cert files: ", err); return end
 
       -- Ensure we can make a successful request.
       local httpc = http.new()
