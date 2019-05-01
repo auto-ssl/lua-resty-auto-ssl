@@ -1,3 +1,4 @@
+require "resty.auto-ssl.utils.random_seed"
 local resty_random = require "resty.random"
 local shell_blocking = require "shell-games"
 local str = require "resty.string"
@@ -45,6 +46,16 @@ end
 
 local function generate_config(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
+
+  local _, tmp_mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/tmp" })
+  if tmp_mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir: ", tmp_mkdir_err)
+  end
+
+  local _, tmp_chmod_err = shell_blocking.capture_combined({ "chmod", "777", base_dir .. "/tmp" })
+  if tmp_chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir permissions: ", tmp_chmod_err)
+  end
 
   local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/conf.d" }, { umask = "0022" })
   if mkdir_err then
