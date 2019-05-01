@@ -60,6 +60,10 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   return self.adapter:set(domain .. ":latest", string)
 end
 
+function _M.delete_cert(self, domain)
+  return self.adapter:delete(domain .. ":latest")
+end
+
 function _M.all_cert_domains(self)
   local keys, err = self.adapter:keys_with_suffix(":latest")
   if err then
