@@ -97,11 +97,11 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
       file:write(cert["fullchain_pem"])
       file:close()
 
-      local _, date_output, date_err = run_command('date --date="$(openssl x509 -enddate -noout -in "' .. cert_pem_path .. '"|cut -d= -f 2)" +%s')
+      local date_result, date_err = shell_blocking.run_raw('date --date="$(openssl x509 -enddate -noout -in "' .. shell_blocking.quote(cert_pem_path) .. '"|cut -d= -f 2)" +%s', { capture = true, stderr = "&1" })
       if date_err then
         ngx.log(ngx.ERR, "auto-ssl: failed to extract expiry date from cert: ", date_err)
       else
-        cert["expiry"] = tonumber(date_output)
+        cert["expiry"] = tonumber(date_result["output"])
         if cert["expiry"] then
           -- Update stored certificate to include expiry information
           ngx.log(ngx.NOTICE, "auto-ssl: setting expiration date of ",  domain, " to ", cert["expiry"])

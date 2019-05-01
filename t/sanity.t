@@ -1158,16 +1158,16 @@ lua ssl certificate verify error: (18: self signed certificate)
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
-      local run_command = require "resty.auto-ssl.utils.run_command"
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs -maxdepth 1 -name '$TEST_NGINX_NGROK_HOSTNAME'")
+      local shell_blocking = require "shell-games"
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
       end
-      ngx.say("cert: " .. tostring(#output > 0))
+      ngx.say("cert: " .. tostring(#result["output"] > 0))
 
       -- Delete the stored files and wipe the in-memory cache.
-      local _, output, err = run_command("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"))
+      local _, err = shell_blocking.capture_combined({ "rm", "-rf", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest") })
       if err then
         ngx.say("failed to delete cert: ", err)
         return nil, err
@@ -1215,12 +1215,12 @@ lua ssl certificate verify error: (18: self signed certificate)
         return
       end
 
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs -maxdepth 1 -name '$TEST_NGINX_NGROK_HOSTNAME'")
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
       end
-      ngx.say("cert: " .. tostring(#output > 0))
+      ngx.say("cert: " .. tostring(#result["output"] > 0))
     }
   }
 --- timeout: 30s
@@ -1302,16 +1302,16 @@ auto-ssl: issuing new certificate for
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
-      local run_command = require "resty.auto-ssl.utils.run_command"
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs -maxdepth 1 -name '$TEST_NGINX_NGROK_HOSTNAME'")
+      local shell_blocking = require "shell-games"
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
       end
-      ngx.say("cert: " .. tostring(#output > 0))
+      ngx.say("cert: " .. tostring(#result["output"] > 0))
 
       -- Delete the stored files and wipe the in-memory cache.
-      local _, output, err = run_command("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"))
+      local _, err = shell_blocking.capture_combined({ "rm", "-rf", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest") })
       if err then
         ngx.say("failed to delete cert: ", err)
         return nil, err
@@ -1325,7 +1325,7 @@ auto-ssl: issuing new certificate for
 
       -- Create a directory where the storage file would normally belong so
       -- that attempt to write this cert to storage will temporarily fail.
-      local _, output, err = run_command("mkdir $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"))
+      local _, err = shell_blocking.capture_combined({ "mkdir", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest") })
       if err then
         ngx.say("failed to change directory permissions: ", err)
         return nil, err
@@ -1344,14 +1344,14 @@ auto-ssl: issuing new certificate for
         ngx.say("failed to do SSL handshake: ", err)
       end
 
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs -maxdepth 1 -name '$TEST_NGINX_NGROK_HOSTNAME'")
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
       end
-      ngx.say("cert: " .. tostring(#output > 0))
+      ngx.say("cert: " .. tostring(#result["output"] > 0))
 
-      local _, output, err = run_command("rm -rf $TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest"))
+      local _, err = shell_blocking.capture_combined({ "rm", "-rf", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file/" .. ngx.escape_uri("$TEST_NGINX_NGROK_HOSTNAME:latest") })
       if err then
         ngx.say("failed to delete cert: ", err)
         return nil, err
@@ -1393,12 +1393,12 @@ auto-ssl: issuing new certificate for
         return
       end
 
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs -maxdepth 1 -name '$TEST_NGINX_NGROK_HOSTNAME'")
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
       end
-      ngx.say("cert: " .. tostring(#output > 0))
+      ngx.say("cert: " .. tostring(#result["output"] > 0))
     }
   }
 --- timeout: 30s
