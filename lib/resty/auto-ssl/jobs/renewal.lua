@@ -86,32 +86,35 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     return
   end
 
-  -- If we don't have an expiry date yet, try to update the stored cert
-  -- with a date based on backup timestamps
+  -- While newer certs should have the expire date stored already, if an older
+  -- cert doesn't have an expiry date stored yet, extract it and save it.
   if not cert["expiry"] then
-    local keys, err = storage.adapter:keys_with_prefix(domain .. ":")
-    if err then
-      ngx.log(ngx.ERR, "auto-ssl: error fetching certificate backups from storage for ", domain, ": ", err)
+    local cert_pem_path = auto_ssl_instance:get("dir") .. "/tmp/extract-expiry-" .. ngx.escape_uri(domain)
+    local file, file_err = io.open(cert_pem_path, "w")
+    if file_err then
+      ngx.log(ngx.ERR, "auto-ssl: write expiry cert file for " .. domain .. " failed: ", file_err)
     else
-      local most_recent = 0
-      for _, key in ipairs(keys) do
-        local timestamp = string.sub(key, string.find(key, ":") + 1)
-        timestamp = tonumber(timestamp)
-        if timestamp and most_recent < timestamp then
-          most_recent = timestamp
+      file:write(cert["fullchain_pem"])
+      file:close()
+
+      local _, date_output, date_err = run_command('date --date="$(openssl x509 -enddate -noout -in "' .. cert_pem_path .. '"|cut -d= -f 2)" +%s')
+      if date_err then
+        ngx.log(ngx.ERR, "auto-ssl: failed to extract expiry date from cert: ", date_err)
+      else
+        cert["expiry"] = tonumber(date_output)
+        if cert["expiry"] then
+          -- Update stored certificate to include expiry information
+          ngx.log(ngx.NOTICE, "auto-ssl: setting expiration date of ",  domain, " to ", cert["expiry"])
+          local _, set_cert_err = storage:set_cert(domain, cert["fullchain_pem"], cert["privkey_pem"], cert["cert_pem"], cert["expiry"])
+          if set_cert_err then
+            ngx.log(ngx.ERR, "auto-ssl: failed to update cert: ", set_cert_err)
+          end
         end
       end
-      if most_recent ~= 0 then
-        -- Backup timestamp used milliseconds, convert to seconds
-        cert["expiry"] = math.floor(most_recent/1000) + (90 * 24 * 60 * 60)
-        -- Update stored certificate to include expiry information
-        ngx.log(ngx.NOTICE, "auto-ssl: setting expiration date of ",  domain, " to ", cert["expiry"])
-        local _, err = storage:set_cert(domain, cert["fullchain_pem"], cert["privkey_pem"], cert["cert_pem"], cert["expiry"])
-        if err then
-          ngx.log(ngx.ERR, "auto-ssl: failed to update cert: ", err)
-        end
-      else
-        ngx.log(ngx.ERR, "auto-ssl: no certificate backups in storage for ", domain, ", unable to set expiration date")
+
+      local _, remove_err = os.remove(cert_pem_path)
+      if remove_err then
+        ngx.log(ngx.ERR, "auto-ssl: failed to remove expiry cert file: ", remove_err)
       end
     end
   end
@@ -158,15 +161,13 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- configured time for renewals.
   local _, issue_err = ssl_provider.issue_cert(auto_ssl_instance, domain)
   if issue_err then
-    ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", err)
+    ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", issue_err)
+
     -- Give up on renewing this certificate if we didn't manage to renew
     -- it before the expiration date
-    local now = ngx.now()
-    if cert["expiry"] then
-      if cert["expiry"] < now then
-        ngx.log(ngx.NOTICE, "auto-ssl: existing certificate is expired, deleting: ", domain)
-        storage:delete_cert(domain)
-      end
+    if cert["expiry"] and cert["expiry"] < ngx.now() then
+      ngx.log(ngx.WARN, "auto-ssl: existing certificate is expired, deleting: ", domain)
+      storage:delete_cert(domain)
     end
   end
 

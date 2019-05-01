@@ -50,7 +50,7 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
     cert_pem = cert_pem,
-    expiry = expiry,
+    expiry = tonumber(expiry),
   })
   if err then
     return nil, err

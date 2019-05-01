@@ -47,6 +47,16 @@ end
 local function generate_config(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
 
+  local _, _, tmp_mkdir_err = run_command("mkdir -p " .. base_dir .. "/tmp")
+  if tmp_mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir: ", tmp_mkdir_err)
+  end
+
+  local _, _, tmp_chmod_err = run_command("chmod 777 " .. base_dir .. "/tmp")
+  if tmp_chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir permissions: ", tmp_chmod_err)
+  end
+
   local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/letsencrypt/conf.d")
   if mkdir_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/conf.d dir: ", mkdir_err)
