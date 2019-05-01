@@ -42,7 +42,7 @@ end
 function _M.set(self, key, value, options)
   local file, err = io.open(file_path(self, key), "w")
   if err then
-    ngx.log(ngx.ERR, "FILE SET ERR: ", err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to open file for writing: ", err)
     return false, err
   end
 

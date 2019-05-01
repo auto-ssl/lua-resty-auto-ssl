@@ -419,8 +419,8 @@ received: foo
 latest cert: string
 --- error_log
 auto-ssl: issuing new certificate for
-dehydrated succeeded, but certs still missing from storage
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]
@@ -702,8 +702,8 @@ latest cert db0: userdata: NULL
 latest cert db5: string
 --- error_log
 auto-ssl: issuing new certificate for
-dehydrated succeeded, but certs still missing from storage
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]

@@ -52,11 +52,12 @@ function _M.issue_cert(auto_ssl_instance, domain)
     ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
   end
 
-  -- If dehydrated said it succeeded, but we still don't have any certs in
-  -- storage, the issue is likely that the certs have been deleted out of our
-  -- storage, but still exist in dehydrated's certs directory. If this
-  -- occurs, try to manually fire the deploy_cert hook again to populate our
-  -- storage with dehydrated's local copies.
+  -- If dehydrated succeeded, but we still don't have any certs in storage, the
+  -- issue might be that dehydrated succeeded and has local certs cached, but
+  -- the initial attempt to deploy them and save them into storage failed (eg,
+  -- storage was temporarily unavailable). If this occurs, try to manually fire
+  -- the deploy_cert hook again to populate our storage with dehydrated's local
+  -- copies.
   if not cert or not cert["fullchain_pem"] or not cert["privkey_pem"] then
     ngx.log(ngx.WARN, "auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy - domain: " .. domain)
 
