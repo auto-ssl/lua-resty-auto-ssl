@@ -15,7 +15,7 @@ return function(auto_ssl_instance)
 
   -- Return the challenge value for this token if it's found.
   local domain = ngx.var.host
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   local value = storage:get_challenge(domain, token_filename)
   if value then
     ngx.say(value)

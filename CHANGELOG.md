@@ -1,5 +1,78 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.12.0 - 2018-02-04
+
+### Upgrade Notes
+
+This version upgrades the bundled version of the dehydrated library to deal with recent redirect changes in the Let's Encrypt service. The issue could lead to certificate registration failures in dehydrated and quota exhaustion, so upgrading is recommended. See [4aed490](https://github.com/GUI/lua-resty-auto-ssl/commit/4aed490c1d76b8bf09a8151aad2373c3e0cac6ce) or https://community.letsencrypt.org/t/dehydrated-caused-rate-limits-to-be-reached/52477/2 for more details.
+
+### Added
+- Allow for the Redis `db` number to be configured. Thanks to [@RainFlying](https://github.com/RainFlying). ([#103](https://github.com/GUI/lua-resty-auto-ssl/pull/103))
+- Expose the storage adapter instance in the `allow_domain` callback so the Redis connection can be reused. ([#38](https://github.com/GUI/lua-resty-auto-ssl/issues/38))
+- Add `generate_certs` option to allow for disabling SSL certification generation within specific server blocks. Thanks to [@mklauber](https://github.com/mklauber). ([#91](https://github.com/GUI/lua-resty-auto-ssl/issues/91), [#92](https://github.com/GUI/lua-resty-auto-ssl/pull/92))
+- Add `json_adapter` option for choosing a different JSON encoder/decoder library. Thanks to [@meyskens](https://github.com/meyskens). ([#85](https://github.com/GUI/lua-resty-auto-ssl/pull/85), [#84](https://github.com/GUI/lua-resty-auto-ssl/issues/84))
+
+### Changed
+- Upgrade dehydrated to latest version from master to fix recent redirect changes in Let's Encrypt. The issue could lead to certificate registration failures in dehydrated and quota exhaustion. ([4aed490](https://github.com/GUI/lua-resty-auto-ssl/commit/4aed490c1d76b8bf09a8151aad2373c3e0cac6ce))
+- Make the renewal process more efficient so the dehydrated shell script is only executed when certificates are up for renewal (rather than every night). This can reduce CPU usage in environments with lots of certificates. Thanks to [@brianlund](https://github.com/brianlund). ([#111](https://github.com/GUI/lua-resty-auto-ssl/pull/111), [#110](https://github.com/GUI/lua-resty-auto-ssl/issues/110))
+- Only call the `allow_domain` callback if a certificate is not present in shared memory. This may improve efficiency in cases where the `allow_domain` callback is more costly or takes longer. Thanks to [@gohai](https://github.com/gohai). ([#107](https://github.com/GUI/lua-resty-auto-ssl/pull/107))
+- The internal APIs for `storage:get_cert()` and `ssl_provider.issue_cert()` has changed to return a single table of data instead of multiple values (so it's easier to pass along other metadata).
+
+### Deprecated
+- If accessing the storage object off of the auto-ssl instance, use `auto_ssl.storage` instead of `auto_ssl:get("storage")`.
+
+### Fixed
+- Fix renewals when using the file adapter and too many certificate files were present for shell globbing ([#109](https://github.com/GUI/lua-resty-auto-ssl/issues/109))
+
+## 0.11.1 - 2017-11-17
+
+### Fixed
+- Update dehydrated to v0.4.0 to account for new [Let's Encrypt Subscriber Agreement](https://letsencrypt.org/documents/2017.11.15-LE-SA-v1.2.pdf) as of November 15, 2017. This would lead to certificate registration errors for new users (but should not have affected existing lua-resty-auto-ssl users). ([#13](https://github.com/GUI/lua-resty-auto-ssl/issues/13), [#104](https://github.com/GUI/lua-resty-auto-ssl/issues/104))
+
+## 0.11.0 - 2017-06-18
+
+### Upgrade Notes
+
+This update mostly fixes bugs related to edge-case situations, so upgrading is recommended. However, it requires a couple of small adjustments to your nginx configuration, so if you're upgrading, be sure to make the following changes:
+
+1. Add this line to nginx's `http` block:
+
+   ```
+   lua_shared_dict auto_ssl_settings 64k;
+   ```
+
+   (This is in addition to the existing `lua_shared_dict auto_ssl` you should already have.)
+2. Add these 2 lines to the `server` block that is listening on port 8999:
+
+   ```
+   client_body_buffer_size 128k;
+   client_max_body_size 128k;
+   ```
+
+See the [README](https://github.com/GUI/lua-resty-auto-ssl#installation) for a full example of the updated config.
+
+### Fixed
+- Fix potential for failed requests if nginx is reloaded at the same time new certificates are being issued. Many thanks to [@luto](https://github.com/luto). ([#66](https://github.com/GUI/lua-resty-auto-ssl/issues/66), [#68](https://github.com/GUI/lua-resty-auto-ssl/pull/68))
+- Fix possibility of sockproc inheriting nginx's sockets, which could lead to nginx hanging after reloading or restarting. ([#75](https://github.com/GUI/lua-resty-auto-ssl/pull/75))
+- Fix race condition on nginx reload if the `lua_shared_dict` ran out of memory that could lead to sockproc trying to be started twice. ([#76](https://github.com/GUI/lua-resty-auto-ssl/pull/76))
+- Increase the suggested body buffer size configuration, to prevent SSL registration from failing if nginx's default was too small. ([#65](https://github.com/GUI/lua-resty-auto-ssl/issues/65]), [#77](https://github.com/GUI/lua-resty-auto-ssl/pull/77))
+
+### Security
+- Fix possibility of certificate private keys being logged to nginx's error log when unexpected errors occur (this has actually been fixed since v0.10.5, but somewhat by accident—further steps have been taken to reduce debug output in this release). ([#64](https://github.com/GUI/lua-resty-auto-ssl/issues/64))
+
+### Added
+- Add documentation and link about test suite used. Thanks to [@luto](https://github.com/luto). ([#69](https://github.com/GUI/lua-resty-auto-ssl/pull/69))
+
+## 0.10.6 - 2017-04-16
+
+### Fixed
+- Fix installation under LuaRocks 2.4+ (executable files were not installed as executable).
+- Fix inability to register new certificates if the configured `lua_shared_dict` ran out of memory.
+
+### Changed
+- Additional error logging to warn admins when the configured `lua_shared_dict` has run out of memory.
+- Updated test suite dependencies, and added Docker test setup.
+
 ## 0.10.5 - 2017-03-16
 
 ### Fixed

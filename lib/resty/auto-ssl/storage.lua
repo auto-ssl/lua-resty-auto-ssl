@@ -4,8 +4,13 @@ local cjson = require "cjson"
 
 local _M = {}
 
-function _M.new(adapter)
-  return setmetatable({ adapter = adapter }, { __index = _M })
+
+function _M.new(options)
+  assert(options)
+  assert(options["adapter"])
+  assert(options["json_adapter"])
+
+  return setmetatable(options, { __index = _M })
 end
 
 function tablelength(a)
@@ -197,35 +202,42 @@ end
 function _M.get_cert(self, domain)
   local json, err = self.adapter:get(domain .. ":latest")
   if err then
-    return nil, nil, err
+    return nil, err
   elseif not json then
     return nil
   end
 
-  local data = cjson.decode(json)
-  return data["fullchain_pem"], data["privkey_pem"], data["cert_pem"]
+  local data, json_err = self.json_adapter:decode(json)
+  if json_err then
+    return nil, json_err
+  end
+
+  return data
 end
 
-function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem)
+function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   -- Store the public certificate and private key as a single JSON string.
   --
   -- We use a single JSON string so that the storage adapter just has to store
   -- a single string (regardless of implementation), and we don't have to worry
   -- about race conditions with the public cert and private key being stored
   -- separately and getting out of sync.
-  local data = cjson.encode({
+  local string, err = self.json_adapter:encode({
     fullchain_pem = fullchain_pem,
     privkey_pem = privkey_pem,
     cert_pem = cert_pem,
+    expiry = tonumber(expiry),
   })
-
-  -- Store the cert with the current timestamp, so the old certs are preserved
-  -- in case something goes wrong.
-  local time = ngx.now() * 1000
-  self.adapter:set(domain .. ":" .. time, data)
+  if err then
+    return nil, err
+  end
 
   -- Store the cert under the "latest" alias, which is what this app will use.
-  return self.adapter:set(domain .. ":latest", data)
+  return self.adapter:set(domain .. ":latest", string)
+end
+
+function _M.delete_cert(self, domain)
+  return self.adapter:delete(domain .. ":latest")
 end
 
 function _M.all_cert_domains(self)

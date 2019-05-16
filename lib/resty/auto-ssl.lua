@@ -1,10 +1,10 @@
 local _M = {}
 
 local current_file_path = package.searchpath("resty.auto-ssl", package.path)
-_M.package_root = string.match(current_file_path, "(.*)/(.*)")
-if string.sub(_M.package_root, 1, 2) == "./" then
+_M.lua_root = string.match(current_file_path, "(.*)/.*/.*/.*/.*/.*")
+if string.sub(_M.lua_root, 1, 2) == "./" then
   local lfs = require "lfs"
-  _M.package_root = lfs.currentdir() .. string.sub(_M.package_root, 2, -1)
+  _M.lua_root = lfs.currentdir() .. string.sub(_M.lua_root, 2, -1)
 end
 
 function _M.new(options)
@@ -23,13 +23,17 @@ function _M.new(options)
   end
 
   if not options["allow_domain"] then
-    options["allow_domain"] = function(domain) -- luacheck: ignore
+    options["allow_domain"] = function(domain, auto_ssl, ssl_options) -- luacheck: ignore
       return false
     end
   end
 
   if not options["storage_adapter"] then
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
+  end
+
+  if not options["json_adapter"] then
+    options["json_adapter"] = "resty.auto-ssl.json_adapters.cjson"
   end
 
   if not options["ocsp_stapling_error_level"] then
@@ -48,15 +52,22 @@ function _M.new(options)
 end
 
 function _M.set(self, key, value)
+  if key == "storage" then
+    ngx.log(ngx.ERR, "auto-ssl: DEPRECATED: Don't use auto_ssl:set() for the 'storage' instance. Set directly with auto_ssl.storage.")
+    self.storage = value
+    return
+  end
+
   self.options[key] = value
 end
 
 function _M.get(self, key)
-  return self.options[key]
-end
+  if key == "storage" then
+    ngx.log(ngx.ERR, "auto-ssl: DEPRECATED: Don't use auto_ssl:get() for the 'storage' instance. Get directly with auto_ssl.storage.")
+    return self.storage
+  end
 
-function _M.allow_domain(domain) -- luacheck: ignore
-  return false
+  return self.options[key]
 end
 
 function _M.init(self)

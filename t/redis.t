@@ -6,13 +6,13 @@ require "./t/inc/setup.pl";
 AutoSsl::setup();
 
 make_path("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/redis");
-my $redis = Expect->spawn("redis-server ./t/config/redis.conf");
+my $redis = Expect->spawn("redis-server ./t/config/redis.conf") or die "failed to spawn redis-server: $!";
 $redis->log_stdout(0);
-$redis->expect(10, "now ready") or die "failed to start redis: " . $redis->exp_before();
+$redis->expect(10, "-re", "(now ready|Ready to accept)") or die "failed to start redis: " . $redis->exp_before();
 
-repeat_each(2);
+repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 7 + 5);
+plan tests => repeat_each() * (blocks() * 7 + 6);
 
 check_accum_error_log();
 no_long_string();
@@ -26,9 +26,10 @@ __DATA__
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -48,8 +49,8 @@ __DATA__
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -72,6 +73,8 @@ __DATA__
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -79,7 +82,7 @@ __DATA__
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -158,9 +161,10 @@ auto-ssl: issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -181,8 +185,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -205,6 +209,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -212,7 +218,7 @@ auto-ssl: issuing new certificate for
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -274,8 +280,8 @@ received: Connection: close
 received: 
 received: foo
 --- error_log
-(Longer than 30 days). Skipping
 auto-ssl: checking certificate renewals for
+auto-ssl: expiry date is more than 30 days out
 --- no_error_log
 [warn]
 [error]
@@ -287,9 +293,10 @@ issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -310,8 +317,8 @@ issuing new certificate for
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -334,6 +341,8 @@ issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -341,7 +350,7 @@ issuing new certificate for
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -410,8 +419,8 @@ received: foo
 latest cert: string
 --- error_log
 auto-ssl: issuing new certificate for
-dehydrated succeeded, but certs still missing from storage
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]
@@ -420,9 +429,10 @@ dehydrated succeeded, but certs still missing from storage
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -444,8 +454,8 @@ dehydrated succeeded, but certs still missing from storage
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -468,6 +478,8 @@ dehydrated succeeded, but certs still missing from storage
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -475,7 +487,7 @@ dehydrated succeeded, but certs still missing from storage
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
@@ -537,8 +549,8 @@ received: Connection: close
 received: 
 received: foo
 --- error_log
-(Longer than 30 days). Skipping
 auto-ssl: checking certificate renewals for
+auto-ssl: expiry date is more than 30 days out
 --- no_error_log
 [warn]
 [error]
@@ -547,3 +559,299 @@ auto-ssl: checking certificate renewals for
 attempting to renew certificate for domain without certificates in storage
 issuing new certificate for
 
+=== TEST 5: allows storage in a separate redis database number
+--- http_config
+  resolver $TEST_NGINX_RESOLVER;
+  lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
+
+  init_by_lua_block {
+    auto_ssl = (require "resty.auto-ssl").new({
+      dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      storage_adapter = "resty.auto-ssl.storage_adapters.redis",
+      redis = {
+        port = 9999,
+        db = 5,
+        prefix = "db-test-prefix",
+      },
+      allow_domain = function(domain)
+        return true
+      end,
+    })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+--- config
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
+  lua_ssl_verify_depth 5;
+  location /t {
+    content_by_lua_block {
+      local sock = ngx.socket.tcp()
+      sock:settimeout(30000)
+      local ok, err = sock:connect("127.0.0.1:9443")
+      if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+      end
+
+      local sess, err = sock:sslhandshake(nil, "$TEST_NGINX_NGROK_HOSTNAME", true)
+      if not sess then
+        ngx.say("failed to do SSL handshake: ", err)
+        return
+      end
+
+      local req = "GET /foo HTTP/1.0\r\nHost: $TEST_NGINX_NGROK_HOSTNAME\r\nConnection: close\r\n\r\n"
+      local bytes, err = sock:send(req)
+      if not bytes then
+        ngx.say("failed to send http request: ", err)
+        return
+      end
+
+      while true do
+        local line, err = sock:receive()
+        if not line then
+          break
+        end
+
+        ngx.say("received: ", line)
+      end
+
+      local ok, err = sock:close()
+      if not ok then
+        ngx.say("failed to close: ", err)
+        return
+      end
+
+      local redis = require "resty.redis"
+      local r = redis:new()
+      local ok, err = r:connect("127.0.0.1", 9999)
+      if not ok then
+        ngx.say("failed to connect to redis: ", err)
+      end
+
+      local res, err = r:get("db-test-prefix:$TEST_NGINX_NGROK_HOSTNAME:latest")
+      if err then
+        ngx.say("failed to fetch from redis: ", err)
+        return
+      end
+      ngx.say("latest cert db0: " .. tostring(res))
+
+      ok, err = r:select(5)
+      if not ok then
+        ngx.say("failed to selecte redis db: ", err)
+      end
+
+      res, err = r:get("db-test-prefix:$TEST_NGINX_NGROK_HOSTNAME:latest")
+      if err then
+        ngx.say("failed to fetch from redis: ", err)
+        return
+      end
+      ngx.say("latest cert db5: " .. type(res))
+    }
+  }
+--- timeout: 30s
+--- request
+GET /t
+--- response_body
+received: HTTP/1.1 200 OK
+received: Server: openresty
+received: Content-Type: text/plain
+received: Connection: close
+received: 
+received: foo
+latest cert db0: userdata: NULL
+latest cert db5: string
+--- error_log
+auto-ssl: issuing new certificate for
+--- no_error_log
+[warn]
+[error]
+[alert]
+[emerg]
+
+=== TEST 6: allows storage in a separate redis database number
+--- http_config
+  resolver $TEST_NGINX_RESOLVER;
+  lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
+
+  init_by_lua_block {
+    auto_ssl = (require "resty.auto-ssl").new({
+      dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      storage_adapter = "resty.auto-ssl.storage_adapters.redis",
+      redis = {
+        port = 9999,
+      },
+      allow_domain = function(domain, allow_domain_auto_ssl)
+        ngx.log(ngx.INFO, "allow_domain auto_ssl: " .. type(allow_domain_auto_ssl))
+        local redis = allow_domain_auto_ssl.storage.adapter:get_connection()
+        ngx.log(ngx.INFO, "allow_domain redis: " .. type(redis))
+        redis:set("allow_domain_redis_test", "foo")
+        return true
+      end,
+    })
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      server_tokens off;
+      more_clear_headers Date;
+      echo "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+--- config
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
+  lua_ssl_verify_depth 5;
+  location /t {
+    content_by_lua_block {
+      local sock = ngx.socket.tcp()
+      sock:settimeout(30000)
+      local ok, err = sock:connect("127.0.0.1:9443")
+      if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+      end
+
+      local sess, err = sock:sslhandshake(nil, "$TEST_NGINX_NGROK_HOSTNAME", true)
+      if not sess then
+        ngx.say("failed to do SSL handshake: ", err)
+        return
+      end
+
+      local req = "GET /foo HTTP/1.0\r\nHost: $TEST_NGINX_NGROK_HOSTNAME\r\nConnection: close\r\n\r\n"
+      local bytes, err = sock:send(req)
+      if not bytes then
+        ngx.say("failed to send http request: ", err)
+        return
+      end
+
+      while true do
+        local line, err = sock:receive()
+        if not line then
+          break
+        end
+
+        ngx.say("received: ", line)
+      end
+
+      local ok, err = sock:close()
+      if not ok then
+        ngx.say("failed to close: ", err)
+        return
+      end
+
+      local redis = require "resty.redis"
+      local r = redis:new()
+      local ok, err = r:connect("127.0.0.1", 9999)
+      if not ok then
+        ngx.say("failed to connect to redis: ", err)
+      end
+
+      local res, err = r:get("$TEST_NGINX_NGROK_HOSTNAME:latest")
+      if err then
+        ngx.say("failed to fetch from redis: ", err)
+        return
+      end
+
+      ngx.say("latest cert: " .. type(res))
+
+      local res, err = r:get("allow_domain_redis_test")
+      if err then
+        ngx.say("failed to fetch from redis: ", err)
+        return
+      end
+      ngx.say("allow_domain_redis_test: " .. tostring(res))
+    }
+  }
+--- timeout: 30s
+--- request
+GET /t
+--- response_body
+received: HTTP/1.1 200 OK
+received: Server: openresty
+received: Content-Type: text/plain
+received: Connection: close
+received: 
+received: foo
+latest cert: string
+allow_domain_redis_test: foo
+--- error_log
+allow_domain auto_ssl: table
+allow_domain redis: table
+--- no_error_log
+[error]
+[alert]
+[emerg]
+issuing new certificate for

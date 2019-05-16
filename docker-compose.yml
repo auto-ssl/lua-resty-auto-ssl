@@ -1,0 +1,35 @@
+version: "2"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile-test
+    volumes:
+      - .:/app
+      - build_cache:/app/build
+  alpine:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-alpine
+    volumes:
+      - .:/app
+      - alpine_build_cache:/app/build
+  ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-ubuntu
+    volumes:
+      - .:/app
+      - ubuntu_build_cache:/app/build
+  lua51:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-lua51
+    volumes:
+      - .:/app
+      - lua51_build_cache:/app/build
+volumes:
+  build_cache:
+  alpine_build_cache:
+  ubuntu_build_cache:
+  lua51_build_cache:

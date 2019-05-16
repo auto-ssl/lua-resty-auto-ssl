@@ -12,6 +12,8 @@ This OpenResty plugin automatically and transparently issues SSL certificates fr
 
 This uses the `ssl_certificate_by_lua` functionality in OpenResty 1.9.7.2+.
 
+By using lua-resty-auto-ssl to register SSL certificates with Let's Encrypt, you agree to the [Let's Encrypt Subscriber Agreement](https://letsencrypt.org/repository/).
+
 ## Status
 
 Used in production (but the internal APIs might still be in flux).
@@ -24,8 +26,8 @@ Requirements:
   - Or nginx patched with [ssl_cert_cb_yield](https://github.com/openresty/openresty/blob/v1.11.2.2/patches/nginx-1.11.2-ssl_cert_cb_yield.patch) and built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
-- make (for initial install via LuaRocks)
-- bash, curl, diff, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
+- gcc, make (for initial install via LuaRocks)
+- bash, curl, diff, find, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
 
 
 ```sh
@@ -49,6 +51,10 @@ http {
   # hold your certificate data. 1MB of storage holds certificates for
   # approximately 100 separate domains.
   lua_shared_dict auto_ssl 1m;
+  # The "auto_ssl_settings" shared dict is used to temporarily store various settings
+  # like the secret used by the hook server on port 8999. Do not change or
+  # omit it.
+  lua_shared_dict auto_ssl_settings 64k;
 
   # A DNS resolver must be defined for OCSP stapling to function.
   #
@@ -112,6 +118,12 @@ http {
   # Internal server running on port 8999 for handling certificate tasks.
   server {
     listen 127.0.0.1:8999;
+
+    # Increase the body buffer size, to ensure the internal POSTs can always
+    # parse the full POST contents into memory.
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -125,139 +137,189 @@ http {
 
 Additional configuration options can be set on the `auto_ssl` instance that is created:
 
-- **`allow_domain`**
-  *Default:* `function(domain) return false end`
+### `allow_domain`
+*Default:* `function(domain, auto_ssl, ssl_options) return false end`
 
-  A function that determines whether the incoming domain should automatically issue a new SSL certificate.
+A function that determines whether the incoming domain should automatically issue a new SSL certificate.
 
-  By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
+By default, resty-auto-ssl will not perform any SSL registrations until you define the `allow_domain` function. You may return `true` to handle all possible domains, but be aware that bogus SNI hostnames can then be used to trigger an indefinite number of SSL registration attempts (which will be rejected). A better approach may be to whitelist the allowed domains in some way.
 
-  *Example:*
+The callback function's arguments are:
 
-  ```lua
-  auto_ssl:set("allow_domain", function(domain)
-    return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
-  end)
-  ```
+- `domain`: The domain of the incoming request.
+- `auto_ssl`: The current auto-ssl instance.
+- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_configuration` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis (see example in [`request_domain`](#request_domain)).
 
-- **`dir`**
-  *Default:* `/etc/resty-auto-ssl`
+When using the Redis storage adapter, you can access the current Redis connection inside the `allow_domain` callback by accessing `auto_ssl.storage.adapter:get_connection()`.
 
-  The base directory used for storing configuration, temporary files, and certificate files (if using the `file` storage adapter). This directory must be writable by the user nginx workers run as.
+*Example:*
 
-  *Example:*
+```lua
+auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options)
+  return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
+end)
+```
 
-  ```lua
-  auto_ssl:set("dir", "/some/other/location")
-  ```
+### `dir`
+*Default:* `/etc/resty-auto-ssl`
 
-- **`renew_check_interval`**
-  *Default:* `86400`
+The base directory used for storing configuration, temporary files, and certificate files (if using the `file` storage adapter). This directory must be writable by the user nginx workers run as.
 
-  How frequently (in seconds) all of the domains should be checked for certificate renewals. Defaults to checking every 1 day. Certificates will automatically be renewed if the expire in less than 30 days.
+*Example:*
 
-  *Example:*
+```lua
+auto_ssl:set("dir", "/some/other/location")
+```
 
-  ```lua
-  auto_ssl:set("renew_check_interval", 172800)
-  ```
+### `renew_check_interval`
+*Default:* `86400`
 
-- **`storage_adapter`**
-  *Default:* `resty.auto-ssl.storage_adapters.file`
-  *Options:* `resty.auto-ssl.storage_adapters.file`, `resty.auto-ssl.storage_adapters.redis`
+How frequently (in seconds) all of the domains should be checked for certificate renewals. Defaults to checking every 1 day. Certificates will automatically be renewed if the expire in less than 30 days.
 
-  The storage mechanism used for persistent storage of the SSL certificates. File-based and redis-based storage adapters are supplied, but custom external adapters may also be specified (the value simply needs to be on the `lua_package_path`).
+*Example:*
 
-  The default storage adapter persists the certificates to local files. However, you may want to consider another storage adapter (like redis) for a couple reason:
-    - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
-    - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
+```lua
+auto_ssl:set("renew_check_interval", 172800)
+```
 
-  *Example:*
+### `storage_adapter`
+*Default:* `resty.auto-ssl.storage_adapters.file`<br>
+*Options:* `resty.auto-ssl.storage_adapters.file`, `resty.auto-ssl.storage_adapters.redis`
 
-  ```lua
-  auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
-  ```
+The storage mechanism used for persistent storage of the SSL certificates. File-based and redis-based storage adapters are supplied, but custom external adapters may also be specified (the value simply needs to be on the `lua_package_path`).
 
-- **`redis`**
-  *Default:* `{ host = "127.0.0.1", port = 6379 }`
+The default storage adapter persists the certificates to local files. However, you may want to consider another storage adapter (like redis) for a couple reason:
+  - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
+  - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
 
-  If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts the following options:
+*Example:*
 
-  - `host`
-  - `port`
-  - `socket` (for unix socket paths)
-  - `auth`
-  - `prefix`
+```lua
+auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
+```
 
-  *Example:*
+### `redis`
+*Default:* `{ host = "127.0.0.1", port = 6379 }`
 
-  ```lua
-  auto_ssl:set("redis", {
-    host = "10.10.10.1"
-  })
-  ```
+If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts the following options:
 
-- **`request_domain`**
-  *Default:* `function(ssl, ssl_options) return ssl.server_name() end`
+- `host`
+- `port`
+- `socket` (for unix socket paths, in the format of `"unix:/path/to/unix.sock"`)
+- `auth`
+- `db` (the [Redis database number](https://redis.io/commands/select) used by lua-resty-auto-ssl to save certificates)
+- `prefix`
 
-  A function that determines the hostname of the request. By default, the SNI domain is used, but a custom function can be implemented to determine the domain name for non-SNI requests (by basing the domain on something that can be determined outside of SSL, like the port or IP address that received the request).
+*Example:*
 
-  *Example:*
+```lua
+auto_ssl:set("redis", {
+  host = "10.10.10.1"
+})
+```
 
-  This example, along with the accompanying nginx `server` blocks, will default to SNI domain names, but for non-SNI clients will respond with predefined hosts based on the connecting port. Connections to port 9000 will register and return a certificate for `foo.example.com`, while connections to port 9001 will register and return a certificate for `bar.example.com`. Any other ports will return the default nginx fallback certificate.
+### `request_domain`
+*Default:* `function(ssl, ssl_options) return ssl.server_name() end`
 
-  ```lua
-  auto_ssl:set("request_domain", function(ssl, ssl_options)
-    local domain, err = ssl.server_name()
-    if (not domain or err) and ssl_options and ssl_options["port"] then
-      if ssl_options["port"] == 9000 then
-        domain = "foo.example.com"
-      elseif ssl_options["port"] == 9001 then
-        domain = "bar.example.com"
-      end
+A function that determines the hostname of the request. By default, the SNI domain is used, but a custom function can be implemented to determine the domain name for non-SNI requests (by basing the domain on something that can be determined outside of SSL, like the port or IP address that received the request).
+
+The callback function's arguments are:
+
+- `ssl`: An instance of the [`ngx.ssl`](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md) module.
+- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_configuration` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis.
+
+*Example:*
+
+This example, along with the accompanying nginx `server` blocks, will default to SNI domain names, but for non-SNI clients will respond with predefined hosts based on the connecting port. Connections to port 9000 will register and return a certificate for `foo.example.com`, while connections to port 9001 will register and return a certificate for `bar.example.com`. Any other ports will return the default nginx fallback certificate.
+
+```lua
+auto_ssl:set("request_domain", function(ssl, ssl_options)
+  local domain, err = ssl.server_name()
+  if (not domain or err) and ssl_options and ssl_options["port"] then
+    if ssl_options["port"] == 9000 then
+      domain = "foo.example.com"
+    elseif ssl_options["port"] == 9001 then
+      domain = "bar.example.com"
     end
+  end
 
-    return domain, err
-  end)
-  ```
+  return domain, err
+end)
+```
 
-  ```nginx
-  server {
-    listen 9000 ssl;
-    ssl_certificate_by_lua_block {
-      auto_ssl:ssl_certificate({ port = 9000 })
-    }
+```nginx
+server {
+  listen 9000 ssl;
+  ssl_certificate_by_lua_block {
+    auto_ssl:ssl_certificate({ port = 9000 })
   }
+}
 
-  server {
-    listen 9001 ssl;
-    ssl_certificate_by_lua_block {
-      auto_ssl:ssl_certificate({ port = 9001 })
-    }
+server {
+  listen 9001 ssl;
+  ssl_certificate_by_lua_block {
+    auto_ssl:ssl_certificate({ port = 9001 })
   }
-  ```
+}
+```
 
-- **`ca`**
-  *Default:* the default Let's Encrypt CA
+### `ca`
+*Default:* the default Let's Encrypt CA
 
-  URL of the Let's Encrypt environment to use. Normally you should not set this, unless you want make us of Let's Encrypts [staging environment](https://letsencrypt.org/docs/staging-environment/).
+URL of the Let's Encrypt environment to use. Normally you should not set this, unless you want make us of Let's Encrypts [staging environment](https://letsencrypt.org/docs/staging-environment/).
 
-  *Example:*
+*Example:*
 
-  ```lua
-  auto_ssl:set("ca", "https://some-other-letsencrypt.org/directory")
-  ```
+```lua
+auto_ssl:set("ca", "https://some-other-letsencrypt.org/directory")
+```
 
-- **`hook_server_port`**
-  *Default:* 8999
+### `hook_server_port`
+*Default:* 8999
 
-  Internally we use a special server server running on port 8999 for handling certificate tasks. The port used for this service may be changed here. Please note that you will also need to change it in your nginx configuration.
+Internally we use a special server server running on port 8999 for handling certificate tasks. The port used for this service may be changed here. Please note that you will also need to change it in your nginx configuration.
 
-  *Example:*
+*Example:*
 
-  ```lua
-  auto_ssl:set("hook_server_port", 90)
-  ```
+```lua
+auto_ssl:set("hook_server_port", 90)
+```
+
+### `json_adapter`
+*Default:* `resty.auto-ssl.json_adapters.cjson`<br>
+*Options:* `resty.auto-ssl.json_adapters.cjson`, `resty.auto-ssl.json_adapters.dkjson`
+
+The JSON adapter to use for encoding and decoding JSON. Defaults to using [cjson](https://github.com/openresty/lua-cjson), which is bundled with OpenResty installations and should probably be used in most cases. However, an adapter using the pure Lua [dkjson](https://luarocks.org/modules/dhkolf/dkjson) can be used for environments where cjson may not be available (you will need to manually install the dkjson dependency via luarocks to use this adapter).
+
+cjson and dkjson json adapters are supplied, but custom external adapters may also be specified (the value simply needs to be on the `lua_package_path`).
+
+*Example:*
+
+```lua
+auto_ssl:set("json_adapter", "resty.auto-ssl.json_adapters.dkjson")
+```
+
+## `ssl_certificate` Configuration
+
+The `ssl_certificate` function accepts an optional table of configuration options. These options can be used to customize and control the SSL behavior on a per nginx `server` basis. Some built-in options may control the default behavior of lua-resty-auto-ssl, but any other custom data can be given as options, which will then be passed along to the [`allow_domain`](#allow_domain) and [`request_domain`](#request_domain) callback functions.
+
+Built-in configuration options:
+
+### `generate_certs`
+*Default:* true
+
+This variable can be used to disable generating certs on a per server block location.
+
+*Example:*
+
+```nginx
+server {
+  listen 8443 ssl;
+  ssl_certificate_by_lua_block {
+    auto_ssl:ssl_certificate({ generate_certs = false })
+  }
+}
+```
 
 ### Advanced Let's Encrypt Configuration
 
@@ -281,6 +343,17 @@ CONTACT_EMAIL="foo@example.com"
 - **File Storage:** The default storage adapter persists the certificates to local files. However, you may want to consider another storage adapter (like redis) for a couple reason:
   - File I/O causes blocking in OpenResty which should be avoided for optimal performance. However, files are only read and written the first time a certificate is seen, and then things are cached in memory, so the actual amount of file I/O should be quite minimal.
   - Local files won't work if the certificates need to be shared across multiple servers (for a load-balanced environment).
+
+
+## Development
+
+After checking out the repo, Docker can be used to run the test suite:
+
+```sh
+$ docker-compose run --rm app make test
+```
+
+The test suite is implemented using nginx' [`Test::Nginx`](https://metacpan.org/pod/Test::Nginx::Socket) cpan module.
 
 ## Credits
 
