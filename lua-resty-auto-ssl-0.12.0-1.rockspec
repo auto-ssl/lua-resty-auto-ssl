@@ -1,7 +1,7 @@
 package = "lua-resty-auto-ssl"
 version = "0.12.0-1"
 source = {
-  url = "git://github.com/GUI/lua-resty-auto-ssl.git",
+  url = "git://github.com/gjongenelen/lua-resty-auto-ssl.git",
   tag = "v0.12.0",
 }
 description = {
