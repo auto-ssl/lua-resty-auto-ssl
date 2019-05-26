@@ -2,7 +2,6 @@ local http = require "resty.http"
 local lock = require "resty.lock"
 local ocsp = require "ngx.ocsp"
 local ssl = require "ngx.ssl"
-local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local function convert_to_der_and_cache(domain, cert)
   -- Convert certificate from PEM to DER format.
@@ -92,7 +91,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   end
 
   ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
-  cert, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+  cert, err = auto_ssl_instance.client:issue_cert(domain)
   if err then
     ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
   end

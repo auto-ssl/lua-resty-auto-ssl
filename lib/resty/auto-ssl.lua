@@ -28,6 +28,10 @@ function _M.new(options)
     end
   end
 
+  if not options["client_adapter"] then
+    options["client_adapter"] = "resty.auto-ssl.client_adapters.dehydrated"
+  end
+
   if not options["storage_adapter"] then
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
   end

@@ -1159,7 +1159,7 @@ lua ssl certificate verify error: (18: self signed certificate)
   location /t {
     content_by_lua_block {
       local shell_blocking = require "shell-games"
-      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/dehydrated/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
@@ -1215,7 +1215,7 @@ lua ssl certificate verify error: (18: self signed certificate)
         return
       end
 
-      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/dehydrated/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
@@ -1303,7 +1303,7 @@ auto-ssl: issuing new certificate for
   location /t {
     content_by_lua_block {
       local shell_blocking = require "shell-games"
-      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/dehydrated/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
@@ -1344,7 +1344,7 @@ auto-ssl: issuing new certificate for
         ngx.say("failed to do SSL handshake: ", err)
       end
 
-      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/dehydrated/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err
@@ -1393,7 +1393,7 @@ auto-ssl: issuing new certificate for
         return
       end
 
-      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
+      local result, err = shell_blocking.capture_combined({ "find", "$TEST_NGINX_RESTY_AUTO_SSL_DIR/dehydrated/certs", "-maxdepth", "1", "-name", "$TEST_NGINX_NGROK_HOSTNAME" })
       if err then
         ngx.say("failed to list certs directory: ", err)
         return nil, err

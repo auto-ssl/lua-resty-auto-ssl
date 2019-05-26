@@ -1,7 +1,6 @@
 local lock = require "resty.lock"
 local shell_blocking = require "shell-games"
 local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
-local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local _M = {}
 
@@ -139,10 +138,10 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
 
   -- Write out the cert.pem value to the location dehydrated expects it for
   -- checking.
-  local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
+  local dir = auto_ssl_instance:get("dir") .. "/dehydrated/certs/" .. domain
   local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", dir }, { umask = "0022" })
   if mkdir_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/certs dir: ", mkdir_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to create dehydrated/certs dir: ", mkdir_err)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return false, mkdir_err
   end
@@ -159,7 +158,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- Trigger a normal certificate issuance attempt, which dehydrated will
   -- skip if the certificate already exists or renew if it's within the
   -- configured time for renewals.
-  local _, issue_err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+  local _, issue_err = auto_ssl_instance.client:issue_cert(domain, cert)
   if issue_err then
     ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", issue_err)
 

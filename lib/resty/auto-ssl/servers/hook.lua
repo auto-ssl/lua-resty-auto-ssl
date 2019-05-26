@@ -50,7 +50,7 @@ return function(auto_ssl_instance)
     -- remove the extra copy of the certificate files in dehydrated's cert directory
     assert(string.find(params["domain"], "/") == nil)
     assert(string.find(params["domain"], "%.%.") == nil)
-    local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. params["domain"]
+    local dir = auto_ssl_instance:get("dir") .. "/dehydrated/certs/" .. params["domain"]
     local _, rm_err = shell_blocking.capture_combined({ "rm", "-rf", dir })
     if rm_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to cleanup certs: ", rm_err)

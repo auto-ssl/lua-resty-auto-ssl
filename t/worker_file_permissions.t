@@ -162,18 +162,18 @@ received: foo
 latest cert: string
 permissions:
 /tmp/resty-auto-ssl-test-worker-perms nobody root 755
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt root root 777
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/.acme-challenges nobody nobody 755
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/accounts nobody nobody 700
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK nobody nobody 700
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK/account_key.pem nobody nobody 600
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK/registration_info.json nobody nobody 600
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/certs nobody nobody 700
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/chains nobody nobody 700
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/chains/0a3654cf.chain nobody nobody 600
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/conf.d root root 755
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/config root root 644
-/tmp/resty-auto-ssl-test-worker-perms/letsencrypt/locks nobody nobody 755
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated root root 777
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/.acme-challenges nobody nobody 755
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/accounts nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK/account_key.pem nobody nobody 600
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/accounts/aHR0cHM6Ly9hY21lLXN0YWdpbmcuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkK/registration_info.json nobody nobody 600
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/certs nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/chains nobody nobody 700
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/chains/0a3654cf.chain nobody nobody 600
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/conf.d root root 755
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/config root root 644
+/tmp/resty-auto-ssl-test-worker-perms/dehydrated/locks nobody nobody 755
 /tmp/resty-auto-ssl-test-worker-perms/storage nobody nobody 755
 /tmp/resty-auto-ssl-test-worker-perms/storage/file nobody nobody 700
 /tmp/resty-auto-ssl-test-worker-perms/tmp root root 777

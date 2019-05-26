@@ -326,9 +326,9 @@ server {
 Internally, lua-resty-auto-ssl uses [dehydrated](https://github.com/lukas2511/dehydrated) as it's Let's Encrypt client. If you'd like to adjust lower-level settings, like the private key size, public key algorithm, or your registration e-mail, these settings can be configured in a custom dehydrated configuration file.
 
 - For a full list of supported options, see [dehydrated's example config](https://github.com/lukas2511/dehydrated/blob/v0.4.0/docs/examples/config).
-- Custom dehydrated configuration files can be placed inside the `/etc/resty-auto-ssl/letsencrypt/conf.d` directory by default (or adjust the path if you've changed the default lua-resty-auto-ssl `dir` setting).
+- Custom dehydrated configuration files can be placed inside the `/etc/resty-auto-ssl/dehydrated/conf.d` directory by default (or adjust the path if you've changed the default lua-resty-auto-ssl `dir` setting).
 
-Example `/etc/resty-auto-ssl/letsencrypt/conf.d/custom.sh`:
+Example `/etc/resty-auto-ssl/dehydrated/conf.d/custom.sh`:
 
 ```sh
 KEYSIZE="4096"

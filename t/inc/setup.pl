@@ -27,7 +27,7 @@ sub setup {
     # But still re-register once a day to deal with issues like new license
     # terms, where old accounts may behave differently than new accounts
     # (https://community.letsencrypt.org/t/lets-encrypt-subscriber-agreement-v1-1-1/17409/7).
-    my $existing_accounts_path = canonpath("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/letsencrypt/accounts");
+    my $existing_accounts_path = canonpath("$ENV{TEST_NGINX_RESTY_AUTO_SSL_DIR}/dehydrated/accounts");
     my $keep_existing_accounts = 0;
     if(-d $existing_accounts_path) {
       my $current_time = time;

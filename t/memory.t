@@ -194,7 +194,7 @@ auto-ssl: issuing new certificate for
       ngx.shared.auto_ssl:flush_all()
       local _, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR/storage/file]], "-mindepth", "1", "-delete" })
       if err then ngx.say("failed to remove storage files: ", err); return end
-      local _, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR/letsencrypt/certs]], "-mindepth", "1", "-delete" })
+      local _, err = shell_blocking.capture_combined({ "find", [[$TEST_NGINX_RESTY_AUTO_SSL_DIR/dehydrated/certs]], "-mindepth", "1", "-delete" })
       if err then ngx.say("failed to remove cert files: ", err); return end
 
       -- Ensure we can make a successful request.

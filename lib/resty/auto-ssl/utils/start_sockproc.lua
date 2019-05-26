@@ -21,6 +21,16 @@ local function start()
   end
 end
 
+-- Startup sockproc. This background process allows for non-blocking shell
+-- commands with resty.shell.
+--
+-- This should be done in the init_worker phase, so that it will always be
+-- started with the same permissions as the nginx workers (and not the elevated
+-- permissions of the nginx master process).
+--
+-- If we implement a native resty Let's Encrypt ACME client (rather than
+-- relying on dehydrated), then we could get rid of the need for this
+-- background process, which would be nice.
 return function(force)
   if ngx.shared.auto_ssl_settings:get("sockproc_started") and not force then
     return

@@ -43,13 +43,14 @@ install: check-dependencies
 	install -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
 	install -m 644 lib/resty/auto-ssl/servers/hook.lua $(INST_LUADIR)/resty/auto-ssl/servers/hook.lua
 	install -m 644 lib/resty/auto-ssl/ssl_certificate.lua $(INST_LUADIR)/resty/auto-ssl/ssl_certificate.lua
-	install -d $(INST_LUADIR)/resty/auto-ssl/ssl_providers
-	install -m 644 lib/resty/auto-ssl/ssl_providers/lets_encrypt.lua $(INST_LUADIR)/resty/auto-ssl/ssl_providers/lets_encrypt.lua
+	install -d $(INST_LUADIR)/resty/auto-ssl/client_adapters
+	install -m 644 lib/resty/auto-ssl/client_adapters/dehydrated.lua $(INST_LUADIR)/resty/auto-ssl/client_adapters/dehydrated.lua
 	install -m 644 lib/resty/auto-ssl/storage.lua $(INST_LUADIR)/resty/auto-ssl/storage.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/storage_adapters
 	install -m 644 lib/resty/auto-ssl/storage_adapters/file.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/file.lua
 	install -m 644 lib/resty/auto-ssl/storage_adapters/redis.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/redis.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/utils
+	install -m 644 lib/resty/auto-ssl/utils/check_dependencies.lua $(INST_LUADIR)/resty/auto-ssl/utils/check_dependencies.lua
 	install -m 644 lib/resty/auto-ssl/utils/random_seed.lua $(INST_LUADIR)/resty/auto-ssl/utils/random_seed.lua
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/shuffle_table.lua $(INST_LUADIR)/resty/auto-ssl/utils/shuffle_table.lua
@@ -57,7 +58,7 @@ install: check-dependencies
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
 	install -d $(INST_BINDIR)/resty-auto-ssl
-	install -m 755 bin/letsencrypt_hooks $(INST_BINDIR)/resty-auto-ssl/letsencrypt_hooks
+	install -m 755 bin/dehydrated_hooks $(INST_BINDIR)/resty-auto-ssl/dehydrated_hooks
 	install -m 755 bin/start_sockproc $(INST_BINDIR)/resty-auto-ssl/start_sockproc
 	install -m 755 $(BUILD_DIR)/bin/dehydrated $(INST_BINDIR)/resty-auto-ssl/dehydrated
 	install -m 755 $(BUILD_DIR)/bin/sockproc $(INST_BINDIR)/resty-auto-ssl/sockproc
@@ -67,6 +68,13 @@ $(BUILD_DIR):
 
 $(BUILD_DIR)/stamp-dehydrated-2-$(DEHYDRATED_VERSION): | $(BUILD_DIR)
 	rm -f $(BUILD_DIR)/stamp-dehydrated-*
+	command -V bash;
+	command -V curl;
+	command -V diff;
+	command -V grep;
+	command -V mktemp;
+	command -V openssl;
+	command -V sed;
 	mkdir -p $(BUILD_DIR)/bin
 	curl -sSLo $(BUILD_DIR)/bin/dehydrated "https://raw.githubusercontent.com/lukas2511/dehydrated/$(DEHYDRATED_VERSION)/dehydrated"
 	chmod +x $(BUILD_DIR)/bin/dehydrated
