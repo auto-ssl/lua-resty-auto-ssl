@@ -60,3 +60,6 @@ workflows:
                 - master
     jobs:
       - default
+      - alpine
+      - ubuntu
+      - lua51
