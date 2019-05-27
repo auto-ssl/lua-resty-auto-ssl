@@ -7,7 +7,7 @@
 # adapter. This allows for setting the data on non-local storage so challenges
 # and certs can work in a multi-server, load balanced environment.
 
-set -e -u
+set -Eeuo pipefail
 
 deploy_challenge() {
   local DOMAIN="${1}" TOKEN_FILENAME="${2}" TOKEN_VALUE="${3}"
