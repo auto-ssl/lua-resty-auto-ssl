@@ -277,7 +277,7 @@ auto_ssl:set("ca", "https://some-other-letsencrypt.org/directory")
 ### `hook_server_port`
 *Default:* 8999
 
-Internally we use a special server server running on port 8999 for handling certificate tasks. The port used for this service may be changed here. Please note that you will also need to change it in your nginx configuration.
+Internally we use a special server running on port 8999 for handling certificate tasks. The port used for this service may be changed here. Please note that you will also need to change it in your nginx configuration.
 
 *Example:*
 
