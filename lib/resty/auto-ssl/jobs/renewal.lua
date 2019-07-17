@@ -129,6 +129,13 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     end
   end
 
+  -- Check if domain is still allowed before renewing.
+  local allow_domain = auto_ssl_instance:get("allow_domain")
+  if not allow_domain(domain) then
+    ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed, not renewing: ", domain)
+    return
+  end
+
   -- We didn't previously store the cert.pem (since it can be derived from the
   -- fullchain.pem). So for backwards compatibility, set the cert.pem value to
   -- the fullchain.pem value, since that should work for our date checking
