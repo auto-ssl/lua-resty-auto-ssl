@@ -72,4 +72,10 @@ exit_hook() {
   :
 }
 
-HANDLER=$1; shift; $HANDLER "$@"
+HANDLER=$1; shift;
+
+if ! command -v "$HANDLER"; then
+  exit 0
+fi
+
+$HANDLER "$@"
