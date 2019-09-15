@@ -3,7 +3,7 @@ local cjson = require "cjson.safe"
 local server = require "spec.support.server"
 local redis = require "resty.redis"
 
-describe("json adapter cjson", function()
+describe("json adapter dkjson", function()
   before_each(server.stop)
   after_each(server.stop)
 

@@ -1,14 +1,15 @@
 worker_processes 1;
 master_process off;
 daemon off;
-error_log /app/spec/tmp/error.log debug;
+pid <%- current_test_dir %>/nginx.pid;
+error_log <%- current_test_dir %>/error.log debug;
 
 events {
   worker_connections 1024;
 }
 
 http {
-  access_log /app/spec/tmp/access.log combined;
+  access_log <%- current_test_dir %>/access.log combined;
 
   resolver ipv6=off local=on;
   lua_shared_dict auto_ssl 1m;
@@ -22,7 +23,7 @@ http {
     local options = <%- auto_ssl_new_options or "{}" %>
 
     if not options["dir"] then
-      options["dir"] = "/tmp/blah"
+      options["dir"] = "<%- current_test_dir %>/auto-ssl"
     end
     if not options["ca"] then
       options["ca"] = "https://acme-staging.api.letsencrypt.org/directory"
@@ -43,8 +44,8 @@ http {
 
   server {
     listen 9443 ssl;
-    ssl_certificate /app/t/certs/example_fallback.crt;
-    ssl_certificate_key /app/t/certs/example_fallback.key;
+    ssl_certificate <%- root_dir %>/t/certs/example_fallback.crt;
+    ssl_certificate_key <%- root_dir %>/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -57,8 +58,8 @@ http {
 
   server {
     listen 9444 ssl;
-    ssl_certificate /app/t/certs/example_fallback.crt;
-    ssl_certificate_key /app/t/certs/example_fallback.key;
+    ssl_certificate <%- root_dir %>/t/certs/example_fallback.crt;
+    ssl_certificate_key <%- root_dir %>/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate({
         generate_certs = false,
@@ -103,14 +104,23 @@ http {
         for i = 1, 15 do
           local random = resty_random.bytes(256000)
           local _, err = ngx.shared.auto_ssl:set("foobar" .. i, str.to_hex(random))
-          if err then ngx.say("set error: ", err); return end
+          if err then
+            ngx.log(ngx.ERR, "set error: ", err)
+            return ngx.exit(500)
+          end
         end
 
         -- Ensure items are getting forced out as expected, after filling it up.
         local random = resty_random.bytes(256000)
         local _, err, forcible = ngx.shared.auto_ssl:set("foobar-force", str.to_hex(random))
-        if err then ngx.say("set error: ", err); return end
-        if not forcible then ngx.say("set didn't force other items out of shdict, as expected"); return end
+        if err then
+          ngx.log(ngx.ERR, "set error: ", err)
+          return ngx.exit(500)
+        end
+        if not forcible then
+          ngx.log(ngx.ERR, "set didn't force other items out of shdict, as expected")
+          return ngx.exit(500)
+        end
 
         ngx.print(cjson.encode({
           keys = #ngx.shared.auto_ssl:get_keys(),
@@ -118,18 +128,13 @@ http {
       }
     }
 
-    location /flush {
+    location /flush-auto-ssl-shdict {
       content_by_lua_block {
         local cjson = require "cjson.safe"
-        local shell_blocking = require "shell-games"
 
         -- Completely wipe certs from storage, to simulate a new registration
         -- after completely running out of memory.
         ngx.shared.auto_ssl:flush_all()
-        local _, err = shell_blocking.capture_combined({ "find", "/tmp/blah/storage/file", "-mindepth", "1", "-delete" })
-        if err then ngx.say("failed to remove storage files: ", err); return end
-        local _, err = shell_blocking.capture_combined({ "find", "/tmp/blah/letsencrypt/certs", "-mindepth", "1", "-delete" })
-        if err then ngx.say("failed to remove cert files: ", err); return end
 
         ngx.print(cjson.encode({
           keys = #ngx.shared.auto_ssl:get_keys(),

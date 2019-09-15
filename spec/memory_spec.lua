@@ -1,6 +1,7 @@
 local http = require "resty.http"
 local cjson = require "cjson.safe"
 local server = require "spec.support.server"
+local shell_blocking = require "shell-games"
 local redis = require "resty.redis"
 
 describe("memory", function()
@@ -46,10 +47,11 @@ describe("memory", function()
 
     local httpc = http.new()
 
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/flush")
+    local res, err = httpc:request_uri("http://127.0.0.1:9080/flush-auto-ssl-shdict")
     assert.equal(nil, err)
     assert.equal(200, res.status)
     local data, err = cjson.decode(res.body)
+    assert.equal(nil, err)
     assert.equal(0, data["keys"])
 
     -- Ensure we can make a successful request.

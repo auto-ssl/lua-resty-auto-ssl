@@ -4,7 +4,13 @@ return {
   _all = {
     lua = "spec/support/resty",
     output = "gtest",
+
+    -- Randomize test order.
     ["shuffle-files"] = true,
     ["shuffle-tests"] = true,
+
+    -- Disable auto-insulate so we can persist processes (like redis and ngrok)
+    -- across test files.
+    ["auto-insulate"] = false,
   },
 }

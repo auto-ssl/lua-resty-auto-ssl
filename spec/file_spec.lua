@@ -28,7 +28,7 @@ describe("file", function()
     assert.equal(nil, err)
     assert.equal("foo", body)
 
-    local file, err = io.open("/tmp/blah/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest"), "r")
+    local file, err = io.open(server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest"), "r")
     assert.equal(nil, err)
 
     local content = file:read("*all")
