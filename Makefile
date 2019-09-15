@@ -104,7 +104,7 @@ install-test-deps-apk:
 		redis \
 		sudo \
 		wget
-	curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/iVLSfdAz1X4/ngrok-2.2.8-linux-amd64.tar.gz
+	curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/4dXSqUzbJK6/ngrok-2.3.34-linux-amd64.tar.gz
 	tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/
 	rm -f /tmp/ngrok.tar.gz
 	chmod +x /usr/local/bin/ngrok
@@ -116,7 +116,7 @@ install-test-deps-apt:
 		cpanminus \
 		redis-server \
 		sudo
-	curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/mRgETDaBsGt/ngrok-2.2.8-linux-amd64.deb
+	curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/b2wQezFbsHk/ngrok-2.3.34-linux-amd64.deb
 	dpkg -i /tmp/ngrok.deb || apt-get -fy install
 	rm -f /tmp/ngrok.deb
 
@@ -129,11 +129,16 @@ install-test-deps-yum:
 		perl-App-cpanminus \
 		redis \
 		sudo \
-		https://bin.equinox.io/a/8eF5UNUMwxo/ngrok-2.2.8-linux-amd64.rpm
+		https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.34-linux-amd64.rpm
 
 install-test-deps:
+	luarocks install etlua 1.3.0-1
+	luarocks install process 1.9.0-1
+	luarocks install lua-resty-http 0.15-0
+	luarocks install luaposix 34.1.1-1
+	luarocks install busted 2.0.0-1
 	luarocks install dkjson 2.5-2
-	luarocks install luacheck 0.22.1-1
+	luarocks install luacheck 0.23.0-1
 	cpanm --notest Expect@1.35
 	cpanm --notest Test::Nginx@0.26
 

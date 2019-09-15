@@ -1,0 +1,10 @@
+-- vi: set ft=lua:
+
+return {
+  _all = {
+    lua = "spec/support/resty",
+    output = "gtest",
+    ["shuffle-files"] = true,
+    ["shuffle-tests"] = true,
+  },
+}

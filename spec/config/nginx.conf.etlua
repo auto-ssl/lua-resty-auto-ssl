@@ -1,0 +1,151 @@
+worker_processes 1;
+master_process off;
+daemon off;
+error_log /app/spec/tmp/error.log debug;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  access_log /app/spec/tmp/access.log combined;
+
+  resolver ipv6=off local=on;
+  lua_shared_dict auto_ssl 1m;
+  <% if not disable_auto_ssl_settings_dict then %>
+    lua_shared_dict auto_ssl_settings 64k;
+  <% end %>
+
+  init_by_lua_block {
+    ngx.log(ngx.NOTICE, "init_by_lua_block")
+
+    local options = <%- auto_ssl_new_options or "{}" %>
+
+    if not options["dir"] then
+      options["dir"] = "/tmp/blah"
+    end
+    if not options["ca"] then
+      options["ca"] = "https://acme-staging.api.letsencrypt.org/directory"
+    end
+    if not options["allow_domain"] then
+      options["allow_domain"] = function(domain)
+        return true
+      end
+    end
+
+    auto_ssl = (require "resty.auto-ssl").new(options)
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate /app/t/certs/example_fallback.crt;
+    ssl_certificate_key /app/t/certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      server_tokens off;
+      echo -n "foo";
+    }
+  }
+
+  server {
+    listen 9444 ssl;
+    ssl_certificate /app/t/certs/example_fallback.crt;
+    ssl_certificate_key /app/t/certs/example_fallback.key;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate({
+        generate_certs = false,
+      })
+    }
+
+    location /foo {
+      server_tokens off;
+      echo -n "generate_certs = false server";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+
+    location /hook-server-secret {
+      content_by_lua_block {
+        ngx.print(ngx.shared.auto_ssl_settings:get("hook_server:secret"))
+      }
+    }
+
+    location /auto-ssl-init {
+      content_by_lua_block {
+        auto_ssl:init()
+        ngx.print("init")
+      }
+    }
+
+    location /fill-auto-ssl-shdict {
+      content_by_lua_block {
+        local cjson = require "cjson.safe"
+        local resty_random = require "resty.random"
+        local str = require "resty.string"
+
+        -- Fill the shdict with random things to simulate what happens when old
+        -- data gets forced out.
+        for i = 1, 15 do
+          local random = resty_random.bytes(256000)
+          local _, err = ngx.shared.auto_ssl:set("foobar" .. i, str.to_hex(random))
+          if err then ngx.say("set error: ", err); return end
+        end
+
+        -- Ensure items are getting forced out as expected, after filling it up.
+        local random = resty_random.bytes(256000)
+        local _, err, forcible = ngx.shared.auto_ssl:set("foobar-force", str.to_hex(random))
+        if err then ngx.say("set error: ", err); return end
+        if not forcible then ngx.say("set didn't force other items out of shdict, as expected"); return end
+
+        ngx.print(cjson.encode({
+          keys = #ngx.shared.auto_ssl:get_keys(),
+        }))
+      }
+    }
+
+    location /flush {
+      content_by_lua_block {
+        local cjson = require "cjson.safe"
+        local shell_blocking = require "shell-games"
+
+        -- Completely wipe certs from storage, to simulate a new registration
+        -- after completely running out of memory.
+        ngx.shared.auto_ssl:flush_all()
+        local _, err = shell_blocking.capture_combined({ "find", "/tmp/blah/storage/file", "-mindepth", "1", "-delete" })
+        if err then ngx.say("failed to remove storage files: ", err); return end
+        local _, err = shell_blocking.capture_combined({ "find", "/tmp/blah/letsencrypt/certs", "-mindepth", "1", "-delete" })
+        if err then ngx.say("failed to remove cert files: ", err); return end
+
+        ngx.print(cjson.encode({
+          keys = #ngx.shared.auto_ssl:get_keys(),
+        }))
+      }
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    client_body_buffer_size <%- hook_server and hook_server.client_body_buffer_size or "128k" %>;
+    client_max_body_size <%- hook_server and hook_server.client_max_body_size or "128k" %>;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+}

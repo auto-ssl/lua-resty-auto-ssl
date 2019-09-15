@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec resty --http-conf "lua_ssl_trusted_certificate /app/t/certs/letsencrypt_staging_chain.pem;" --http-conf "lua_ssl_verify_depth 5;" "$@"
