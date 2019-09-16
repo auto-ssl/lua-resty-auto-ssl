@@ -1,5 +1,6 @@
-worker_processes 1;
-master_process off;
+master_process <%- master_process or "off" %>;
+worker_processes <%- worker_processes or "1" %>;
+user <%- user %>;
 daemon off;
 pid <%- current_test_dir %>/nginx.pid;
 error_log <%- current_test_dir %>/error.log debug;
@@ -20,21 +21,16 @@ http {
   init_by_lua_block {
     ngx.log(ngx.NOTICE, "init_by_lua_block")
 
-    local options = <%- auto_ssl_new_options or "{}" %>
-
-    if not options["dir"] then
-      options["dir"] = "<%- current_test_dir %>/auto-ssl"
-    end
-    if not options["ca"] then
-      options["ca"] = "https://acme-staging.api.letsencrypt.org/directory"
-    end
-    if not options["allow_domain"] then
-      options["allow_domain"] = function(domain)
+    local options = {
+      dir = "<%- current_test_dir %>/auto-ssl",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      allow_domain = function(domain)
         return true
-      end
-    end
-
+      end,
+    }
+    <%- auto_ssl_pre_new or "" %>
     auto_ssl = (require "resty.auto-ssl").new(options)
+    <%- auto_ssl_post_new or "" %>
     auto_ssl:init()
   }
 

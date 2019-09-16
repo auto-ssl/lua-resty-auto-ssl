@@ -47,7 +47,7 @@ function _M.read_until(self, regex, regex_options, timeout)
     end
   until match_found or wait_time > timeout
 
-  return output
+  return match_found, output
 end
 
 return _M

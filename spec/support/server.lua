@@ -1,6 +1,10 @@
 local process = require "process"
+local inspect = require "inspect"
+local shell_blocking = require "shell-games"
 local redis = require "resty.redis"
 local unistd = require "posix.unistd"
+local pwd = require "posix.pwd"
+local grp = require "posix.grp"
 local ffi = require "ffi"
 local log_tail = require "spec.support.log_tail"
 local handler = require 'busted.outputHandlers.base'()
@@ -19,12 +23,14 @@ _M.ngrok_hostname = nil
 _M.redis_process = nil
 
 _M.root_dir = path.dirname(path.dirname(path.dirname(path.abspath(debug.getinfo(1, "S").short_src))))
+_M.dehydrated_persist_accounts_dir = _M.root_dir .. "/spec/tmp/dehydrated-accounts"
 _M.test_dir = "/tmp/resty-auto-ssl-test"
--- _M.auto_ssl_test_dir = _M.test_dir .. "/auto-ssl"
 _M.ngrok_test_dir = _M.test_dir .. "/ngrok"
 _M.redis_test_dir = _M.test_dir .. "/redis"
 _M.tests_test_dir = _M.test_dir .. "/tests"
 _M.test_counter = 0
+_M.nobody_user = "nobody"
+_M.nobody_group = assert(grp.getgrgid(assert(pwd.getpwnam(_M.nobody_user)).pw_gid)).gr_name
 
 local nginx_template = etlua.compile(assert(file.read(_M.root_dir .. "/spec/config/nginx.conf.etlua")))
 local redis_template = etlua.compile(assert(file.read(_M.root_dir .. "/spec/config/redis.conf.etlua")))
@@ -40,16 +46,13 @@ end
 
 local function start_ngrok()
   if not _M.ngrok_hostname then
-    if path.exists(_M.ngrok_test_dir) then
-      assert(dir.rmtree(_M.ngrok_test_dir))
-    end
     assert(dir.makepath(_M.ngrok_test_dir))
     local ngrok_process, err = process.exec("ngrok", { "http", "9080", "--log", _M.ngrok_test_dir .. "/ngrok.log", "--log-format", "logfmt", "--log-level", "debug" })
     _M.ngrok_process = ngrok_process
 
     local log = log_tail.new(_M.ngrok_test_dir .. "/ngrok.log")
-    local output = log:read_until("start tunnel listen.*Hostname:[a-z0-9]+.ngrok.io")
-    if not output then
+    local ok, output = log:read_until("start tunnel listen.*Hostname:[a-z0-9]+.ngrok.io")
+    if not ok then
       print(ngrok_process:stdout())
       print(ngrok_process:stderr())
       local log, err = file.read(_M.ngrok_test_dir .. "/ngrok.log")
@@ -69,9 +72,6 @@ end
 
 local function start_redis()
   if not _M.redis_process then
-    if path.exists(_M.redis_test_dir) then
-      assert(dir.rmtree(_M.redis_test_dir))
-    end
     assert(dir.makepath(_M.redis_test_dir))
     assert(file.write(_M.redis_test_dir .. "/redis.conf", redis_template({
       redis_test_dir = _M.redis_test_dir,
@@ -81,8 +81,8 @@ local function start_redis()
     _M.redis_process = redis_process
 
     local log = log_tail.new(_M.redis_test_dir .. "/redis.log")
-    local output = log:read_until("(now ready|Ready to accept)")
-    if not output then
+    local ok, output = log:read_until("(now ready|Ready to accept)")
+    if not ok then
       print(redis_process:stdout())
       print(redis_process:stderr())
       local log, err = file.read(_M.redis_test_dir .. "/redis.log")
@@ -131,42 +131,50 @@ busted.subscribe({ "test", "end" }, function()
 end)
 
 function _M.start(options)
-  start_ngrok()
-  start_redis()
-
-  if not options then
-    options = {}
-  end
-
-  --[[
-  assert(dir.makepath(_M.auto_ssl_test_dir))
-
-  local shell_blocking = require "shell-games"
-  local result, err = shell_blocking.capture_combined({ "find", _M.auto_ssl_test_dir, "-mindepth", "1", "!", "-path", "*/letsencrypt", "!", "-path", "*/letsencrypt/accounts", "!", "-path", "*/letsencrypt/accounts/*", "-delete" })
-  assert(not err, err)
-
-  local result, err = shell_blocking.capture_combined({ "find", _M.auto_ssl_test_dir, "-mindepth", "1", "-mmin", "+10", "-delete" })
-  assert(not err, err)
-  ]]
-
   if not _M.started_once then
-    if path.exists(_M.tests_test_dir) then
-      assert(dir.rmtree(_M.tests_test_dir))
+    if path.exists(_M.test_dir) then
+      assert(dir.rmtree(_M.test_dir))
+    end
+
+    if path.exists(_M.dehydrated_persist_accounts_dir) then
+      local persist_account_time = path.getmtime(_M.dehydrated_persist_accounts_dir)
+      if persist_account_time < ngx.now() - 60 * 60 * 4 then
+        assert(dir.rmtree(_M.dehydrated_persist_accounts_dir))
+      end
     end
 
     _M.started_once = true
   end
 
+  start_ngrok()
+  start_redis()
+  _M.cleanup_sockproc()
+
+  if not options then
+    options = {}
+  end
+
   _M.test_counter = _M.test_counter + 1
-  local test_name_dir = _M.test_counter .. "-" .. (_M.current_test_name or "")
-  test_name_dir = assert(ngx.re.gsub(test_name_dir, "[^0-9A-Za-z_-]", "_"))
-  test_name_dir = string.sub(test_name_dir, 1, 255)
+  local test_name_dir = assert(ngx.re.gsub(_M.current_test_name or "", "[^0-9A-Za-z_-]+", "_"))
+  test_name_dir = string.sub(test_name_dir, 1, 250)
+  test_name_dir = test_name_dir .. "-" .. string.format("%04d", _M.test_counter)
   _M.current_test_dir = _M.tests_test_dir .. "/" .. test_name_dir
-  assert(dir.makepath(_M.current_test_dir .. "/auto-ssl"))
+  _M.current_test_accounts_dir = _M.current_test_dir .. "/auto-ssl/letsencrypt/accounts"
+  assert(dir.makepath(_M.current_test_dir .. "/auto-ssl/letsencrypt"))
+
+  assert(unistd.chown(_M.current_test_dir .. "/auto-ssl", _M.nobody_user, _M.nobody_group))
+
+  if path.exists(_M.dehydrated_persist_accounts_dir) then
+    local _, err = shell_blocking.capture_combined({ "cp", "-pr", _M.dehydrated_persist_accounts_dir, _M.current_test_accounts_dir })
+    assert(not err, err)
+
+    local _, err = shell_blocking.capture_combined({ "chown", "-R", _M.nobody_user .. ":" .. _M.nobody_group, _M.current_test_accounts_dir })
+    assert(not err, err)
+  end
 
   options["root_dir"] = _M.root_dir
-  -- options["auto_ssl_test_dir"] = _M.auto_ssl_test_dir
   options["current_test_dir"] = _M.current_test_dir
+  options["user"] = _M.nobody_user .. " " .. _M.nobody_group
 
   assert(file.write(_M.current_test_dir .. "/nginx.conf", nginx_template(options)))
 
@@ -174,8 +182,8 @@ function _M.start(options)
   _M.nginx_process = nginx_process
 
   _M.nginx_error_log_tail = log_tail.new(_M.current_test_dir .. "/error.log")
-  local output = _M.nginx_error_log_tail:read_until("init_by_lua_block")
-  if not output then
+  local ok, output = _M.nginx_error_log_tail:read_until("init_by_lua_block")
+  if not ok then
     print(nginx_process:stdout())
     print(nginx_process:stderr())
     local log, err = file.read(_M.current_test_dir .. "/error.log")
@@ -198,14 +206,27 @@ end
 
 function _M.stop()
   if _M.nginx_process then
+    if _M.current_test_accounts_dir and not path.exists(_M.dehydrated_persist_accounts_dir) and path.exists(_M.current_test_accounts_dir) then
+      local result, err = shell_blocking.capture_combined({ "cp", "-pr", _M.current_test_accounts_dir, _M.dehydrated_persist_accounts_dir })
+      assert(not err, err)
+    end
+
     kill(_M.nginx_process)
     _M.nginx_process = nil
+
+    _M.cleanup_sockproc()
   end
 end
 
 function _M.read_error_log()
   local log = log_tail.new(_M.current_test_dir .. "/error.log")
   return log:read()
+end
+
+function _M.cleanup_sockproc()
+  shell_blocking.capture_combined({ "pkill", "sockproc" })
+  local _, err = shell_blocking.capture_combined({ "rm", "-f", "/tmp/shell.sock", "/tmp/auto-ssl-sockproc.pid" })
+  assert(not err, err)
 end
 
 return _M
