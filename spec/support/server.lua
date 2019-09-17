@@ -148,7 +148,7 @@ function _M.start(options)
 
   start_ngrok()
   start_redis()
-  _M.cleanup_sockproc()
+  _M.stop_sockproc()
 
   if not options then
     options = {}
@@ -161,8 +161,7 @@ function _M.start(options)
   _M.current_test_dir = _M.tests_test_dir .. "/" .. test_name_dir
   _M.current_test_accounts_dir = _M.current_test_dir .. "/auto-ssl/letsencrypt/accounts"
   assert(dir.makepath(_M.current_test_dir .. "/auto-ssl/letsencrypt"))
-
-  assert(unistd.chown(_M.current_test_dir .. "/auto-ssl", _M.nobody_user, _M.nobody_group))
+  assert(unistd.chown(_M.current_test_dir .. "/auto-ssl", _M.nobody_user))
 
   if path.exists(_M.dehydrated_persist_accounts_dir) then
     local _, err = shell_blocking.capture_combined({ "cp", "-pr", _M.dehydrated_persist_accounts_dir, _M.current_test_accounts_dir })
@@ -214,7 +213,7 @@ function _M.stop()
     kill(_M.nginx_process)
     _M.nginx_process = nil
 
-    _M.cleanup_sockproc()
+    _M.stop_sockproc()
   end
 end
 
@@ -223,7 +222,7 @@ function _M.read_error_log()
   return log:read()
 end
 
-function _M.cleanup_sockproc()
+function _M.stop_sockproc()
   shell_blocking.capture_combined({ "pkill", "sockproc" })
   local _, err = shell_blocking.capture_combined({ "rm", "-f", "/tmp/shell.sock", "/tmp/auto-ssl-sockproc.pid" })
   assert(not err, err)

@@ -8,9 +8,9 @@ describe("file", function()
 
   it("issues and renews certificates", function()
     server.start({
-      auto_ssl_new_options = [[{
-        renew_check_interval = 1,
-      }]],
+      auto_ssl_pre_new = [[
+        options["renew_check_interval"] = 1
+      ]],
     })
 
     local httpc = http.new()

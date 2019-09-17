@@ -9,13 +9,13 @@ describe("json adapter dkjson", function()
 
   it("issues a new SSL certificate and stores it in redis", function()
     server.start({
-      auto_ssl_new_options = [[{
-        storage_adapter = "resty.auto-ssl.storage_adapters.redis",
-        json_adapter = "resty.auto-ssl.json_adapters.dkjson",
-        redis = {
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["json_adapter"] = "resty.auto-ssl.json_adapters.dkjson"
+        options["redis"] = {
           port = 9999,
-        },
-      }]],
+        }
+      ]],
     })
 
     local r = redis:new()

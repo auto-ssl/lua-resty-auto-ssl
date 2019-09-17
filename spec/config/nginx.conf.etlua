@@ -137,6 +137,15 @@ http {
         }))
       }
     }
+
+    location /get-lua-root {
+      content_by_lua_block {
+        local cjson = require "cjson.safe"
+        ngx.print(cjson.encode({
+          lua_root = auto_ssl.lua_root,
+        }))
+      }
+    }
   }
 
   server {

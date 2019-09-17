@@ -9,12 +9,12 @@ describe("json adapter cjson", function()
 
   it("issues a new SSL certificate and stores it in redis", function()
     server.start({
-      auto_ssl_new_options = [[{
-        storage_adapter = "resty.auto-ssl.storage_adapters.redis",
-        redis = {
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["redis"] = {
           port = 9999,
-        },
-      }]],
+        }
+      ]],
     })
 
     local r = redis:new()

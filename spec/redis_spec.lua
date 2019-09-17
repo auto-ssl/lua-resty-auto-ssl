@@ -9,13 +9,13 @@ describe("redis", function()
 
   it("issues and renews certificates", function()
     server.start({
-      auto_ssl_new_options = [[{
-        storage_adapter = "resty.auto-ssl.storage_adapters.redis",
-        redis = {
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["redis"] = {
           port = 9999,
-        },
-        renew_check_interval = 1,
-      }]],
+        }
+        options["renew_check_interval"] = 1
+      ]],
     })
 
     local httpc = http.new()
@@ -89,14 +89,14 @@ describe("redis", function()
 
   it("issues and renews certificates with redis storage prefix", function()
     server.start({
-      auto_ssl_new_options = [[{
-        storage_adapter = "resty.auto-ssl.storage_adapters.redis",
-        redis = {
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["redis"] = {
           port = 9999,
           prefix = "key-prefix",
-        },
-        renew_check_interval = 1,
-      }]],
+        }
+        options["renew_check_interval"] = 1
+      ]],
     })
 
     local httpc = http.new()
@@ -170,14 +170,14 @@ describe("redis", function()
 
   it("allows storage in a separate redis database number", function()
     server.start({
-      auto_ssl_new_options = [[{
-        storage_adapter = "resty.auto-ssl.storage_adapters.redis",
-        redis = {
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["redis"] = {
           port = 9999,
           db = 5,
           prefix = "db-test-prefix",
-        },
-      }]],
+        }
+      ]],
     })
 
     local httpc = http.new()
@@ -222,19 +222,19 @@ describe("redis", function()
 
   it("exposes redis connection in allow_domain callback", function()
     server.start({
-      auto_ssl_new_options = [[{
-        storage_adapter = "resty.auto-ssl.storage_adapters.redis",
-        redis = {
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["redis"] = {
           port = 9999,
-        },
-        allow_domain = function(domain, allow_domain_auto_ssl)
+        }
+        options["allow_domain"] = function(domain, allow_domain_auto_ssl)
           ngx.log(ngx.INFO, "allow_domain auto_ssl: " .. type(allow_domain_auto_ssl))
           local redis = allow_domain_auto_ssl.storage.adapter:get_connection()
           ngx.log(ngx.INFO, "allow_domain redis: " .. type(redis))
           redis:set("allow_domain_redis_test", "foo")
           return false
-        end,
-      }]],
+        end
+      ]],
     })
 
     local httpc = http.new()
