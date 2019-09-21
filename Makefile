@@ -137,6 +137,8 @@ install-test-deps:
 	luarocks install lua-resty-http 0.15-0
 	luarocks install luaposix 34.1.1-1
 	luarocks install busted 2.0.0-1
+	luarocks install shell-games 1.0.1-1
+	luarocks install inspect 3.1.1-0
 	luarocks install dkjson 2.5-2
 	luarocks install luacheck 0.23.0-1
 	cpanm --notest Expect@1.35

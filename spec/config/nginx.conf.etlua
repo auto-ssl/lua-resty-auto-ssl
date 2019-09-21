@@ -38,10 +38,11 @@ http {
     auto_ssl:init_worker()
   }
 
+  ssl_certificate <%- root_dir %>/t/certs/example_fallback.crt;
+  ssl_certificate_key <%- root_dir %>/t/certs/example_fallback.key;
+
   server {
     listen 9443 ssl;
-    ssl_certificate <%- root_dir %>/t/certs/example_fallback.crt;
-    ssl_certificate_key <%- root_dir %>/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -49,22 +50,6 @@ http {
     location /foo {
       server_tokens off;
       echo -n "foo";
-    }
-  }
-
-  server {
-    listen 9444 ssl;
-    ssl_certificate <%- root_dir %>/t/certs/example_fallback.crt;
-    ssl_certificate_key <%- root_dir %>/t/certs/example_fallback.key;
-    ssl_certificate_by_lua_block {
-      auto_ssl:ssl_certificate({
-        generate_certs = false,
-      })
-    }
-
-    location /foo {
-      server_tokens off;
-      echo -n "generate_certs = false server";
     }
   }
 
@@ -158,4 +143,6 @@ http {
       }
     }
   }
+
+  <%- auto_ssl_http_config or "" %>
 }
