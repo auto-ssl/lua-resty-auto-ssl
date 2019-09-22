@@ -438,6 +438,43 @@ describe("sanity", function()
   end)
 
   it("hook server port can be changed", function()
+    server.start({
+      auto_ssl_pre_new = [[
+        options["hook_server_port"] = 9888
+      ]],
+      auto_ssl_http_config = [[
+        server {
+          listen 127.0.0.1:9888;
+          client_body_buffer_size 128k;
+          client_max_body_size 128k;
+          location / {
+            content_by_lua_block {
+              ngx.log(ngx.INFO, "custom hook_server_port=9888")
+              auto_ssl:hook_server()
+            }
+          }
+        }
+      ]],
+    })
+
+    local httpc = http.new()
+    local _, err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, err)
+
+    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, err)
+
+    local res, err = httpc:request({ path = "/foo" })
+    assert.equal(nil, err)
+    assert.equal(200, res.status)
+
+    local body, err = res:read_body()
+    assert.equal(nil, err)
+    assert.equal("foo", body)
+
+    local error_log = server.nginx_error_log_tail:read()
+    assert.matches("auto-ssl: issuing new certificate for " .. server.ngrok_hostname, error_log, nil, true)
+    assert.matches("custom hook_server_port=9888", error_log, nil, true)
   end)
 
   it("fills in missing expiry dates in storage from certificate expiration on renewal", function()

@@ -182,7 +182,7 @@ function _M.start(options)
 
   _M.nginx_error_log_tail = log_tail.new(_M.current_test_dir .. "/error.log")
   local ok, output = _M.nginx_error_log_tail:read_until("init_by_lua_block")
-  if not ok then
+  if not ok or (output and string.match(output, "emerg")) then
     print(nginx_process:stdout())
     print(nginx_process:stderr())
     local log, err = file.read(_M.current_test_dir .. "/error.log")

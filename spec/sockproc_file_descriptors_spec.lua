@@ -35,7 +35,18 @@ end
 
 describe("sockproc file descriptors", function()
   it("does not inherit nginx file descriptors", function()
-    server.start()
+    server.start({
+      auto_ssl_http_server_config = [[
+        location /get-lua-root {
+          content_by_lua_block {
+            local cjson = require "cjson.safe"
+            ngx.print(cjson.encode({
+              lua_root = auto_ssl.lua_root,
+            }))
+          }
+        }
+      ]],
+    })
 
     local httpc = http.new()
     local res, err = httpc:request_uri("http://127.0.0.1:9080/get-lua-root")

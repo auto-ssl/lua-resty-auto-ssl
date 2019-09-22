@@ -148,7 +148,8 @@ lint:
 	luacheck lib
 
 test: lint
-	PATH=$(PATH) ROOT_DIR=$(ROOT_DIR) t/run_tests
+	luarocks make ./lua-resty-auto-ssl-git-1.rockspec
+	busted ./spec
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test

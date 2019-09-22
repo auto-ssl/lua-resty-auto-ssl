@@ -15,7 +15,16 @@ describe("hook secret", function()
   end)
 
   it("doesn't change the hook secret after reloading", function()
-    server.start()
+    server.start({
+      auto_ssl_http_server_config = [[
+        location /auto-ssl-init {
+          content_by_lua_block {
+            auto_ssl:init()
+            ngx.print("init")
+          }
+        }
+      ]],
+    })
 
     local httpc = http.new()
 

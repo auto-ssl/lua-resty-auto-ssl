@@ -8,7 +8,22 @@ describe("option generate_certs", function()
   after_each(server.stop)
 
   it("generate_certs disables generation of new SSL certs", function()
-    server.start()
+    server.start({
+      auto_ssl_http_config = [[
+        server {
+          listen 9444 ssl;
+          ssl_certificate_by_lua_block {
+            auto_ssl:ssl_certificate({
+              generate_certs = false,
+            })
+          }
+
+          location /foo {
+            echo -n "generate_certs = false server";
+          }
+        }
+      ]],
+    })
 
     local httpc = http.new()
 

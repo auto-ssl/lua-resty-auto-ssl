@@ -9,7 +9,44 @@ describe("memory", function()
   after_each(server.stop)
 
   it("logs when running out of memory in shared dict", function()
-    server.start()
+    server.start({
+      auto_ssl_http_server_config = [[
+        location /fill-auto-ssl-shdict {
+          content_by_lua_block {
+            local cjson = require "cjson.safe"
+            local resty_random = require "resty.random"
+            local str = require "resty.string"
+
+            -- Fill the shdict with random things to simulate what happens when old
+            -- data gets forced out.
+            for i = 1, 15 do
+              local random = resty_random.bytes(256000)
+              local _, err = ngx.shared.auto_ssl:set("foobar" .. i, str.to_hex(random))
+              if err then
+                ngx.log(ngx.ERR, "set error: ", err)
+                return ngx.exit(500)
+              end
+            end
+
+            -- Ensure items are getting forced out as expected, after filling it up.
+            local random = resty_random.bytes(256000)
+            local _, err, forcible = ngx.shared.auto_ssl:set("foobar-force", str.to_hex(random))
+            if err then
+              ngx.log(ngx.ERR, "set error: ", err)
+              return ngx.exit(500)
+            end
+            if not forcible then
+              ngx.log(ngx.ERR, "set didn't force other items out of shdict, as expected")
+              return ngx.exit(500)
+            end
+
+            ngx.print(cjson.encode({
+              keys = #ngx.shared.auto_ssl:get_keys(),
+            }))
+          }
+        }
+      ]],
+    })
 
     local httpc = http.new()
 
@@ -43,7 +80,23 @@ describe("memory", function()
   end)
 
   it("can issue a new certificate after all memory is flushed", function()
-    server.start()
+    server.start({
+      auto_ssl_http_server_config = [[
+        location /flush-auto-ssl-shdict {
+          content_by_lua_block {
+            local cjson = require "cjson.safe"
+
+            -- Completely wipe certs from storage, to simulate a new registration
+            -- after completely running out of memory.
+            ngx.shared.auto_ssl:flush_all()
+
+            ngx.print(cjson.encode({
+              keys = #ngx.shared.auto_ssl:get_keys(),
+            }))
+          }
+        }
+      ]],
+    })
 
     local httpc = http.new()
 
