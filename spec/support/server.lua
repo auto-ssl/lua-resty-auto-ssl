@@ -35,6 +35,10 @@ _M.nobody_group = assert(grp.getgrgid(assert(pwd.getpwnam(_M.nobody_user)).pw_gi
 local nginx_template = etlua.compile(assert(file.read(_M.root_dir .. "/spec/config/nginx.conf.etlua")))
 local redis_template = etlua.compile(assert(file.read(_M.root_dir .. "/spec/config/redis.conf.etlua")))
 
+local nginx_path = ngx.re.gsub(os.getenv("PATH"), [[[^:]+/test-luarocks/[^:]+:]], "")
+local nginx_lua_path = ngx.re.gsub(os.getenv("LUA_PATH"), [[[^;]+/test-luarocks/[^;]+;]], "")
+local nginx_lua_cpath = ngx.re.gsub(os.getenv("LUA_CPATH"), [[[^;]+/test-luarocks/[^;]+;]], "")
+
 local function kill(proc)
   local pid = proc:pid()
   local err = proc:kill()
@@ -177,7 +181,12 @@ function _M.start(options)
 
   assert(file.write(_M.current_test_dir .. "/nginx.conf", nginx_template(options)))
 
-  local nginx_process, err = process.exec("nginx", { "-p", _M.current_test_dir, "-c", _M.current_test_dir .. "/nginx.conf" })
+  local nginx_process, err = process.exec("env", {
+    "PATH=" .. nginx_path,
+    "LUA_PATH=" .. nginx_lua_path,
+    "LUA_CPATH=" .. nginx_lua_cpath,
+    "nginx", "-p", _M.current_test_dir, "-c", _M.current_test_dir .. "/nginx.conf" }, {
+  })
   _M.nginx_process = nginx_process
 
   _M.nginx_error_log_tail = log_tail.new(_M.current_test_dir .. "/error.log")

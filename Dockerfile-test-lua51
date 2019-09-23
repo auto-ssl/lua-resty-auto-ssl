@@ -1,7 +1,29 @@
 FROM openresty/openresty:1.11.2.1-centos
 
+# Runtime dependencies
+RUN yum -y install \
+  bash \
+  coreutils \
+  curl \
+  diffutils \
+  grep \
+  openssl \
+  sed
+
 # Build dependencies.
 RUN yum -y install make
+
+# Test dependencies
+RUN yum -y install epel-release && \
+  yum -y install \
+    gcc \
+    git \
+    lsof \
+    lua \
+    procps-ng \
+    redis \
+    sudo \
+    https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.34-linux-amd64.rpm
 
 ENV PATH /usr/local/openresty/luajit/bin:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ENV TEST_NGINX_RESOLVER 127.0.0.11 ipv6=off
@@ -10,8 +32,11 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY Makefile /app/Makefile
-RUN make install-test-deps-yum
 RUN make install-test-deps
+
+ENV PATH="/app/spec/tmp/test-luarocks/bin:${PATH}"
+ENV LUA_PATH="/app/spec/tmp/test-luarocks/share/lua/5.1/?.lua;/app/spec/tmp/test-luarocks/share/lua/5.1/?/init.lua;;"
+ENV LUA_CPATH="/app/spec/tmp/test-luarocks/lib/lua/5.1/?.so;;"
 
 COPY . /app
 

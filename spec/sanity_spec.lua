@@ -620,4 +620,36 @@ describe("sanity", function()
     assert.Not.matches("[alert]", error_log, nil, true)
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)
+
+  it("does not expose test suite libraries to test nginx server", function()
+    server.start({
+      auto_ssl_http_server_config = [[
+        location /lib-test {
+          content_by_lua_block {
+            local cjson = require "cjson.safe"
+
+            local ok, inspect = pcall(require, "inspect")
+            ngx.print(cjson.encode({
+              ok = ok,
+              inspect = inspect,
+            }))
+
+          }
+        }
+      ]],
+    })
+
+    local inspect = require "inspect"
+    assert.equal('"inspect"', inspect("inspect"))
+
+    local httpc = http.new()
+    local res, err = httpc:request_uri("http://127.0.0.1:9080/lib-test")
+    assert.equal(nil, err)
+    assert.equal(200, res.status)
+    local data, err = cjson.decode(res.body)
+    assert.equal(nil, err)
+    assert.equal(false, data["ok"])
+    assert.string(data["inspect"])
+    assert.matches("not found", data["inspect"], nil, true)
+  end)
 end)

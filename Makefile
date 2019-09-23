@@ -13,9 +13,6 @@ RUNTIME_DEPENDENCIES:=bash curl cut date diff grep mktemp openssl sed
 	grind \
 	install \
 	install-test-deps \
-	install-test-deps-apk \
-	install-test-deps-apt \
-	install-test-deps-yum \
 	lint \
 	test
 
@@ -91,64 +88,26 @@ $(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 # Testing
 #
 
-install-test-deps-apk:
-	apk add --no-cache \
-		coreutils \
-		findutils \
-		gcc \
-		lsof \
-		openssl \
-		procps \
-		perl-app-cpanminus \
-		perl-dev \
-		redis \
-		sudo \
-		wget
-	curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/4dXSqUzbJK6/ngrok-2.3.34-linux-amd64.tar.gz
-	tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/
-	rm -f /tmp/ngrok.tar.gz
-	chmod +x /usr/local/bin/ngrok
-
-install-test-deps-apt:
-	apt-get update
-	apt-get -y install \
-		lsof \
-		cpanminus \
-		redis-server \
-		sudo
-	curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/b2wQezFbsHk/ngrok-2.3.34-linux-amd64.deb
-	dpkg -i /tmp/ngrok.deb || apt-get -fy install
-	rm -f /tmp/ngrok.deb
-
-install-test-deps-yum:
-	yum -y install epel-release
-	yum -y install \
-		gcc \
-		lsof \
-		procps-ng \
-		perl-App-cpanminus \
-		redis \
-		sudo \
-		https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.34-linux-amd64.rpm
-
 install-test-deps:
-	luarocks install etlua 1.3.0-1
-	luarocks install process 1.9.0-1
-	luarocks install lua-resty-http 0.15-0
-	luarocks install luaposix 34.1.1-1
-	luarocks install busted 2.0.0-1
-	luarocks install shell-games 1.0.1-1
-	luarocks install inspect 3.1.1-0
-	luarocks install dkjson 2.5-2
-	luarocks install luacheck 0.23.0-1
-	cpanm --notest Expect@1.35
-	cpanm --notest Test::Nginx@0.26
+	rm -rf $(ROOT_DIR)/spec/tmp/test-luarocks
+	mkdir -p $(ROOT_DIR)/spec/tmp/test-luarocks
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install busted 2.0.0-1
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install etlua 1.3.0-1
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install inspect 3.1.1-0
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install lua-resty-http 0.15-0
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install luacheck 0.23.0-1
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install luaposix 34.1.1-1
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install penlight 1.5.4-1
+	luarocks install luarocks-fetch-gitrec && luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install process 1.9.0-1
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install shell-games 1.0.1-1
 
 lint:
 	luacheck lib
 
 test: lint
-	luarocks make ./lua-resty-auto-ssl-git-1.rockspec
+	rm -rf $(ROOT_DIR)/spec/tmp/server-luarocks
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
+	luarocks --tree=$(ROOT_DIR)/spec/tmp/server-luarocks install dkjson 2.5-2
 	busted ./spec
 
 grind:
