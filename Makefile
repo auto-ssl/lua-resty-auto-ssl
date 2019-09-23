@@ -89,25 +89,25 @@ $(BUILD_DIR)/stamp-sockproc-2-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 #
 
 install-test-deps:
-	rm -rf $(ROOT_DIR)/spec/tmp/test-luarocks
-	mkdir -p $(ROOT_DIR)/spec/tmp/test-luarocks
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install busted 2.0.0-1
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install etlua 1.3.0-1
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install inspect 3.1.1-0
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install lua-resty-http 0.15-0
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install luacheck 0.23.0-1
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install luaposix 34.1.1-1
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install penlight 1.5.4-1
-	luarocks install luarocks-fetch-gitrec && luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install process 1.9.0-1
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/test-luarocks install shell-games 1.0.1-1
+	rm -rf /tmp/resty-auto-ssl-test-luarocks
+	mkdir -p /tmp/resty-auto-ssl-test-luarocks
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install busted 2.0.0-1
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install etlua 1.3.0-1
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install inspect 3.1.1-0
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install lua-resty-http 0.15-0
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install luacheck 0.23.0-1
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install luaposix 34.1.1-1
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install penlight 1.5.4-1
+	luarocks install luarocks-fetch-gitrec && luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install process 1.9.0-1
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install shell-games 1.0.1-1
 
 lint:
 	luacheck lib
 
 test:
-	rm -rf $(ROOT_DIR)/spec/tmp/server-luarocks
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
-	luarocks --tree=$(ROOT_DIR)/spec/tmp/server-luarocks install dkjson 2.5-2
+	rm -rf /tmp/resty-auto-ssl-server-luarocks
+	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
+	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks install dkjson 2.5-2
 	busted ./spec
 
 grind:

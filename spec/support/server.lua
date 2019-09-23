@@ -35,9 +35,9 @@ _M.nobody_group = assert(grp.getgrgid(assert(pwd.getpwnam(_M.nobody_user)).pw_gi
 local nginx_template = etlua.compile(assert(file.read(_M.root_dir .. "/spec/config/nginx.conf.etlua")))
 local redis_template = etlua.compile(assert(file.read(_M.root_dir .. "/spec/config/redis.conf.etlua")))
 
-local nginx_path = ngx.re.gsub(os.getenv("PATH"), [[[^:]+/test-luarocks/[^:]+:]], "")
-local nginx_lua_path = ngx.re.gsub(os.getenv("LUA_PATH"), [[[^;]+/test-luarocks/[^;]+;]], "")
-local nginx_lua_cpath = ngx.re.gsub(os.getenv("LUA_CPATH"), [[[^;]+/test-luarocks/[^;]+;]], "")
+local nginx_path = ngx.re.gsub(os.getenv("PATH"), [[[^:]+/resty-auto-ssl-test-luarocks/[^:]+:]], "")
+local nginx_lua_path = ngx.re.gsub(os.getenv("LUA_PATH"), [[[^;]+/resty-auto-ssl-test-luarocks/[^;]+;]], "")
+local nginx_lua_cpath = ngx.re.gsub(os.getenv("LUA_CPATH"), [[[^;]+/resty-auto-ssl-test-luarocks/[^;]+;]], "")
 
 local function kill(proc)
   local pid = proc:pid()

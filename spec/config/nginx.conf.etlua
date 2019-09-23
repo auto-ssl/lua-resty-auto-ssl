@@ -12,8 +12,8 @@ events {
 http {
   access_log <%- current_test_dir %>/access.log combined;
 
-  lua_package_path "<%- root_dir %>/spec/tmp/server-luarocks/share/lua/5.1/?.lua;<%- root_dir %>/spec/tmp/server-luarocks/share/lua/5.1/?/init.lua;;";
-  lua_package_cpath "<%- root_dir %>/spec/tmp/server-luarocks/lib/lua/5.1/?.so;;";
+  lua_package_path "/tmp/resty-auto-ssl-server-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-server-luarocks/share/lua/5.1/?/init.lua;;";
+  lua_package_cpath "/tmp/resty-auto-ssl-server-luarocks/lib/lua/5.1/?.so;;";
 
   resolver ipv6=off local=on;
   lua_shared_dict auto_ssl 1m;

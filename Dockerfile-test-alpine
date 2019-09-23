@@ -36,8 +36,8 @@ RUN apk add --no-cache \
 COPY Makefile /app/Makefile
 RUN make install-test-deps
 
-ENV PATH="/app/spec/tmp/test-luarocks/bin:${PATH}"
-ENV LUA_PATH="/app/spec/tmp/test-luarocks/share/lua/5.1/?.lua;/app/spec/tmp/test-luarocks/share/lua/5.1/?/init.lua;${LUA_PATH}"
-ENV LUA_CPATH="/app/spec/tmp/test-luarocks/lib/lua/5.1/?.so;${LUA_CPATH}"
+ENV PATH="/tmp/resty-auto-ssl-test-luarocks/bin:${PATH}"
+ENV LUA_PATH="/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?/init.lua;${LUA_PATH}"
+ENV LUA_CPATH="/tmp/resty-auto-ssl-test-luarocks/lib/lua/5.1/?.so;${LUA_CPATH}"
 
 COPY . /app
