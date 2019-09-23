@@ -147,6 +147,8 @@ function _M.start(options)
       end
     end
 
+    assert(dir.makepath(path.dirname(_M.dehydrated_persist_accounts_dir)))
+
     _M.started_once = true
   end
 
