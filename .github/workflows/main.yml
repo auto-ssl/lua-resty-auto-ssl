@@ -13,6 +13,12 @@ jobs:
           - lua51
     steps:
       - uses: actions/checkout@v1
+      - name: test1
+        run: docker-compose run --rm ${{ matrix.variant }} env
+      - name: test2
+        run: docker-compose run --rm ${{ matrix.variant }} find .
+      - name: test3
+        run: docker-compose run --rm ${{ matrix.variant }} pwd
       - name: Lint
         run: docker-compose run --rm ${{ matrix.variant }} make lint
       - name: Test
