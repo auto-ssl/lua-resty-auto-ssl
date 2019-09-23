@@ -41,3 +41,5 @@ ENV LUA_PATH="/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?.lua;/tmp/resty-a
 ENV LUA_CPATH="/tmp/resty-auto-ssl-test-luarocks/lib/lua/5.1/?.so;${LUA_CPATH}"
 
 COPY . /app
+
+CMD ["bash"]

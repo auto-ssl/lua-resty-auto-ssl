@@ -41,3 +41,4 @@ ENV LUA_CPATH="/tmp/resty-auto-ssl-test-luarocks/lib/lua/5.1/?.so;;"
 COPY . /app
 
 ENTRYPOINT []
+CMD ["bash"]

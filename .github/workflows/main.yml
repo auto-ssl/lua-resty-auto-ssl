@@ -24,16 +24,17 @@ jobs:
       - name: Build Container
         run: docker-compose up -d ${{ matrix.variant }}
       - name: Lint
-        run: docker-compose exec ${{ matrix.variant }} make lint
+        run: docker-compose exec -T ${{ matrix.variant }} make lint
       - name: Test
-        run: docker-compose exec ${{ matrix.variant }} make test
+        run: docker-compose exec -T ${{ matrix.variant }} make test
       - name: Copy Artifacts
         if: always()
         run: |
           rm -rf /tmp/resty-auto-ssl-test
           docker cp $(docker-compose ps -q ${{ matrix.variant }}):/tmp/resty-auto-ssl-test /tmp/resty-auto-ssl-test
-      - uses: actions/upload-artifact@v1
+      - name: Upload Artifacts
         if: always()
+        uses: actions/upload-artifact@v1
         with:
           name: logs
           path: /tmp/resty-auto-ssl-test
