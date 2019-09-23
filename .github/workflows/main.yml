@@ -1,0 +1,18 @@
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant:
+          - centos
+          - alpine
+          - ubuntu
+          - lua51
+    steps:
+      - uses: actions/checkout@v1
+      - name: Lint
+        run: docker-compose run --rm ${{ matrix.variant }} make lint
+      - name: Test
+        run: docker-compose run --rm ${{ matrix.variant }} make test

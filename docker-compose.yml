@@ -7,6 +7,13 @@ services:
     volumes:
       - .:/app
       - build_cache:/app/build
+  centos:
+    build:
+      context: .
+      dockerfile: Dockerfile-test
+    volumes:
+      - .:/app
+      - centos_build_cache:/app/build
   alpine:
     build:
       context: .
@@ -30,6 +37,7 @@ services:
       - lua51_build_cache:/app/build
 volumes:
   build_cache:
+  centos_build_cache:
   alpine_build_cache:
   ubuntu_build_cache:
   lua51_build_cache:

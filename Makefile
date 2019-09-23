@@ -104,7 +104,7 @@ install-test-deps:
 lint:
 	luacheck lib
 
-test: lint
+test:
 	rm -rf $(ROOT_DIR)/spec/tmp/server-luarocks
 	luarocks --tree=$(ROOT_DIR)/spec/tmp/server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	luarocks --tree=$(ROOT_DIR)/spec/tmp/server-luarocks install dkjson 2.5-2
