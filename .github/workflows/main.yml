@@ -36,5 +36,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v1
         with:
-          name: logs
+          name: "${{ matrix.variant }}-logs"
           path: /tmp/resty-auto-ssl-test
