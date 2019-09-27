@@ -28,7 +28,7 @@ RUN apk add --no-cache \
     redis \
     sudo \
     wget && \
-  curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/4dXSqUzbJK6/ngrok-2.3.34-linux-amd64.tar.gz && \
+  curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/naDTyS8Kyxv/ngrok-2.3.34-linux-386.tar.gz && \
   tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/ && \
   rm -f /tmp/ngrok.tar.gz && \
   chmod +x /usr/local/bin/ngrok
