@@ -126,7 +126,11 @@ describe("hook server", function()
 
     local error_log = server.read_error_log()
     assert.matches("a client request body is buffered to a temporary file", error_log, nil, true)
-    assert.matches("auto-ssl: failed to parse POST args: request body in temp file not supported", error_log, nil, true)
+    if ngx.config.ngx_lua_version < 10008 then -- v0.10.8
+      assert.matches("auto-ssl: failed to parse POST args: requesty body in temp file not supported", error_log, nil, true)
+    else
+      assert.matches("auto-ssl: failed to parse POST args: request body in temp file not supported", error_log, nil, true)
+    end
     assert.Not.matches("[alert]", error_log, nil, true)
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)

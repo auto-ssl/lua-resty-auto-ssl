@@ -15,7 +15,7 @@ http {
   lua_package_path "/tmp/resty-auto-ssl-server-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-server-luarocks/share/lua/5.1/?/init.lua;;";
   lua_package_cpath "/tmp/resty-auto-ssl-server-luarocks/lib/lua/5.1/?.so;;";
 
-  resolver ipv6=off local=on;
+  resolver <%- os.getenv("TEST_NGINX_RESOLVER") or "ipv6=off local=on" %>;
   lua_shared_dict auto_ssl 1m;
   <% if not disable_auto_ssl_settings_dict then %>
     lua_shared_dict auto_ssl_settings 64k;

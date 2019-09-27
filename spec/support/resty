@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 exec resty \
   -c 1024 \
-  --http-conf "lua_ssl_trusted_certificate /app/t/certs/letsencrypt_staging_chain.pem;" \
-  --http-conf "lua_ssl_verify_depth 5;" \
-  --http-conf "lua_shared_dict test_counts 128k;" \
+  --http-include spec/config/busted-nginx.conf \
   "$@"
