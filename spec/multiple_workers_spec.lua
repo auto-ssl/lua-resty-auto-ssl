@@ -44,6 +44,9 @@ local function make_http_requests()
 end
 
 describe("multiple workers", function()
+  before_each(server.stop)
+  after_each(server.stop)
+
   it("issues a new SSL certificate when multiple nginx workers are running and concurrent requests are made", function()
     server.start({
       master_process = "on",

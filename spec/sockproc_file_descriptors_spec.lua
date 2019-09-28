@@ -34,6 +34,9 @@ local function get_sockproc_file_descriptors(as_user, expect_no_results)
 end
 
 describe("sockproc file descriptors", function()
+  before_each(server.stop)
+  after_each(server.stop)
+
   it("does not inherit nginx file descriptors", function()
     server.start({
       auto_ssl_http_server_config = [[

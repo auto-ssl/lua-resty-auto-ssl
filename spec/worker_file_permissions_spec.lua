@@ -4,6 +4,9 @@ local server = require "spec.support.server"
 local shell_blocking = require "shell-games"
 
 describe("worker file permissions", function()
+  before_each(server.stop)
+  after_each(server.stop)
+
   it("creates file with expected permissions", function()
     server.start({
       master_process = "on",
