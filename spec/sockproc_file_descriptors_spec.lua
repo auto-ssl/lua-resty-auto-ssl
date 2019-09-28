@@ -8,7 +8,7 @@ local function get_sockproc_file_descriptors(as_user, expect_no_results)
   -- there may not be a default PATH set, in which case, lsof installed
   -- in /usr/sbin may not be picked up (but this behavior varies
   -- depending on distro).
-  local result, err = shell_blocking.capture_combined({ "bash", "-l", "-c", "lsof -n -P -l -R -c sockproc -a -d 0-255 -F pnf" })
+  local result, err = shell_blocking.capture({ "bash", "-l", "-c", "lsof -n -P -l -R -c sockproc -a -d 0-255 -F pnf" }, { stderr = "/dev/null" })
   if expect_no_results and err and result["output"] == "" then
     return {}
   end
