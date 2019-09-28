@@ -73,6 +73,16 @@ http {
     }
 
     <%- auto_ssl_http_server_config or "" %>
+
+    # Return a 403 for all other HTTP requests. This prevents nginx from
+    # looking in the "root" dir for files that may not exist. This is to deal
+    # with bots that may automatically crawl the ngrok IP while our server is
+    # up and running, but we want to prevent nginx from printing "No such file
+    # or directory" lines to the error.log file, since that messes without
+    # "[error]" log detection logic in the tests.
+    location / {
+      return 403;
+    }
   }
 
   server {
