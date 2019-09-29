@@ -11,7 +11,6 @@ local function start()
   ngx.log(ngx.NOTICE, "auto-ssl: starting sockproc")
 
   local _, run_err = shell_blocking.capture_combined({ auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc" }, { umask = "0022" })
-  ngx.log(ngx.NOTICE, "auto-ssl: ngx.worker.exiting: ", ngx.worker.exiting())
   if run_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc: ", run_err)
   else

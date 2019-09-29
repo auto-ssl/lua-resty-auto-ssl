@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
 set -Eeuo pipefail
 
 sock_file=/tmp/shell.sock
