@@ -183,12 +183,14 @@ function _M.start(options)
 
   assert(file.write(_M.current_test_dir .. "/nginx.conf", nginx_template(options)))
 
-  local nginx_process, err = process.exec("env", {
-    "PATH=" .. nginx_path,
-    "LUA_PATH=" .. nginx_lua_path,
-    "LUA_CPATH=" .. nginx_lua_cpath,
-    "nginx", "-p", _M.current_test_dir, "-c", _M.current_test_dir .. "/nginx.conf" }, {
-  })
+  local nginx_process, err = process.exec("nginx", {
+    "-p", _M.current_test_dir,
+    "-c", _M.current_test_dir .. "/nginx.conf",
+  }, {
+    ["PATH"] = nginx_path,
+    ["LUA_PATH"] = nginx_lua_path,
+    ["LUA_CPATH"] = nginx_lua_cpath,
+  }, options["pwd"])
   _M.nginx_process = nginx_process
 
   _M.nginx_error_log_tail = log_tail.new(_M.current_test_dir .. "/error.log")
