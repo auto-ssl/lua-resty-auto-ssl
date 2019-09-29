@@ -1,0 +1,3 @@
+port 9999
+dir <%- redis_test_dir %>
+logfile <%- redis_test_dir %>/redis.log

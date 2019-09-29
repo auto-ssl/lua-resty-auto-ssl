@@ -1,0 +1,100 @@
+master_process <%- master_process or "off" %>;
+worker_processes <%- worker_processes or "1" %>;
+user <%- user %>;
+daemon off;
+pid <%- current_test_dir %>/nginx.pid;
+error_log <%- current_test_dir %>/error.log debug;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  access_log <%- current_test_dir %>/access.log combined;
+
+  lua_package_path "/tmp/resty-auto-ssl-server-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-server-luarocks/share/lua/5.1/?/init.lua;;";
+  lua_package_cpath "/tmp/resty-auto-ssl-server-luarocks/lib/lua/5.1/?.so;;";
+
+  resolver <%- os.getenv("TEST_NGINX_RESOLVER") or "ipv6=off local=on" %>;
+  lua_shared_dict auto_ssl 1m;
+  <% if not disable_auto_ssl_settings_dict then %>
+    lua_shared_dict auto_ssl_settings 64k;
+  <% end %>
+
+  set_real_ip_from 127.0.0.1;
+  real_ip_header X-Forwarded-For;
+
+  init_by_lua_block {
+    ngx.log(ngx.NOTICE, "init_by_lua_block")
+
+    local options = {
+      dir = "<%- current_test_dir %>/auto-ssl",
+      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      allow_domain = function(domain)
+        return true
+      end,
+    }
+    <%- auto_ssl_pre_new or "" %>
+    auto_ssl = (require "resty.auto-ssl").new(options)
+    <%- auto_ssl_post_new or "" %>
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  ssl_certificate <%- root_dir %>/spec/certs/example_fallback.crt;
+  ssl_certificate_key <%- root_dir %>/spec/certs/example_fallback.key;
+
+  server {
+    listen 9443 ssl;
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    location /foo {
+      echo -n "foo";
+    }
+  }
+
+  server {
+    listen 9080;
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+
+    location /hook-server-secret {
+      content_by_lua_block {
+        ngx.print(ngx.shared.auto_ssl_settings:get("hook_server:secret"))
+      }
+    }
+
+    <%- auto_ssl_http_server_config or "" %>
+
+    # Return a 403 for all other HTTP requests. This prevents nginx from
+    # looking in the "root" dir for files that may not exist. This is to deal
+    # with bots that may automatically crawl the ngrok IP while our server is
+    # up and running, but we want to prevent nginx from printing "No such file
+    # or directory" lines to the error.log file, since that messes without
+    # "[error]" log detection logic in the tests.
+    location / {
+      return 403;
+    }
+  }
+
+  server {
+    listen 127.0.0.1:8999;
+    client_body_buffer_size <%- hook_server and hook_server.client_body_buffer_size or "128k" %>;
+    client_max_body_size <%- hook_server and hook_server.client_max_body_size or "128k" %>;
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+
+  <%- auto_ssl_http_config or "" %>
+}
