@@ -1,6 +1,6 @@
 # lua-resty-auto-ssl
 
-[![Circle CI](https://circleci.com/gh/GUI/lua-resty-auto-ssl.svg?style=svg)](https://circleci.com/gh/GUI/lua-resty-auto-ssl)
+[![CI](https://github.com/GUI/lua-resty-auto-ssl/workflows/CI/badge.svg)](https://github.com/GUI/lua-resty-auto-ssl/actions?workflow=CI)
 
 On the fly (and free) SSL registration and renewal inside [OpenResty/nginx](http://openresty.org) with [Let's Encrypt](https://letsencrypt.org).
 
