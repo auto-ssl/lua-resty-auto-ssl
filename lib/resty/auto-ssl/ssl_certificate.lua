@@ -156,7 +156,7 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
   return nil, "failed to get or issue certificate"
 end
 
-local function get_ocsp_response(fullchain_der)
+local function get_ocsp_response(fullchain_der, auto_ssl_instance)
   -- Pull the OCSP URL to hit out of the certificate chain.
   local ocsp_url, ocsp_responder_err = ocsp.get_ocsp_responder_from_der_chain(fullchain_der)
   if not ocsp_url then
@@ -172,6 +172,12 @@ local function get_ocsp_response(fullchain_der)
   -- Make the OCSP request against the OCSP server.
   local httpc = http.new()
   httpc:set_timeout(10000)
+  if (auto_ssl_instance:get("proxy_addr") ~= nil) then
+    httpc:set_proxy_options({
+      http_proxy = auto_ssl_instance:get("proxy_addr")
+    })
+  end
+
   local res, req_err = httpc:request_uri(ocsp_url, {
     method = "POST",
     body = ocsp_req,
@@ -202,7 +208,7 @@ local function get_ocsp_response(fullchain_der)
   return ocsp_resp
 end
 
-local function set_ocsp_stapling(domain, cert_der)
+local function set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
   -- Fetch the OCSP stapling response from the cache, or make the request to
   -- fetch it.
   local ocsp_resp = ngx.shared.auto_ssl:get("domain:ocsp:" .. domain)
@@ -215,7 +221,7 @@ local function set_ocsp_stapling(domain, cert_der)
     end
 
     local ocsp_response_err
-    ocsp_resp, ocsp_response_err = get_ocsp_response(cert_der["fullchain_der"])
+    ocsp_resp, ocsp_response_err = get_ocsp_response(cert_der["fullchain_der"], auto_ssl_instance)
     if ocsp_response_err then
       return false, "failed to get ocsp response: " .. (ocsp_response_err or "")
     end
@@ -250,7 +256,7 @@ local function set_response_cert(auto_ssl_instance, domain, cert_der)
   end
 
   -- Set OCSP stapling.
-  ok, err = set_ocsp_stapling(domain, cert_der)
+  ok, err = set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
   if not ok then
     ngx.log(auto_ssl_instance:get("ocsp_stapling_error_level"), "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
   end
