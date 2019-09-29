@@ -151,14 +151,14 @@ describe("hook server", function()
     assert.equal(200, res.status)
     assert.equal("", res.body)
 
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/.well-known/acme-challenge/foo", {
+    local challenge_res, challenge_err = httpc:request_uri("http://127.0.0.1:9080/.well-known/acme-challenge/foo", {
       headers = {
         ["Host"] = "example.com",
       },
     })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
-    assert.equal("bar\n", res.body)
+    assert.equal(nil, challenge_err)
+    assert.equal(200, challenge_res.status)
+    assert.equal("bar\n", challenge_res.body)
 
     local error_log = server.read_error_log()
     assert.Not.matches("[warn]", error_log, nil, true)

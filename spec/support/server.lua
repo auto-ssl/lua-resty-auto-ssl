@@ -1,18 +1,16 @@
-local process = require "process"
-local inspect = require "inspect"
-local shell_blocking = require "shell-games"
-local redis = require "resty.redis"
-local unistd = require "posix.unistd"
-local pwd = require "posix.pwd"
-local grp = require "posix.grp"
-local ffi = require "ffi"
-local log_tail = require "spec.support.log_tail"
-local handler = require 'busted.outputHandlers.base'()
-local etlua = require "etlua"
-local path = require "pl.path"
-local file = require "pl.file"
-local dir = require "pl.dir"
 local busted = require "busted"
+local dir = require "pl.dir"
+local etlua = require "etlua"
+local file = require "pl.file"
+local grp = require "posix.grp"
+local handler = require 'busted.outputHandlers.base'()
+local log_tail = require "spec.support.log_tail"
+local path = require "pl.path"
+local process = require "process"
+local pwd = require "posix.pwd"
+local redis = require "resty.redis"
+local shell_blocking = require "shell-games"
+local unistd = require "posix.unistd"
 
 local _M = {}
 
@@ -41,7 +39,7 @@ local nginx_lua_cpath = ngx.re.gsub(os.getenv("LUA_CPATH"), [[[^;]+/resty-auto-s
 
 local function kill(proc)
   local pid = proc:pid()
-  local err = proc:kill()
+  proc:kill()
   process.waitpid(pid)
 
   proc:kill(6)
@@ -51,7 +49,8 @@ end
 local function start_ngrok()
   if not _M.ngrok_hostname then
     assert(dir.makepath(_M.ngrok_test_dir))
-    local ngrok_process, err = process.exec("ngrok", { "http", "9080", "--log", _M.ngrok_test_dir .. "/ngrok.log", "--log-format", "logfmt", "--log-level", "debug" })
+    local ngrok_process, exec_err = process.exec("ngrok", { "http", "9080", "--log", _M.ngrok_test_dir .. "/ngrok.log", "--log-format", "logfmt", "--log-level", "debug" })
+    assert(not exec_err, exec_err)
     _M.ngrok_process = ngrok_process
 
     local log = log_tail.new(_M.ngrok_test_dir .. "/ngrok.log")
@@ -59,17 +58,18 @@ local function start_ngrok()
     if not ok then
       print(ngrok_process:stdout())
       print(ngrok_process:stderr())
-      local log, err = file.read(_M.ngrok_test_dir .. "/ngrok.log")
-      if log then
-        print(log)
-      elseif err then
-        print(err)
+      local log_content, log_content_err = file.read(_M.ngrok_test_dir .. "/ngrok.log")
+      if log_content then
+        print(log_content)
+      elseif log_content_err then
+        print(log_content_err)
       end
 
       error("ngrok did not startup as expected")
     end
 
-    local matches, err = ngx.re.match(output, "Hostname:([a-z0-9]+.ngrok.io)", "jo")
+    local matches, match_err = ngx.re.match(output, "Hostname:([a-z0-9]+.ngrok.io)", "jo")
+    assert(not match_err, match_err)
     _M.ngrok_hostname = matches[1]
   end
 end
@@ -85,22 +85,22 @@ local function start_redis()
     _M.redis_process = redis_process
 
     local log = log_tail.new(_M.redis_test_dir .. "/redis.log")
-    local ok, output = log:read_until("(now ready|Ready to accept)")
+    local ok = log:read_until("(now ready|Ready to accept)")
     if not ok then
       print(redis_process:stdout())
       print(redis_process:stderr())
-      local log, err = file.read(_M.redis_test_dir .. "/redis.log")
-      if log then
-        print(log)
+      local log_content, log_content_err = file.read(_M.redis_test_dir .. "/redis.log")
+      if log_content then
+        print(log_content)
       elseif err then
-        print(err)
+        print(log_content_err)
       end
 
-      local conf, err = file.read(_M.redis_test_dir .. "/redis.conf")
+      local conf, conf_err = file.read(_M.redis_test_dir .. "/redis.conf")
       if conf then
         print(conf)
-      elseif err then
-        print(err)
+      elseif conf_err then
+        print(conf_err)
       end
 
       error("redis did not startup as expected")
@@ -170,11 +170,11 @@ function _M.start(options)
   assert(unistd.chown(_M.current_test_dir .. "/auto-ssl", _M.nobody_user))
 
   if path.exists(_M.dehydrated_persist_accounts_dir) then
-    local _, err = shell_blocking.capture_combined({ "cp", "-pr", _M.dehydrated_persist_accounts_dir, _M.current_test_accounts_dir })
-    assert(not err, err)
+    local _, cp_err = shell_blocking.capture_combined({ "cp", "-pr", _M.dehydrated_persist_accounts_dir, _M.current_test_accounts_dir })
+    assert(not cp_err, cp_err)
 
-    local _, err = shell_blocking.capture_combined({ "chown", "-R", _M.nobody_user .. ":" .. _M.nobody_group, _M.current_test_accounts_dir })
-    assert(not err, err)
+    local _, chown_err = shell_blocking.capture_combined({ "chown", "-R", _M.nobody_user .. ":" .. _M.nobody_group, _M.current_test_accounts_dir })
+    assert(not chown_err, chown_err)
   end
 
   options["root_dir"] = _M.root_dir
@@ -198,18 +198,18 @@ function _M.start(options)
   if not ok or (output and string.match(output, "emerg")) then
     print(nginx_process:stdout())
     print(nginx_process:stderr())
-    local log, err = file.read(_M.current_test_dir .. "/error.log")
-    if log then
-      print(log)
+    local log_content, log_content_err = file.read(_M.current_test_dir .. "/error.log")
+    if log_content then
+      print(log_content)
     elseif err then
-      print(err)
+      print(log_content_err)
     end
 
-    local conf, err = file.read(_M.current_test_dir .. "/nginx.conf")
+    local conf, conf_err = file.read(_M.current_test_dir .. "/nginx.conf")
     if conf then
       print(conf)
-    elseif err then
-      print(err)
+    elseif conf_err then
+      print(conf_err)
     end
 
     error("nginx did not startup as expected")
@@ -219,8 +219,8 @@ end
 function _M.stop()
   if _M.nginx_process then
     if _M.current_test_accounts_dir and not path.exists(_M.dehydrated_persist_accounts_dir) and path.exists(_M.current_test_accounts_dir) then
-      local result, err = shell_blocking.capture_combined({ "cp", "-pr", _M.current_test_accounts_dir, _M.dehydrated_persist_accounts_dir })
-      assert(not err, err)
+      local _, cp_err = shell_blocking.capture_combined({ "cp", "-pr", _M.current_test_accounts_dir, _M.dehydrated_persist_accounts_dir })
+      assert(not cp_err, cp_err)
     end
 
     kill(_M.nginx_process)

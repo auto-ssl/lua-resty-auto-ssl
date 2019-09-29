@@ -1,19 +1,20 @@
 local cjson = require "cjson.safe"
-local shell_blocking = require "shell-games"
 local http = require "resty.http"
 local server = require "spec.support.server"
+local shell_blocking = require "shell-games"
 
 local function get_sockproc_file_descriptors(as_user, expect_no_results)
-  local result, err = shell_blocking.capture({ "sudo", "-u", as_user, "lsof", "-n", "-P", "-l", "-R", "-c", "sockproc", "-a", "-d", "0-255", "-F", "pnf" })
-  if expect_no_results and err and result["output"] == "" then
+  local result, shell_err = shell_blocking.capture({ "sudo", "-u", as_user, "lsof", "-n", "-P", "-l", "-R", "-c", "sockproc", "-a", "-d", "0-255", "-F", "pnf" })
+  if expect_no_results and shell_err and result["output"] == "" then
     return {}
   end
-  assert.equal(nil, err)
+  assert.equal(nil, shell_err)
 
   local lines = {}
   local index = 1
   for line in string.gmatch(result["output"], "[^\n]+") do
     if index > 1 then
+      local _, err
       line, _, err = ngx.re.sub(line, "\\s*type=STREAM", "")
       assert.equal(nil, err)
 
@@ -51,7 +52,8 @@ describe("sockproc file descriptors", function()
     local res, err = httpc:request_uri("http://127.0.0.1:9080/get-lua-root")
     assert.equal(nil, err)
     assert.equal(200, res.status)
-    local data, err = cjson.decode(res.body)
+    local data, json_err = cjson.decode(res.body)
+    assert.equal(nil, json_err)
     local lua_root = data["lua_root"]
     assert.String(lua_root)
 
@@ -108,7 +110,8 @@ describe("sockproc file descriptors", function()
     local res, err = httpc:request_uri("http://127.0.0.1:9080/get-lua-root")
     assert.equal(nil, err)
     assert.equal(200, res.status)
-    local data, err = cjson.decode(res.body)
+    local data, json_err = cjson.decode(res.body)
+    assert.equal(nil, json_err)
     local lua_root = data["lua_root"]
     assert.String(lua_root)
 

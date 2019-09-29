@@ -6,7 +6,7 @@ end
 
 function _M.read(self)
   local output
-  local file, err = io.open(self.path, "r")
+  local file = io.open(self.path, "r")
   if file then
     file:seek("set", self.pos)
     output = file:read("*all")
@@ -36,6 +36,7 @@ function _M.read_until(self, regex, regex_options, timeout)
       output = (output or "") .. output_chunk
 
       local match, err = ngx.re.match(output_chunk, regex, regex_options)
+      assert(not err, err)
       if match then
         match_found = true
       end

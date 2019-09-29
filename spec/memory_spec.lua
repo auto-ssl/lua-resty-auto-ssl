@@ -1,8 +1,6 @@
-local http = require "resty.http"
 local cjson = require "cjson.safe"
+local http = require "resty.http"
 local server = require "spec.support.server"
-local shell_blocking = require "shell-games"
-local redis = require "resty.redis"
 
 describe("memory", function()
   before_each(server.stop)
@@ -50,25 +48,26 @@ describe("memory", function()
 
     local httpc = http.new()
 
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/fill-auto-ssl-shdict")
+    local fill_res, err = httpc:request_uri("http://127.0.0.1:9080/fill-auto-ssl-shdict")
     assert.equal(nil, err)
-    assert.equal(200, res.status)
-    local data, err = cjson.decode(res.body)
+    assert.equal(200, fill_res.status)
+    local data, json_err = cjson.decode(fill_res.body)
+    assert.equal(nil, json_err)
     assert.equal(2, data["keys"])
 
     -- Ensure we can make a successful request.
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local error_log = server.read_error_log()
@@ -100,26 +99,26 @@ describe("memory", function()
 
     local httpc = http.new()
 
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/flush-auto-ssl-shdict")
+    local flush_res, err = httpc:request_uri("http://127.0.0.1:9080/flush-auto-ssl-shdict")
     assert.equal(nil, err)
-    assert.equal(200, res.status)
-    local data, err = cjson.decode(res.body)
-    assert.equal(nil, err)
+    assert.equal(200, flush_res.status)
+    local data, json_err = cjson.decode(flush_res.body)
+    assert.equal(nil, json_err)
     assert.equal(0, data["keys"])
 
     -- Ensure we can make a successful request.
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local error_log = server.read_error_log()

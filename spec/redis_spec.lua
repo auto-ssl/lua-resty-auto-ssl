@@ -1,7 +1,7 @@
-local http = require "resty.http"
 local cjson = require "cjson.safe"
-local server = require "spec.support.server"
+local http = require "resty.http"
 local redis = require "resty.redis"
+local server = require "spec.support.server"
 
 describe("redis", function()
   before_each(server.stop)
@@ -18,36 +18,38 @@ describe("redis", function()
       ]],
     })
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local r = redis:new()
-    local ok, err = r:connect("127.0.0.1", 9999)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+      local r = redis:new()
+      local redis_connect_ok, redis_connect_err = r:connect("127.0.0.1", 9999)
+      assert.equal(nil, redis_connect_err)
+      assert.truthy(redis_connect_ok)
 
-    local res, err = r:get(server.ngrok_hostname .. ":latest")
-    assert.equal(nil, err)
-    assert.string(res)
+      local get_res, get_err = r:get(server.ngrok_hostname .. ":latest")
+      assert.equal(nil, get_err)
+      assert.string(get_res)
 
-    local data, err = cjson.decode(res)
-    assert.equal(nil, err)
-    assert.string(data["fullchain_pem"])
+      local data, json_err = cjson.decode(get_res)
+      assert.equal(nil, json_err)
+      assert.string(data["fullchain_pem"])
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.matches("issuing new certificate for", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("issuing new certificate for", error_log, nil, true)
+    end
 
     -- Wait for scheduled renewals to happen (since the check interval is
     -- every 1 second).
@@ -62,25 +64,27 @@ describe("redis", function()
 
     -- Next, ensure that that we're still able to access things using the
     -- existing certificate even after the renewal was triggered.
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.Not.matches("issuing new certificate for", error_log, nil, true)
+      error_log = server.nginx_error_log_tail:read()
+      assert.Not.matches("issuing new certificate for", error_log, nil, true)
+    end
 
-    local error_log = server.read_error_log()
+    error_log = server.read_error_log()
     assert.Not.matches("[warn]", error_log, nil, true)
     assert.Not.matches("[error]", error_log, nil, true)
     assert.Not.matches("[alert]", error_log, nil, true)
@@ -99,36 +103,38 @@ describe("redis", function()
       ]],
     })
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local r = redis:new()
-    local ok, err = r:connect("127.0.0.1", 9999)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+      local r = redis:new()
+      local redis_connect_ok, redis_connect_err = r:connect("127.0.0.1", 9999)
+      assert.equal(nil, redis_connect_err)
+      assert.truthy(redis_connect_ok)
 
-    local res, err = r:get("key-prefix:" .. server.ngrok_hostname .. ":latest")
-    assert.equal(nil, err)
-    assert.string(res)
+      local get_res, get_err = r:get("key-prefix:" .. server.ngrok_hostname .. ":latest")
+      assert.equal(nil, get_err)
+      assert.string(get_res)
 
-    local data, err = cjson.decode(res)
-    assert.equal(nil, err)
-    assert.string(data["fullchain_pem"])
+      local data, json_err = cjson.decode(get_res)
+      assert.equal(nil, json_err)
+      assert.string(data["fullchain_pem"])
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.matches("issuing new certificate for", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("issuing new certificate for", error_log, nil, true)
+    end
 
     -- Wait for scheduled renewals to happen (since the check interval is
     -- every 1 second).
@@ -143,25 +149,27 @@ describe("redis", function()
 
     -- Next, ensure that that we're still able to access things using the
     -- existing certificate even after the renewal was triggered.
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.Not.matches("issuing new certificate for", error_log, nil, true)
+      error_log = server.nginx_error_log_tail:read()
+      assert.Not.matches("issuing new certificate for", error_log, nil, true)
+    end
 
-    local error_log = server.read_error_log()
+    error_log = server.read_error_log()
     assert.Not.matches("[warn]", error_log, nil, true)
     assert.Not.matches("[error]", error_log, nil, true)
     assert.Not.matches("[alert]", error_log, nil, true)
@@ -181,35 +189,35 @@ describe("redis", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local r = redis:new()
-    local ok, err = r:connect("127.0.0.1", 9999)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+    local redis_connect_ok, redis_connect_err = r:connect("127.0.0.1", 9999)
+    assert.equal(nil, redis_connect_err)
+    assert.truthy(redis_connect_ok)
 
-    local ok, err = r:select(5)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+    local select_ok, select_err = r:select(5)
+    assert.equal(nil, select_err)
+    assert.truthy(select_ok)
 
-    local res, err = r:get("db-test-prefix:" .. server.ngrok_hostname .. ":latest")
-    assert.equal(nil, err)
-    assert.string(res)
+    local get_res, get_err = r:get("db-test-prefix:" .. server.ngrok_hostname .. ":latest")
+    assert.equal(nil, get_err)
+    assert.string(get_res)
 
-    local data, err = cjson.decode(res)
-    assert.equal(nil, err)
+    local data, json_err = cjson.decode(get_res)
+    assert.equal(nil, json_err)
     assert.string(data["fullchain_pem"])
 
     local error_log = server.read_error_log()
@@ -246,13 +254,13 @@ describe("redis", function()
     assert.equal("foo", res.body)
 
     local r = redis:new()
-    local ok, err = r:connect("127.0.0.1", 9999)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+    local redis_connect_ok, connect_err = r:connect("127.0.0.1", 9999)
+    assert.equal(nil, connect_err)
+    assert.truthy(redis_connect_ok)
 
-    local res, err = r:get("allow_domain_redis_test")
-    assert.equal(nil, err)
-    assert.equal("foo", res)
+    local get_res, get_err = r:get("allow_domain_redis_test")
+    assert.equal(nil, get_err)
+    assert.equal("foo", get_res)
 
     local error_log = server.read_error_log()
     assert.matches("allow_domain auto_ssl: table", error_log, nil, true)

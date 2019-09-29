@@ -1,7 +1,7 @@
-local http = require "resty.http"
 local cjson = require "cjson.safe"
-local server = require "spec.support.server"
+local http = require "resty.http"
 local redis = require "resty.redis"
+local server = require "spec.support.server"
 
 describe("json adapter cjson", function()
   before_each(server.stop)
@@ -18,39 +18,34 @@ describe("json adapter cjson", function()
     })
 
     local r = redis:new()
-    local ok, err = r:connect("127.0.0.1", 9999)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+    local connect_ok, connect_err = r:connect("127.0.0.1", 9999)
+    assert.equal(nil, connect_err)
+    assert.truthy(connect_ok)
 
-    local res, err = r:set(server.ngrok_hostname .. ":latest", '{"invalid_json"')
-    assert.equal(nil, err)
+    local _, set_err = r:set(server.ngrok_hostname .. ":latest", '{"invalid_json"')
+    assert.equal(nil, set_err)
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, http_connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, http_connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
-    local r = redis:new()
-    local ok, err = r:connect("127.0.0.1", 9999)
-    assert.equal(nil, err)
-    assert.truthy(ok)
+    local get_res, get_err = r:get(server.ngrok_hostname .. ":latest")
+    assert.equal(nil, get_err)
+    assert.string(get_res)
 
-    local res, err = r:get(server.ngrok_hostname .. ":latest")
-    assert.equal(nil, err)
-    assert.string(res)
-
-    local data, err = cjson.decode(res)
-    assert.equal(nil, err)
+    local data, json_err = cjson.decode(get_res)
+    assert.equal(nil, json_err)
     assert.string(data["fullchain_pem"])
 
     local error_log = server.read_error_log()

@@ -1,4 +1,3 @@
-local cjson = require "cjson.safe"
 local http = require "resty.http"
 local server = require "spec.support.server"
 local shell_blocking = require "shell-games"
@@ -13,22 +12,22 @@ describe("worker file permissions", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
-    local result, err = shell_blocking.capture_combined({ "find", server.current_test_dir .. "/auto-ssl", "-printf", [[./%P %u %g %m %y\n]] })
-    assert.equal(nil, err)
+    local result, shell_err = shell_blocking.capture_combined({ "find", server.current_test_dir .. "/auto-ssl", "-printf", [[./%P %u %g %m %y\n]] })
+    assert.equal(nil, shell_err)
 
     local output = string.gsub(result["output"], "%s+$", "")
     local lines = {}

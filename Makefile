@@ -102,7 +102,7 @@ install-test-deps:
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install shell-games 1.0.1-1
 
 lint:
-	luacheck lib
+	luacheck lib spec
 
 test:
 	rm -rf /tmp/resty-auto-ssl-server-luarocks

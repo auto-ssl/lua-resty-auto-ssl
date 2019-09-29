@@ -1,10 +1,10 @@
 local cjson = require "cjson.safe"
-local shell_blocking = require "shell-games"
-local http = require "resty.http"
-local server = require "spec.support.server"
-local pl_utils = require "pl.utils"
-local file = require "pl.file"
 local dir = require "pl.dir"
+local file = require "pl.file"
+local http = require "resty.http"
+local pl_utils = require "pl.utils"
+local server = require "spec.support.server"
+local shell_blocking = require "shell-games"
 
 describe("sanity", function()
   before_each(server.stop)
@@ -13,41 +13,45 @@ describe("sanity", function()
   it("issues a new SSL certificate and returns existing ones", function()
     server.start()
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.matches("issuing new certificate for", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("issuing new certificate for", error_log, nil, true)
+    end
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.Not.matches("issuing new certificate for", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.Not.matches("issuing new certificate for", error_log, nil, true)
+    end
 
     local error_log = server.read_error_log()
     assert.Not.matches("[warn]", error_log, nil, true)
@@ -60,11 +64,11 @@ describe("sanity", function()
     server.start()
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, nil, true)
-    assert.equal("18: self signed certificate", err)
+    local _, ssl_err = httpc:ssl_handshake(nil, nil, true)
+    assert.equal("18: self signed certificate", ssl_err)
 
     local error_log = server.read_error_log()
     assert.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ", error_log, nil, true)
@@ -81,11 +85,11 @@ describe("sanity", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal("18: self signed certificate", err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal("18: self signed certificate", ssl_err)
 
     local error_log = server.read_error_log()
     assert.matches("auto-ssl: domain not allowed - using fallback - " .. server.ngrok_hostname, error_log, nil, true)
@@ -109,11 +113,11 @@ describe("sanity", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal("18: self signed certificate", err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal("18: self signed certificate", ssl_err)
 
     local error_log = server.read_error_log()
     assert.matches("allow_domain called: " .. server.ngrok_hostname, error_log, nil, true)
@@ -144,11 +148,11 @@ describe("sanity", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal("18: self signed certificate", err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal("18: self signed certificate", ssl_err)
 
     local error_log = server.read_error_log()
     assert.matches("allow_domain set() called: " .. server.ngrok_hostname, error_log, nil, true)
@@ -162,11 +166,11 @@ describe("sanity", function()
     server.start()
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, "not-ours-" .. server.ngrok_hostname, true)
-    assert.equal("18: self signed certificate", err)
+    local _, ssl_err = httpc:ssl_handshake(nil, "not-ours-" .. server.ngrok_hostname, true)
+    assert.equal("18: self signed certificate", ssl_err)
 
     local error_log = server.read_error_log()
     assert.matches("auto-ssl: issuing new certificate for not-ours-" .. server.ngrok_hostname, error_log, nil, true)
@@ -180,11 +184,11 @@ describe("sanity", function()
     server.start()
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, "unresolvable-sdjfklsdjf.example", true)
-    assert.equal("18: self signed certificate", err)
+    local _, ssl_err = httpc:ssl_handshake(nil, "unresolvable-sdjfklsdjf.example", true)
+    assert.equal("18: self signed certificate", ssl_err)
 
     local error_log = server.read_error_log()
     assert.matches("auto-ssl: issuing new certificate for unresolvable-sdjfklsdjf.example", error_log, nil, true)
@@ -250,65 +254,73 @@ describe("sanity", function()
       ]]
     })
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9444)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9444)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, nil, true)
-    assert.equal("18: self signed certificate", err)
+      local _, ssl_err = httpc:ssl_handshake(nil, nil, true)
+      assert.equal("18: self signed certificate", ssl_err)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.Not.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
-    assert.matches("auto-ssl: issuing new certificate for non-sni-9444.example", error_log, nil, true)
-    assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
-    assert.matches("Name does not end in a public suffix", error_log, nil, true)
-    assert.Not.matches("[alert]", error_log, nil, true)
-    assert.Not.matches("[emerg]", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.Not.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
+      assert.matches("auto-ssl: issuing new certificate for non-sni-9444.example", error_log, nil, true)
+      assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
+      assert.matches("Name does not end in a public suffix", error_log, nil, true)
+      assert.Not.matches("[alert]", error_log, nil, true)
+      assert.Not.matches("[emerg]", error_log, nil, true)
+    end
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9445)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9445)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, nil, true)
-    assert.equal("18: self signed certificate", err)
+      local _, ssl_err = httpc:ssl_handshake(nil, nil, true)
+      assert.equal("18: self signed certificate", ssl_err)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.Not.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
-    assert.matches("auto-ssl: issuing new certificate for non-sni-mismatch-9445.example", error_log, nil, true)
-    assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
-    assert.matches("Name does not end in a public suffix", error_log, nil, true)
-    assert.Not.matches("[alert]", error_log, nil, true)
-    assert.Not.matches("[emerg]", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.Not.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
+      assert.matches("auto-ssl: issuing new certificate for non-sni-mismatch-9445.example", error_log, nil, true)
+      assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
+      assert.matches("Name does not end in a public suffix", error_log, nil, true)
+      assert.Not.matches("[alert]", error_log, nil, true)
+      assert.Not.matches("[emerg]", error_log, nil, true)
+    end
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9446)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9446)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, nil, true)
-    assert.equal("18: self signed certificate", err)
+      local _, ssl_err = httpc:ssl_handshake(nil, nil, true)
+      assert.equal("18: self signed certificate", ssl_err)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
-    assert.Not.matches("auto-ssl: issuing new certificate", error_log, nil, true)
-    assert.Not.matches("[error]", error_log, nil, true)
-    assert.Not.matches("[alert]", error_log, nil, true)
-    assert.Not.matches("[emerg]", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
+      assert.Not.matches("auto-ssl: issuing new certificate", error_log, nil, true)
+      assert.Not.matches("[error]", error_log, nil, true)
+      assert.Not.matches("[alert]", error_log, nil, true)
+      assert.Not.matches("[emerg]", error_log, nil, true)
+    end
 
-    local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9447)
-    assert.equal(nil, err)
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9447)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, nil, true)
-    assert.equal("18: self signed certificate", err)
+      local _, ssl_err = httpc:ssl_handshake(nil, nil, true)
+      assert.equal("18: self signed certificate", ssl_err)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.Not.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
-    assert.matches("auto-ssl: domain not allowed - using fallback - non-sni-disallowed-9447.example", error_log, nil, true)
-    assert.Not.matches("auto-ssl: issuing new certificate", error_log, nil, true)
-    assert.Not.matches("[warn]", error_log, nil, true)
-    assert.Not.matches("[error]", error_log, nil, true)
-    assert.Not.matches("[alert]", error_log, nil, true)
-    assert.Not.matches("[emerg]", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.Not.matches("auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - ,", error_log, nil, true)
+      assert.matches("auto-ssl: domain not allowed - using fallback - non-sni-disallowed-9447.example", error_log, nil, true)
+      assert.Not.matches("auto-ssl: issuing new certificate", error_log, nil, true)
+      assert.Not.matches("[warn]", error_log, nil, true)
+      assert.Not.matches("[error]", error_log, nil, true)
+      assert.Not.matches("[alert]", error_log, nil, true)
+      assert.Not.matches("[emerg]", error_log, nil, true)
+    end
   end)
 
   it("deletes dehydrated temporary files after successful cert deployment", function()
@@ -324,25 +336,25 @@ describe("sanity", function()
     }, pl_utils.split(result["output"]))
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local error_log = server.nginx_error_log_tail:read()
     assert.matches("issuing new certificate for", error_log, nil, true)
 
-    local result, err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
-    assert.equal(nil, err)
+    local ls_result, ls_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
+    assert.equal(nil, ls_err)
     assert.same({
       "accounts",
       "certs",
@@ -350,13 +362,13 @@ describe("sanity", function()
       "conf.d",
       "config",
       "locks",
-    }, pl_utils.split(result["output"]))
+    }, pl_utils.split(ls_result["output"]))
 
-    local result, err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt/certs" })
-    assert.equal(nil, err)
-    assert.same({}, pl_utils.split(result["output"]))
+    local ls_certs_result, ls_certs_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt/certs" })
+    assert.equal(nil, ls_certs_err)
+    assert.same({}, pl_utils.split(ls_certs_result["output"]))
 
-    local error_log = server.read_error_log()
+    error_log = server.read_error_log()
     assert.Not.matches("[warn]", error_log, nil, true)
     assert.Not.matches("[error]", error_log, nil, true)
     assert.Not.matches("[alert]", error_log, nil, true)
@@ -370,32 +382,35 @@ describe("sanity", function()
     -- that attempt to write this cert to storage will temporarily fail.
     assert(dir.makepath(server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest")))
 
-    local result, err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
-    assert.equal(nil, err)
+    local ls_before_result, ls_before_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
+    assert.equal(nil, ls_before_err)
     assert.same({
       "accounts",
       "conf.d",
       "config",
       "locks",
-    }, pl_utils.split(result["output"]))
+    }, pl_utils.split(ls_before_result["output"]))
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal("18: self signed certificate", err)
+    do
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.matches("auto-ssl: issuing new certificate for", error_log, nil, true)
-    assert.matches("auto-ssl: failed to open file for writing:", error_log, nil, true)
-    assert.matches("auto-ssl: failed to set cert", error_log, nil, true)
-    assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
-    assert.matches("auto-ssl: issuing new certificate failed", error_log, nil, true)
-    assert.matches("auto-ssl: could not get certificate for", error_log, nil, true)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal("18: self signed certificate", ssl_err)
 
-    local result, err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
-    assert.equal(nil, err)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("auto-ssl: issuing new certificate for", error_log, nil, true)
+      assert.matches("auto-ssl: failed to open file for writing:", error_log, nil, true)
+      assert.matches("auto-ssl: failed to set cert", error_log, nil, true)
+      assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
+      assert.matches("auto-ssl: issuing new certificate failed", error_log, nil, true)
+      assert.matches("auto-ssl: could not get certificate for", error_log, nil, true)
+    end
+
+    local ls_result, ls_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
+    assert.equal(nil, ls_err)
     assert.same({
       "accounts",
       "certs",
@@ -403,34 +418,36 @@ describe("sanity", function()
       "conf.d",
       "config",
       "locks",
-    }, pl_utils.split(result["output"]))
+    }, pl_utils.split(ls_result["output"]))
 
-    local result, err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt/certs" })
-    assert.equal(nil, err)
+    local ls_certs_result, ls_certs_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt/certs" })
+    assert.equal(nil, ls_certs_err)
     assert.same({
       server.ngrok_hostname,
-    }, pl_utils.split(result["output"]))
+    }, pl_utils.split(ls_certs_result["output"]))
 
     assert(dir.rmtree(server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest")))
 
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    do
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
-    assert.equal("foo", body)
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
 
-    local error_log = server.nginx_error_log_tail:read()
-    assert.matches("auto-ssl: issuing new certificate for", error_log, nil, true)
-    assert.matches("Checking domain name(s) of existing cert... unchanged.", error_log, nil, true)
-    assert.matches("auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy", error_log, nil, true)
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("auto-ssl: issuing new certificate for", error_log, nil, true)
+      assert.matches("Checking domain name(s) of existing cert... unchanged.", error_log, nil, true)
+      assert.matches("auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy", error_log, nil, true)
+    end
 
     local error_log = server.read_error_log()
     assert.Not.matches("[alert]", error_log, nil, true)
@@ -458,18 +475,18 @@ describe("sanity", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local error_log = server.nginx_error_log_tail:read()
@@ -485,18 +502,18 @@ describe("sanity", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local error_log = server.nginx_error_log_tail:read()
@@ -518,18 +535,18 @@ describe("sanity", function()
     -- Wait for scheduled renewals to happen.
     ngx.sleep(3)
 
-    local error_log = server.nginx_error_log_tail:read()
+    error_log = server.nginx_error_log_tail:read()
     assert.matches("auto-ssl: checking certificate renewals for " .. server.ngrok_hostname, error_log, nil, true)
     assert.matches("auto-ssl: setting expiration date of " .. server.ngrok_hostname, error_log, nil, true)
     assert.matches("auto-ssl: expiry date is more than 30 days out, skipping renewal: " .. server.ngrok_hostname, error_log, nil, true)
 
-    local content = assert(file.read(cert_path))
+    content = assert(file.read(cert_path))
     assert.string(content)
-    local data = assert(cjson.decode(content))
+    data = assert(cjson.decode(content))
     assert.number(data["expiry"])
     assert.equal(original_expiry, data["expiry"])
 
-    local error_log = server.read_error_log()
+    error_log = server.read_error_log()
     assert.Not.matches("[warn]", error_log, nil, true)
     assert.Not.matches("[error]", error_log, nil, true)
     assert.Not.matches("[alert]", error_log, nil, true)
@@ -544,18 +561,18 @@ describe("sanity", function()
     })
 
     local httpc = http.new()
-    local _, err = httpc:connect("127.0.0.1", 9443)
-    assert.equal(nil, err)
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
 
-    local _, err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, err)
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
 
-    local res, err = httpc:request({ path = "/foo" })
-    assert.equal(nil, err)
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
 
-    local body, err = res:read_body()
-    assert.equal(nil, err)
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
     assert.equal("foo", body)
 
     local error_log = server.nginx_error_log_tail:read()
@@ -575,27 +592,27 @@ describe("sanity", function()
     -- Wait for scheduled renewals to happen.
     ngx.sleep(3)
 
-    local error_log = server.nginx_error_log_tail:read()
+    error_log = server.nginx_error_log_tail:read()
     assert.matches("auto-ssl: checking certificate renewals for " .. server.ngrok_hostname, error_log, nil, true)
     assert.matches("Skipping renew!", error_log, nil, true)
 
     -- Since this cert renewal is still valid, it should still remain despite
     -- being marked as expired.
-    local content = assert(file.read(cert_path))
+    content = assert(file.read(cert_path))
     assert.string(content)
-    local data = assert(cjson.decode(content))
+    data = assert(cjson.decode(content))
     assert.number(data["expiry"])
 
     -- Copy the cert to an unresolvable domain to verify that failed renewals
     -- will be removed.
     local unresolvable_cert_path = server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri("unresolvable-sdjfklsdjf.example:latest")
-    local result, err = shell_blocking.capture_combined({ "cp", "-p", cert_path, unresolvable_cert_path })
-    assert(not err, err)
+    local _, cp_err = shell_blocking.capture_combined({ "cp", "-p", cert_path, unresolvable_cert_path })
+    assert.equal(nil, cp_err)
 
     -- Wait for scheduled renewals to happen.
     ngx.sleep(5)
 
-    local error_log = server.nginx_error_log_tail:read()
+    error_log = server.nginx_error_log_tail:read()
     assert.matches("auto-ssl: checking certificate renewals for " .. server.ngrok_hostname, error_log, nil, true)
     assert.matches("Skipping renew!", error_log, nil, true)
     assert.matches("auto-ssl: checking certificate renewals for unresolvable-sdjfklsdjf.example", error_log, nil, true)
@@ -606,17 +623,17 @@ describe("sanity", function()
 
     -- Verify that the valid cert still remains (despite being marked as
     -- expired).
-    local content = assert(file.read(cert_path))
+    content = assert(file.read(cert_path))
     assert.string(content)
-    local data = assert(cjson.decode(content))
+    data = assert(cjson.decode(content))
     assert.number(data["expiry"])
 
     -- Verify that the failed renewal gets deleted.
-    local content, err = file.read(unresolvable_cert_path)
-    assert.equal(nil, content)
-    assert.matches("No such file or directory", err, nil, true)
+    local file_content, file_err = file.read(unresolvable_cert_path)
+    assert.equal(nil, file_content)
+    assert.matches("No such file or directory", file_err, nil, true)
 
-    local error_log = server.read_error_log()
+    error_log = server.read_error_log()
     assert.Not.matches("[alert]", error_log, nil, true)
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)
@@ -643,8 +660,8 @@ describe("sanity", function()
     assert.equal('"inspect"', inspect("inspect"))
 
     local httpc = http.new()
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/lib-test")
-    assert.equal(nil, err)
+    local res, request_err = httpc:request_uri("http://127.0.0.1:9080/lib-test")
+    assert.equal(nil, request_err)
     assert.equal(200, res.status)
     local data, err = cjson.decode(res.body)
     assert.equal(nil, err)

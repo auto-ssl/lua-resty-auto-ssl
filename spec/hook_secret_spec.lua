@@ -1,5 +1,5 @@
-local server = require "spec.support.server"
 local http = require "resty.http"
+local server = require "spec.support.server"
 
 describe("hook secret", function()
   before_each(server.stop)
@@ -35,17 +35,17 @@ describe("hook secret", function()
     assert.equal(64, string.len(res.body))
     local secret1 = res.body
 
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/auto-ssl-init")
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
-    assert.equal("init", res.body)
+    local init_res, init_err = httpc:request_uri("http://127.0.0.1:9080/auto-ssl-init")
+    assert.equal(nil, init_err)
+    assert.equal(200, init_res.status)
+    assert.equal("init", init_res.body)
 
-    local res, err = httpc:request_uri("http://127.0.0.1:9080/hook-server-secret")
-    assert.equal(nil, err)
-    assert.equal(200, res.status)
-    assert.string(res.body)
-    assert.equal(64, string.len(res.body))
-    local secret2 = res.body
+    local res2, err2 = httpc:request_uri("http://127.0.0.1:9080/hook-server-secret")
+    assert.equal(nil, err2)
+    assert.equal(200, res2.status)
+    assert.string(res2.body)
+    assert.equal(64, string.len(res2.body))
+    local secret2 = res2.body
 
     assert.equal(secret1, secret2)
 
