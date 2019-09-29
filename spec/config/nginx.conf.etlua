@@ -44,8 +44,8 @@ http {
     auto_ssl:init_worker()
   }
 
-  ssl_certificate <%- root_dir %>/t/certs/example_fallback.crt;
-  ssl_certificate_key <%- root_dir %>/t/certs/example_fallback.key;
+  ssl_certificate <%- root_dir %>/spec/certs/example_fallback.crt;
+  ssl_certificate_key <%- root_dir %>/spec/certs/example_fallback.key;
 
   server {
     listen 9443 ssl;
