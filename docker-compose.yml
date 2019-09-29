@@ -28,6 +28,13 @@ services:
     volumes:
       - .:/app
       - ubuntu_build_cache:/app/build
+  openresty1.13:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-openresty1.13
+    volumes:
+      - .:/app
+      - openresty1.13_build_cache:/app/build
   lua51:
     build:
       context: .
@@ -40,4 +47,5 @@ volumes:
   centos_build_cache:
   alpine_build_cache:
   ubuntu_build_cache:
+  openresty1.13_build_cache:
   lua51_build_cache:

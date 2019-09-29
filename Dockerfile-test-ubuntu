@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.13.6.2-2-bionic
+FROM openresty/openresty:1.15.8.2-1-bionic
 
 # Runtime dependencies
 RUN apt-get update && \
