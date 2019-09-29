@@ -2,6 +2,16 @@ local auto_ssl = require "resty.auto-ssl"
 local lock = require "resty.lock"
 local shell_blocking = require "shell-games"
 
+local run = shell_blocking.capture_combined
+-- Don't capture output in older OpenResty versions prior to SIGCHLD handling
+-- being fixed: https://github.com/openresty/lua-nginx-module/pull/1296
+-- While this still seems to work, it can cause sporadic, but hard to reproduce
+-- errors (that don't affect behavior) in the test suite against older
+-- OpenResty versions.
+if ngx.config.ngx_lua_version < 10014 then
+  run = shell_blocking.run
+end
+
 local function start()
   local _, set_false_err = ngx.shared.auto_ssl_settings:safe_set("sockproc_started", false)
   if set_false_err then
@@ -10,7 +20,7 @@ local function start()
 
   ngx.log(ngx.NOTICE, "auto-ssl: starting sockproc")
 
-  local _, run_err = shell_blocking.capture_combined({ auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc" }, { umask = "0022" })
+  local _, run_err = run({ auto_ssl.lua_root .. "/bin/resty-auto-ssl/start_sockproc" }, { umask = "0022" })
   if run_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to start sockproc: ", run_err)
   else
