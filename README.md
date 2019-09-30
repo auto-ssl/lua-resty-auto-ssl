@@ -300,14 +300,17 @@ cjson and dkjson json adapters are supplied, but custom external adapters may al
 auto_ssl:set("json_adapter", "resty.auto-ssl.json_adapters.dkjson")
 ```
 
-### `proxy_addr`
+### `http_proxy_options`
+*Default:* `nil`
 
- The `proxy_addr` specify address of proxy which will be used for requests to issue SSL certificates.
+Configure an HTTP proxy to use when making OCSP stapling requests. Accepts a table of options for [lua-resty-http's `set_proxy_options`](https://github.com/ledgetech/lua-resty-http#set_proxy_options).
 
 *Example:*
 
 ```lua
-auto_ssl:set("proxy_addr", "http://localhost:3128")
+auto_ssl:set("http_proxy_options", {
+  http_proxy = "http://localhost:3128",
+})
 ```
 
 ## `ssl_certificate` Configuration

@@ -172,10 +172,9 @@ local function get_ocsp_response(fullchain_der, auto_ssl_instance)
   -- Make the OCSP request against the OCSP server.
   local httpc = http.new()
   httpc:set_timeout(10000)
-  if (auto_ssl_instance:get("proxy_addr") ~= nil) then
-    httpc:set_proxy_options({
-      http_proxy = auto_ssl_instance:get("proxy_addr")
-    })
+  local http_proxy_options = auto_ssl_instance:get("http_proxy_options")
+  if http_proxy_options then
+    httpc:set_proxy_options(http_proxy_options)
   end
 
   local res, req_err = httpc:request_uri(ocsp_url, {
