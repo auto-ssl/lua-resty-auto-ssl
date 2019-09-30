@@ -13,7 +13,8 @@ RUNTIME_DEPENDENCIES:=bash curl cut date diff grep mktemp openssl sed
 	install \
 	install-test-deps \
 	lint \
-	test
+	test \
+	release
 
 all: \
 	check-dependencies \
@@ -108,3 +109,18 @@ test:
 	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks install dkjson 2.5-2
 	busted ./spec
+
+release:
+	# Ensure the rockspec has been renamed and updated.
+	grep -q -F 'version = "${VERSION}-1"' "lua-resty-auto-ssl-${VERSION}-1.rockspec"
+	grep -q -F 'tag = "v${VERSION}"' "lua-resty-auto-ssl-${VERSION}-1.rockspec"
+	# Ensure the CHANGELOG has been updated.
+	grep -q -F '## ${VERSION} -' CHANGELOG.md
+	# Make sure tests pass.
+	docker-compose run --rm -v "${PWD}:/app" app make test
+	# Check for remote tag.
+	git ls-remote -t | grep -F "refs/tags/v${VERSION}^{}"
+	# Verify LuaRock can be built locally.
+	docker-compose run --rm -v "${PWD}:/app" app luarocks pack "lua-resty-auto-ssl-${VERSION}-1.rockspec"
+	# Upload to LuaRocks
+	docker-compose run --rm -v "${HOME}/.luarocks/upload_config.lua:/root/.luarocks/upload_config.lua" -v "${PWD}:/app" app luarocks upload "lua-resty-auto-ssl-${VERSION}-1.rockspec"

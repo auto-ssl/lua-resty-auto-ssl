@@ -370,6 +370,15 @@ $ docker-compose run --rm app make test
 
 The test suite is implemented using nginx' [`Test::Nginx`](https://metacpan.org/pod/Test::Nginx::Socket) cpan module.
 
+### Release Process
+
+To release a new version to LuaRocks:
+
+- Ensure `CHANGELOG.md` is up to date.
+- Move the rockspec file to the new version number (`git mv lua-resty-auto-ssl-X.X.X-1.rockspec lua-resty-auto-ssl-X.X.X-1.rockspec`), and update the `version` and `tag` variables in the rockspec file.
+- Commit and tag the release (`git tag -a vX.X.X -m "Tagging vX.X.X" && git push origin vX.X.X`).
+- Run `make release VERSION=X.X.X`.
+
 ## Credits
 
 **[dehydrated](https://github.com/lukas2511/dehydrated)** is the client used internally that does all the heavy lifting with Let's Encrypt.
