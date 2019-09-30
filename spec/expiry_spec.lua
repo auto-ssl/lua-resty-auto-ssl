@@ -8,6 +8,37 @@ describe("expiry", function()
   before_each(server.stop)
   after_each(server.stop)
 
+  it("stores the expiry date on issuance", function()
+    server.start()
+
+    local httpc = http.new()
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
+
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal(nil, ssl_err)
+
+    local res, request_err = httpc:request({ path = "/foo" })
+    assert.equal(nil, request_err)
+    assert.equal(200, res.status)
+
+    local body, body_err = res:read_body()
+    assert.equal(nil, body_err)
+    assert.equal("foo", body)
+
+    local error_log = server.nginx_error_log_tail:read()
+    assert.matches("issuing new certificate for " .. server.ngrok_hostname, error_log, nil, true)
+    assert.Not.matches("auto-ssl: checking certificate renewals for " .. server.ngrok_hostname, error_log, nil, true)
+    assert.Not.matches("failed to get the expiry date", error_log, nil, true)
+
+    local cert_path = server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest")
+    local content = assert(file.read(cert_path))
+    assert.string(content)
+    local data = assert(cjson.decode(content))
+    assert.number(data["expiry"])
+    assert(data["expiry"] > 0, data["expiry"] .. " is not greater than 0")
+  end)
+
   it("fills in missing expiry dates in storage from certificate expiration on renewal", function()
     server.start({
       auto_ssl_pre_new = [[

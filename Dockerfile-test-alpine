@@ -6,7 +6,6 @@ WORKDIR /app
 # Runtime dependencies
 RUN apk add --no-cache \
     bash \
-    coreutils \
     curl \
     diffutils \
     grep \
@@ -27,6 +26,7 @@ RUN apk add --no-cache \
     procps \
     redis \
     sudo \
+    tzdata \
     wget && \
   curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/naDTyS8Kyxv/ngrok-2.3.34-linux-386.tar.gz && \
   tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/ && \

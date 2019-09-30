@@ -1,3 +1,4 @@
+local parse_openssl_time = require "resty.auto-ssl.utils.parse_openssl_time"
 local shell_blocking = require "shell-games"
 
 -- This server provides an internal-only API for the dehydrated bash hook
@@ -42,7 +43,13 @@ return function(auto_ssl_instance)
     assert(params["fullchain"])
     assert(params["privkey"])
     assert(params["expiry"])
-    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"], tonumber(params["expiry"]))
+
+    local expiry, parse_err = parse_openssl_time(params["expiry"])
+    if parse_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to parse expiry date: ", parse_err)
+    end
+
+    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"], expiry)
     if err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set cert: ", err)
       return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
