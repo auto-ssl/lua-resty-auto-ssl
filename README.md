@@ -148,7 +148,8 @@ The callback function's arguments are:
 
 - `domain`: The domain of the incoming request.
 - `auto_ssl`: The current auto-ssl instance.
-- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_configuration` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis (see example in [`request_domain`](#request_domain)).
+- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_certificate` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis (see example in [`request_domain`](#request_domain)). Note, this option is **not** passed in when this function is called for renewals, so your function should handle that accordingly.
+- `renewal`: Boolean value indicating whether this function is being called during certificate renewal or not. When `true`, the `ssl_options` argument will not be present.
 
 When using the Redis storage adapter, you can access the current Redis connection inside the `allow_domain` callback by accessing `auto_ssl.storage.adapter:get_connection()`.
 
@@ -226,7 +227,7 @@ A function that determines the hostname of the request. By default, the SNI doma
 The callback function's arguments are:
 
 - `ssl`: An instance of the [`ngx.ssl`](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md) module.
-- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_configuration` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis.
+- `ssl_options`: A table of optional configuration options that were passed to the [`ssl_certificate` function](#ssl_certificate-configuration). This can be used to customize the behavior on a per nginx `server` basis.
 
 *Example:*
 

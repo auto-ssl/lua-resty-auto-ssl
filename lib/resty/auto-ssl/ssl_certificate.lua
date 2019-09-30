@@ -122,7 +122,7 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
   -- We may want to consider caching the results of allow_domain lookups
   -- (including negative caching or disallowed domains).
   local allow_domain = auto_ssl_instance:get("allow_domain")
-  if not allow_domain(domain, auto_ssl_instance, ssl_options) then
+  if not allow_domain(domain, auto_ssl_instance, ssl_options, false) then
     return nil, "domain not allowed"
   end
 

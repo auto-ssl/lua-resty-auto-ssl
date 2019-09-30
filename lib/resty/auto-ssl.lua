@@ -23,7 +23,7 @@ function _M.new(options)
   end
 
   if not options["allow_domain"] then
-    options["allow_domain"] = function(domain, auto_ssl, ssl_options) -- luacheck: ignore
+    options["allow_domain"] = function(domain, auto_ssl, ssl_options, renewal) -- luacheck: ignore
       return false
     end
   end
