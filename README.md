@@ -378,6 +378,7 @@ To release a new version to LuaRocks:
 - Move the rockspec file to the new version number (`git mv lua-resty-auto-ssl-X.X.X-1.rockspec lua-resty-auto-ssl-X.X.X-1.rockspec`), and update the `version` and `tag` variables in the rockspec file.
 - Commit and tag the release (`git tag -a vX.X.X -m "Tagging vX.X.X" && git push origin vX.X.X`).
 - Run `make release VERSION=X.X.X`.
+- Copy the CHANGELOG notes into a [new GitHub Release](https://github.com/GUI/lua-resty-auto-ssl/releases/new).
 
 ## Credits
 
