@@ -34,9 +34,9 @@ function _M.get_connection(self)
   local ok, err
 
   if self.options["socket"] then
-    ok, err = connection:connect(self.options["socket"])
+    ok, err = connection:connect(self.options["socket"], self.options["connect_options"])
   else
-    ok, err = connection:connect(self.options["host"], self.options["port"])
+    ok, err = connection:connect(self.options["host"], self.options["port"], self.options["connect_options"])
   end
   if not ok then
     return false, err

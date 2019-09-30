@@ -270,4 +270,32 @@ describe("redis", function()
     assert.Not.matches("[alert]", error_log, nil, true)
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)
+
+  it("accepts additional connect options", function()
+    server.start({
+      auto_ssl_pre_new = [[
+        options["storage_adapter"] = "resty.auto-ssl.storage_adapters.redis"
+        options["redis"] = {
+          port = 9999,
+          connect_options = {
+            pool = { "invalid-value" },
+          },
+        }
+      ]],
+    })
+
+    local httpc = http.new()
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
+
+    local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+    assert.equal("18: self signed certificate", ssl_err)
+
+    local error_log = server.read_error_log()
+    assert.matches("bad argument #3 to 'connect'", error_log, nil, true)
+    assert.Not.matches("[warn]", error_log, nil, true)
+    assert.matches("[error]", error_log, nil, true)
+    assert.Not.matches("[alert]", error_log, nil, true)
+    assert.Not.matches("[emerg]", error_log, nil, true)
+  end)
 end)

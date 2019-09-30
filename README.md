@@ -204,12 +204,13 @@ auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
 
 If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts the following options:
 
-- `host`
-- `port`
-- `socket` (for unix socket paths, in the format of `"unix:/path/to/unix.sock"`)
-- `auth`
-- `db` (the [Redis database number](https://redis.io/commands/select) used by lua-resty-auto-ssl to save certificates)
-- `prefix`
+- `host`: Host to connect to (defaults to `127.0.0.1`).
+- `port`: Port to connect to (defaults to `6379`).
+- `socket`: Instead of specifying `host` and `port` to connect to, a unix socket path can be given instead (in the format of `"unix:/path/to/unix.sock").`
+- `connect_options`: Additional connection options to pass to the Redis [`connect`](https://github.com/openresty/lua-resty-redis#connect) function.
+- `auth`: Value to pass to the [`AUTH` command](https://github.com/openresty/lua-resty-redis#redis-authentication).
+- `db`: The [Redis database number](https://redis.io/commands/select) used by lua-resty-auto-ssl to save certificates
+- `prefix`: Prefix all keys stored in Redis with this string.
 
 *Example:*
 
