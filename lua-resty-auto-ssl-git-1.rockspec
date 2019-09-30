@@ -11,7 +11,7 @@ description = {
 }
 dependencies = {
   "lua-resty-http",
-  "shell-games >= 1.0.2",
+  "shell-games >= 1.1.0",
 }
 build = {
   type = "make",
