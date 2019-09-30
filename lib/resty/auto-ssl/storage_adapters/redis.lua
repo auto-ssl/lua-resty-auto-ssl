@@ -33,10 +33,11 @@ function _M.get_connection(self)
   connection = redis:new()
   local ok, err
 
+  local connect_options = self.options["connect_options"] or {}
   if self.options["socket"] then
-    ok, err = connection:connect(self.options["socket"], self.options["connect_options"])
+    ok, err = connection:connect(self.options["socket"], connect_options)
   else
-    ok, err = connection:connect(self.options["host"], self.options["port"], self.options["connect_options"])
+    ok, err = connection:connect(self.options["host"], self.options["port"], connect_options)
   end
   if not ok then
     return false, err
