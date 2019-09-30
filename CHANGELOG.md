@@ -1,5 +1,30 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.13.0 - 2019-09-30
+
+### Upgrade Notes
+
+This version upgrades the bundled version of the dehydrated library to fix certificate registration due to recent changes in the Let's Encrypt service. It also brings support for ACMEv2 which will be required for new account registration in November. Upgrading is recommended or certificate registration and renewal may fail. See [#192](https://github.com/GUI/lua-resty-auto-ssl/issues/192), [#189](https://github.com/GUI/lua-resty-auto-ssl/issues/189) for more details.
+
+### Added
+- Allow for additional Redis connect options to be specified. ([#191](https://github.com/GUI/lua-resty-auto-ssl/issues/191))
+- Pass `ssl_options` and `renewal` arguments to the `allow_domain` callback. Thanks to [@gohai](https://github.com/gohai). ([#123](https://github.com/GUI/lua-resty-auto-ssl/pull/123), [#176](https://github.com/GUI/lua-resty-auto-ssl/pull/176))
+- Add support for specifying HTTP proxy options for OCSP requests. Thanks to [@Unknown22](https://github.com/Unknown22). ([#133](https://github.com/GUI/lua-resty-auto-ssl/pull/133))
+
+### Changed
+- Upgrade dehydrated to v0.6.5. This fixes "badNonce" errors cropping up since 2019-09-23 and also supports ACMEv2 which will be required for new account registration in November. Thanks to [@luto](https://github.com/luto). ([#190](https://github.com/GUI/lua-resty-auto-ssl/pull/190), [#192](https://github.com/GUI/lua-resty-auto-ssl/issues/192), [#189](https://github.com/GUI/lua-resty-auto-ssl/issues/189))
+- Check whether domains are allowed (by calling `allow_domain` callback) on renewals. Thanks to [@yveslaroche](https://github.com/yveslaroche). ([#176](https://github.com/GUI/lua-resty-auto-ssl/pull/176))
+- Remove certificates that cannot be successfully renewed. Thanks to [@gohai](https://github.com/gohai). ([#128](https://github.com/GUI/lua-resty-auto-ssl/pull/128))
+- Don't store backups of previous versions of certificates. Thanks to [@gohai](https://github.com/gohai). ([#124](https://github.com/GUI/lua-resty-auto-ssl/pull/124))
+- Cleanup unused cert files after successfully adding certs to permanent storage. Thanks to [@gohai](https://github.com/gohai). ([#155](https://github.com/GUI/lua-resty-auto-ssl/pull/155))
+- Randomize order of certificate renewal processing. Thanks to [@luto](https://github.com/luto). ([#154](https://github.com/GUI/lua-resty-auto-ssl/pull/154))
+- Upgrade sockproc to newer version to fix compiling under FreeBSD. Thanks to [@imerr](https://github.com/imerr). ([#118](https://github.com/GUI/lua-resty-auto-ssl/pull/118))
+- Improve shell command escaping and handling. This could potentially fix issues if trying to store files in directories with spaces in the name. ([#175](https://github.com/GUI/lua-resty-auto-ssl/pull/175))
+- Switch the test suite to be written in Lua to better align with the code base, and hopefully make it easier to debug and maintain. ([#193](https://github.com/GUI/lua-resty-auto-ssl/pull/193))
+
+### Fixed
+- Fix documentation errors. Thanks to [@jfreax](https://github.com/jfreax), [@Ephemera](https://github.com/Ephemera). ([#118](https://github.com/GUI/lua-resty-auto-ssl/pull/120), [#183](https://github.com/GUI/lua-resty-auto-ssl/pull/183))
+
 ## 0.12.0 - 2018-02-04
 
 ### Upgrade Notes
