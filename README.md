@@ -138,7 +138,7 @@ http {
 Additional configuration options can be set on the `auto_ssl` instance that is created:
 
 ### `allow_domain`
-*Default:* `function(domain, auto_ssl, ssl_options) return false end`
+*Default:* `function(domain, auto_ssl, ssl_options, renewal) return false end`
 
 A function that determines whether the incoming domain should automatically issue a new SSL certificate.
 
@@ -156,7 +156,7 @@ When using the Redis storage adapter, you can access the current Redis connectio
 *Example:*
 
 ```lua
-auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options)
+auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options, renewal)
   return ngx.re.match(domain, "^(example.com|example.net)$", "ijo")
 end)
 ```
