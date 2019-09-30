@@ -13,9 +13,6 @@ RUN yum -y install \
 # Build dependencies.
 RUN yum -y install make
 
-# Dependencies for the release process.
-RUN yum -y install git zip
-
 # Test dependencies
 RUN yum -y install epel-release && \
   yum -y install \
