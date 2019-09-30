@@ -368,7 +368,7 @@ After checking out the repo, Docker can be used to run the test suite:
 $ docker-compose run --rm app make test
 ```
 
-The test suite is implemented using nginx' [`Test::Nginx`](https://metacpan.org/pod/Test::Nginx::Socket) cpan module.
+Tests can be found in the [`spec`](https://github.com/GUI/lua-resty-auto-ssl/tree/master/spec) directory, and the test suite is implemented using [busted](http://olivinelabs.com/busted/).
 
 ### Release Process
 
