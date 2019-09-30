@@ -10,7 +10,6 @@ RUNTIME_DEPENDENCIES:=bash curl cut date diff grep mktemp openssl sed
 .PHONY: \
 	all \
 	check-dependencies \
-	grind \
 	install \
 	install-test-deps \
 	lint \
@@ -109,6 +108,3 @@ test:
 	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks install dkjson 2.5-2
 	busted ./spec
-
-grind:
-	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test
