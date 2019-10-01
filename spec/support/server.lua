@@ -140,14 +140,21 @@ function _M.start(options)
       assert(dir.rmtree(_M.test_dir))
     end
 
+    -- We persist the Let's Encrypt account configuration across individual
+    -- test runs so that each test doesn't register it's own account and we
+    -- don't hit the Let's Encrypt rate limits of 10 accounts per IP per 3
+    -- hours (https://letsencrypt.org/docs/rate-limits/).
+    --
+    -- But we still want to ensure the normal account creation process works
+    -- and creates files with the right permissions, so if the persisted
+    -- account config is older than 4 hours, delete it, so the next test run
+    -- perform a normal, fresh account registration.
     if path.exists(_M.dehydrated_persist_accounts_dir) then
       local persist_account_time = path.getmtime(_M.dehydrated_persist_accounts_dir)
       if persist_account_time < ngx.now() - 60 * 60 * 4 then
         assert(dir.rmtree(_M.dehydrated_persist_accounts_dir))
       end
     end
-
-    assert(dir.makepath(path.dirname(_M.dehydrated_persist_accounts_dir)))
 
     _M.started_once = true
   end
@@ -169,7 +176,12 @@ function _M.start(options)
   assert(dir.makepath(_M.current_test_dir .. "/auto-ssl/letsencrypt"))
   assert(unistd.chown(_M.current_test_dir .. "/auto-ssl", _M.nobody_user))
 
+  -- If there is persisted account configuration, copy it into place for this
+  -- test run. This prevents us hitting account registration rate limits if we
+  -- were to register a new account on every test.
   if path.exists(_M.dehydrated_persist_accounts_dir) then
+    _M.dehydrated_cached_accounts = true
+
     local _, cp_err = shell_blocking.capture_combined({ "cp", "-pr", _M.dehydrated_persist_accounts_dir, _M.current_test_accounts_dir })
     assert(not cp_err, cp_err)
 
@@ -218,7 +230,10 @@ end
 
 function _M.stop()
   if _M.nginx_process then
+    -- On shutdown, if we don't already have persisted account config, then
+    -- copy the generated config into the persisted directory.
     if _M.current_test_accounts_dir and not path.exists(_M.dehydrated_persist_accounts_dir) and path.exists(_M.current_test_accounts_dir) then
+      assert(dir.makepath(path.dirname(_M.dehydrated_persist_accounts_dir)))
       local _, cp_err = shell_blocking.capture_combined({ "cp", "-pr", _M.current_test_accounts_dir, _M.dehydrated_persist_accounts_dir })
       assert(not cp_err, cp_err)
     end
