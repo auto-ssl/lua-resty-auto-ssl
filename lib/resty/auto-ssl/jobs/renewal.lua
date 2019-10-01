@@ -1,4 +1,5 @@
 local lock = require "resty.lock"
+local parse_openssl_time = require "resty.auto-ssl.utils.parse_openssl_time"
 local shell_blocking = require "shell-games"
 local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
@@ -97,12 +98,16 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
       file:write(cert["fullchain_pem"])
       file:close()
 
-      local date_result, date_err = shell_blocking.run_raw('date --date="$(openssl x509 -enddate -noout -in "' .. shell_blocking.quote(cert_pem_path) .. '"|cut -d= -f 2)" +%s', { capture = true, stderr = "&1" })
+      local date_result, date_err = shell_blocking.capture_combined({ "openssl", "x509", "-enddate", "-noout", "-in", cert_pem_path })
       if date_err then
         ngx.log(ngx.ERR, "auto-ssl: failed to extract expiry date from cert: ", date_err)
       else
-        cert["expiry"] = tonumber(date_result["output"])
-        if cert["expiry"] then
+        local expiry, parse_err = parse_openssl_time(date_result["output"])
+        if parse_err then
+          ngx.log(ngx.ERR, "auto-ssl: failed to parse expiry date: ", parse_err)
+        else
+          cert["expiry"] = expiry
+
           -- Update stored certificate to include expiry information
           ngx.log(ngx.NOTICE, "auto-ssl: setting expiration date of ",  domain, " to ", cert["expiry"])
           local _, set_cert_err = storage:set_cert(domain, cert["fullchain_pem"], cert["privkey_pem"], cert["cert_pem"], cert["expiry"])

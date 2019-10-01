@@ -34,7 +34,7 @@ clean_challenge() {
 deploy_cert() {
   local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}" TIMESTAMP="${6}"
   local EXPIRY
-  if ! EXPIRY=$(date --date="$(openssl x509 -enddate -noout -in "$CERTFILE"|cut -d= -f 2)" +%s); then
+  if ! EXPIRY=$(openssl x509 -enddate -noout -in "$CERTFILE"); then
     echo "failed to get the expiry date"
   fi
 

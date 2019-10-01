@@ -47,6 +47,7 @@ install: check-dependencies
 	install -m 644 lib/resty/auto-ssl/storage_adapters/file.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/file.lua
 	install -m 644 lib/resty/auto-ssl/storage_adapters/redis.lua $(INST_LUADIR)/resty/auto-ssl/storage_adapters/redis.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/utils
+	install -m 644 lib/resty/auto-ssl/utils/parse_openssl_time.lua $(INST_LUADIR)/resty/auto-ssl/utils/parse_openssl_time.lua
 	install -m 644 lib/resty/auto-ssl/utils/random_seed.lua $(INST_LUADIR)/resty/auto-ssl/utils/random_seed.lua
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/shuffle_table.lua $(INST_LUADIR)/resty/auto-ssl/utils/shuffle_table.lua
@@ -105,6 +106,7 @@ lint:
 	luacheck lib spec
 
 test:
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	rm -rf /tmp/resty-auto-ssl-server-luarocks
 	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	luarocks --tree=/tmp/resty-auto-ssl-server-luarocks install dkjson 2.5-2

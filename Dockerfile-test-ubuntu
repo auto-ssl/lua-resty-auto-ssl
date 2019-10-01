@@ -1,5 +1,7 @@
 FROM openresty/openresty:1.15.8.2-1-bionic
 
+ENV DEBIAN_FRONTEND noninteractive
+
 # Runtime dependencies
 RUN apt-get update && \
   apt-get -y install \
@@ -22,7 +24,8 @@ RUN apt-get update && \
     lsof \
     lua5.2 \
     redis-server \
-    sudo && \
+    sudo \
+    tzdata && \
   curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/b2wQezFbsHk/ngrok-2.3.34-linux-amd64.deb && \
   dpkg -i /tmp/ngrok.deb || apt-get -fy install && \
   rm -f /tmp/ngrok.deb
