@@ -15,6 +15,15 @@ local months = {
   Dec = 12,
 }
 
+-- Parse the time strings that OpenSSL outputs via ASN1_TIME_print:
+-- https://www.openssl.org/docs/man1.1.1/man3/ASN1_TIME_print.html
+--
+-- Relevant pieces of specification:
+--
+-- > It will be of the format MMM DD HH:MM:SS YYYY [GMT], for example "Feb 3
+-- > 00:55:52 2015 GMT"
+-- > Does not print out the time zone: it either prints out "GMT" or nothing.
+-- > But all certificates complying with RFC5280 et al use GMT anyway.
 return function(time_str)
   local matches, match_err = ngx.re.match(time_str, [[(?<month>[A-Za-z]{3}) +(?<day>\d{1,2}) +(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})(?:\.\d+)? +(?<year>-?\d{4})]], "jo")
   if match_err then
