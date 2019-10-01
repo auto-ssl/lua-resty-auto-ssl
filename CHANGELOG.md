@@ -1,9 +1,9 @@
 # lua-resty-auto-ssl Change Log
 
-## 0.13.1 - Unreleased
+## 0.13.1 - 2019-10-01
 
 ### Changed
-- Eliminate dependency on GNU version of the `date` command line utility to improve compatibility with Alpine Linux, BSDs, and others. Fixes warnings that may have started getting logged in v0.13.0. [#195](https://github.com/GUI/lua-resty-auto-ssl/issues/195)
+- Eliminate dependency on GNU version of the `date` command line utility to improve compatibility with Alpine Linux, BSDs, and others. Fixes warnings that may have started getting logged in v0.13.0. ([#196](https://github.com/GUI/lua-resty-auto-ssl/pull/196), [#195](https://github.com/GUI/lua-resty-auto-ssl/issues/195))
 - Enable PCRE-JIT compilation of regular expressions used in code.
 
 ## 0.13.0 - 2019-09-30
