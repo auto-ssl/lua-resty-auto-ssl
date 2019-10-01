@@ -325,14 +325,18 @@ describe("sanity", function()
   it("deletes dehydrated temporary files after successful cert deployment", function()
     server.start()
 
-    local result, err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
-    assert.equal(nil, err)
-    assert.same({
-      "accounts",
+    local ls_before_result, ls_before_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
+    assert.equal(nil, ls_before_err)
+    local expected_ls_before = {
       "conf.d",
       "config",
       "locks",
-    }, pl_utils.split(result["output"]))
+    }
+    if server.dehydrated_cached_accounts then
+      table.insert(expected_ls_before, "accounts")
+    end
+    table.sort(expected_ls_before)
+    assert.same(expected_ls_before, pl_utils.split(ls_before_result["output"]))
 
     local httpc = http.new()
     local _, connect_err = httpc:connect("127.0.0.1", 9443)
@@ -383,12 +387,16 @@ describe("sanity", function()
 
     local ls_before_result, ls_before_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
     assert.equal(nil, ls_before_err)
-    assert.same({
-      "accounts",
+    local expected_ls_before = {
       "conf.d",
       "config",
       "locks",
-    }, pl_utils.split(ls_before_result["output"]))
+    }
+    if server.dehydrated_cached_accounts then
+      table.insert(expected_ls_before, "accounts")
+    end
+    table.sort(expected_ls_before)
+    assert.same(expected_ls_before, pl_utils.split(ls_before_result["output"]))
 
     local httpc = http.new()
 
