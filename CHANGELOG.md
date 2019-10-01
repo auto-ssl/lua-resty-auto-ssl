@@ -4,6 +4,7 @@
 
 ### Changed
 - Eliminate dependency on GNU version of the `date` command line utility to improve compatibility with Alpine Linux, BSDs, and others. Fixes warnings that may have started getting logged in v0.13.0. [#195](https://github.com/GUI/lua-resty-auto-ssl/issues/195)
+- Enable PCRE-JIT compilation of regular expressions used in code.
 
 ## 0.13.0 - 2019-09-30
 

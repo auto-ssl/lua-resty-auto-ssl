@@ -81,7 +81,7 @@ function _M.keys_with_suffix(self, suffix)
 
   local keys = {}
   for path in string.gmatch(result["output"], "[^\r\n]+") do
-    local filename = ngx.re.sub(path, ".*/", "")
+    local filename = ngx.re.sub(path, ".*/", "", "jo")
     local key = ngx.unescape_uri(filename)
     table.insert(keys, key)
   end

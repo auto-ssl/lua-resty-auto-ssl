@@ -5,7 +5,7 @@
 return function(auto_ssl_instance)
   -- Extract the dynamic token filename part out of the URL path.
   local path = ngx.var.request_uri
-  local matches, match_err = ngx.re.match(path, "/([A-Za-z0-9\\-_]+)$")
+  local matches, match_err = ngx.re.match(path, "/([A-Za-z0-9\\-_]+)$", "jo")
   if not matches or not matches[1] then
     ngx.exit(ngx.HTTP_NOT_FOUND)
   elseif match_err then
