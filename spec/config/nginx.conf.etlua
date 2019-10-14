@@ -29,7 +29,7 @@ http {
 
     local options = {
       dir = "<%- current_test_dir %>/auto-ssl",
-      ca = "https://acme-staging.api.letsencrypt.org/directory",
+      ca = "https://acme-staging-v02.api.letsencrypt.org/directory",
       allow_domain = function(domain)
         return true
       end,
