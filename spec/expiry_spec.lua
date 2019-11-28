@@ -162,7 +162,7 @@ describe("expiry", function()
     assert.matches("Skipping renew!", error_log, nil, true)
     assert.matches("auto-ssl: checking certificate renewals for unresolvable-sdjfklsdjf.example", error_log, nil, true)
     assert.matches("Ignoring because renew was forced!", error_log, nil, true)
-    assert.matches("Name does not end in a public suffix", error_log, nil, true)
+    assert.matches("Domain name does not end with a valid public suffix (TLD)", error_log, nil, true)
     assert.matches("auto-ssl: issuing renewal certificate failed: dehydrated failure", error_log, nil, true)
     assert.matches("auto-ssl: existing certificate is expired, deleting: unresolvable-sdjfklsdjf.example", error_log, nil, true)
 
