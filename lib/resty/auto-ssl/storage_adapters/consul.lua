@@ -1,3 +1,4 @@
+
 -- License: Public Domain
 
 ---
@@ -12,6 +13,7 @@
 -- How to test:
 -- Copy this file to /usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua. With ansible would be:
 --    ansible -m copy -a "src=./consul.lua dest=/usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua" aguia-pescadora-delta.etica.ai,aguia-pescadora-echo.etica.ai,aguia-pescadora-foxtrot.etica.ai
+--    ansible -m copy -a "src=/alligo/code/fititnt/lua-resty-auto-ssl/lib/resty/auto-ssl/storage_adapters/consul.lua dest=/usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua" aguia-pescadora-delta.etica.ai,aguia-pescadora-echo.etica.ai,aguia-pescadora-foxtrot.etica.ai
 -- Them set the following on your OpenResty, at http context
 --    auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.consul")
 --
@@ -47,7 +49,7 @@ local dumpcache = {}
 -- @author https://pastebin.com/A7JScXWk
 -- @param data Anything that need to be dumped
 -- @return string
-function dumpvar(data)
+local function dumpvar(data)
   -- cache of tables already printed, to avoid infinite recursive loops
   local tablecache = {}
   local buffer = ""
@@ -241,8 +243,10 @@ function _M.get(self, key)
   --  -- ngx.log(ngx.ERR, 'storage_adapter.consul._M.get: connection error:', err)
   --  value = nil
   --else
-  if res.status ~= 404 and res.body[0] ~= nil and res.body[0]['Value'] ~= null then
-    value = res.body[0]['Value']
+  if res.status ~= 404 and res.body[1] ~= nil and res.body[1]['Value'] ~= nil then
+    value = res.body[1]['Value']
+  else
+    dump({fn = '_M.get fail', res})
   end
 
   dump({fn = '_M.get', key=key, res=res, err=err, value=value}, '_M.get')
@@ -272,9 +276,20 @@ function _M.set(self, key, value, options)
 
   key = prefixed_key(self, key)
 
+  if options then
+    -- no implemented options["exptime"] yet, but must be done (fititnt, 2019-11-30 21:32 BRT)
+  end
+
   -- Redis use set, Consul use put_key:
   -- local ok, err = connection:put_key(key, value)
   local res, err = connection:put_key(key, value)
+
+  if res.status == 200 then
+    local ok = true
+  else
+    local ok = false
+    dump({fn = '_M.get fail', res=res})
+  end
 
   -- Know issue: not implemented way to expire key at this moment.
   -- The following was from redis.lua
@@ -288,7 +303,7 @@ function _M.set(self, key, value, options)
   -- end
 
   dump({fn = '_M.set', key=key, value=value, res=res, err=err}, '_M.set')
-  return res, err
+  return ok, err
 end
 
 --- Delete a value from Consul based on the unprefixed key
