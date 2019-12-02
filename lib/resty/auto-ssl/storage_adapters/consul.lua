@@ -1,41 +1,7 @@
--- License: Public Domain
-
 ---
 -- Requisites:
 --   opm get hamishforbes/lua-resty-consul
---
--- @todo: implement expire. Different from Redis, Consul or will persist
---        keys forever or will have a maximum TTL of 24h. (fititnt, 2019-11-28 19:17 BRT)
---
--- @todo: remove dump functions and keep login at at resonable way (fititnt, 2019-11-28 19:17 BRT)
---
--- How to test:
--- Copy this file to /usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua. With ansible would be:
---    ansible -m copy -a "src=./consul.lua dest=/usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua" aguia-pescadora-delta.etica.ai,aguia-pescadora-echo.etica.ai,aguia-pescadora-foxtrot.etica.ai
---    ansible -m copy -a "src=/alligo/code/fititnt/lua-resty-auto-ssl/lib/resty/auto-ssl/storage_adapters/consul.lua dest=/usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua" aguia-pescadora-delta.etica.ai,aguia-pescadora-echo.etica.ai,aguia-pescadora-foxtrot.etica.ai
--- Them set the following on your OpenResty, at http context
---    auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.consul")
---
--- How to document Lua code:
---   - https://stevedonovan.github.io/ldoc/manual/doc.md.html
---   - https://keplerproject.github.io/luadoc/manual.html
---   - http://lua-users.org/wiki/LuaStyleGuide
---   - http://sputnik.freewisdom.org/en/Coding_Standard
---
--- Using ldoc (https://github.com/stevedonovan/LDoc); the lua-doc from keplerproject says it is obsolete (https://github.com/keplerproject/luadoc)
---    sudo apt install lua-ldoc
--- Then validate documentation with
---    ldoc consul.lua
 
--- I think the path would be /usr/local/share/lua/5.1/resty/auto-ssl/storage_adapters/consul.lua
--- to work with resty/auto-ssl
--- And then use this as reference https://github.com/GUI/lua-resty-auto-ssl/blob/master/lib/resty/auto-ssl/storage_adapters/redis.lua
-
--- Lean lua in an Hour https://www.youtube.com/watch?v=S4eNl1rA1Ns
--- Definitely an openresty guide/ Hello world https://www.staticshin.com/programming/definitely-an-open-resty-guide/#hello_world
--- Lua in 15 minutes http://tylerneylon.com/a/learn-lua/
-
--- Redis equivalent: local redis = require "resty.redis"
 local consul = require('resty.consul')
 
 --------------------------------------------------------------------------------
@@ -101,7 +67,6 @@ ngx.log(ngx.ERR, "\n\n\n\n\n\n\n\n\n\n---")
 dump({'started', os.date("!%Y-%m-%dT%TZ")})
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-
 
 -- @module storage_adapter_consul
 local _M = {}
@@ -260,7 +225,7 @@ function _M.delete(self, key)
   local connection, connection_err = self:get_connection()
   if connection_err then
     -- ngx.log(ngx.EMERG, '_M.delete: ', connection_err)
-    ngx.log(ngx.EMERG, 'storage_adapter.consul._M.delete: connection error:', err)
+    ngx.log(ngx.EMERG, 'storage_adapter.consul._M.delete: connection error:', connection_err)
     return false, connection_err
   end
 
@@ -285,8 +250,6 @@ function _M.keys_with_suffix(self, suffix)
     return false, connection_err
   end
 
-  -- Redis use keys, Consul uses list_keys
-  -- local keys, err = connection:keys(prefixed_key(self, "*" .. suffix))
   local keys, err = connection:list_keys(prefixed_key(self, "*" .. suffix))
 
   if keys and self.options["prefix"] then

@@ -199,6 +199,25 @@ The default storage adapter persists the certificates to local files. However, y
 auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
 ```
 
+### `consul`
+*Default:* `{ host = "127.0.0.1", port = 8500, prefix = "lua-resty-auto-ssl", connect_timeout = '60s', ssl = false, ssl_verify = true }`
+
+- `prefix` Defaults to `lua-resty-auto-ssl`
+- `host` Defaults to `127.0.0.1`
+- `port` Defaults to 8500. Set to `0` if using a unix socket as `host`.
+- `connect_timeout` Connection timeout in ms. Defaults to 60s
+- `read_timeout` Read timeout in ms. Defaults to `60s`
+- `default_args` Table of query string arguments to send with all requests (e.g. `token`) Defaults to empty
+- `ssl` Boolean, enable HTTPS requests. Default to `false`.
+- `ssl_verify` Boolean, verify SSL certificates. Defaults to `true`      = true,
+- `sni_host` Hostname to use when verifying SSL certs.
+
+This storage adapter requires [Consul](https://www.consul.io) installed and [hamishforbes/lua-resty-consul](https://github.com/hamishforbes/lua-resty-consul) installed with OPM (the LuaRocks can be too oudated):
+
+> ```lua
+> sudo opm get hamishforbes/lua-resty-consul
+> ```
+
 ### `redis`
 *Default:* `{ host = "127.0.0.1", port = 6379 }`
 
