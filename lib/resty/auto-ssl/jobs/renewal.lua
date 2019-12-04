@@ -138,6 +138,7 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   local allow_domain = auto_ssl_instance:get("allow_domain")
   if not allow_domain(domain, auto_ssl_instance, nil, true) then
     ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed, not renewing: ", domain)
+    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return
   end
 
