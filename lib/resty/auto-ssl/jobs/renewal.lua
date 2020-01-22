@@ -254,12 +254,14 @@ end
 local function renew(premature, auto_ssl_instance)
   if premature then return end
 
+  local start = ngx.now()
   local renew_ok, renew_err = pcall(do_renew, auto_ssl_instance)
   if not renew_ok then
     ngx.log(ngx.ERR, "auto-ssl: failed to run do_renew cycle: ", renew_err)
   end
 
-  local timer_ok, timer_err = ngx.timer.at(auto_ssl_instance:get("renew_check_interval"), renew, auto_ssl_instance)
+  local delay = math.max(0, auto_ssl_instance:get("renew_check_interval") - (ngx.now() - start))
+  local timer_ok, timer_err = ngx.timer.at(delay, renew, auto_ssl_instance)
   if not timer_ok then
     if timer_err ~= "process exiting" then
       ngx.log(ngx.ERR, "auto-ssl: failed to create timer: ", timer_err)
