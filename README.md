@@ -183,6 +183,11 @@ How frequently (in seconds) all of the domains should be checked for certificate
 auto_ssl:set("renew_check_interval", 172800)
 ```
 
+### `renewals_per_hour`
+*Default:* `60`
+
+How many renewal requests to issue per hour at most. The ACME v2 protocol limits each account to 300 new orders per 3 hours. This setting will throttle the renewal job so that a sufficient margin remains available for new domains at all times. You might consider lowering this setting when the same Let's Encrypt account credentials are shared across multiple servers (in a load-balanced environment).
+
 ### `storage_adapter`
 *Default:* `resty.auto-ssl.storage_adapters.file`<br>
 *Options:* `resty.auto-ssl.storage_adapters.file`, `resty.auto-ssl.storage_adapters.redis`

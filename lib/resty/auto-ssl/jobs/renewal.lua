@@ -5,6 +5,8 @@ local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local _M = {}
+local min_renewal_seconds
+local last_renewal
 
 -- Based on lua-rest-upstream-healthcheck's lock:
 -- https://github.com/openresty/lua-resty-upstream-healthcheck/blob/v0.03/lib/resty/upstream/healthcheck.lua#L423-L440
@@ -184,6 +186,18 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   end
 
   renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+
+  -- Throttle renewal requests based on renewals_per_hour setting.
+  if last_renewal and ngx.now() - last_renewal < min_renewal_seconds then
+    local to_sleep = min_renewal_seconds - (ngx.now() - last_renewal)
+    ngx.log(ngx.NOTICE, "auto-ssl: pausing renewal job for " .. to_sleep .. " seconds")
+    ngx.sleep(to_sleep)
+  end
+  if last_renewal then
+    last_renewal = last_renewal + min_renewal_seconds
+  else
+    last_renewal = ngx.now()
+  end
 end
 
 local function renew_all_domains(auto_ssl_instance)
@@ -198,6 +212,10 @@ local function renew_all_domains(auto_ssl_instance)
     -- each time (which may allow things to eventually succeed over multiple
     -- renewal attempts).
     shuffle_table(domains)
+
+    -- Set up renewal request throttling.
+    min_renewal_seconds = 3600 / auto_ssl_instance:get("renewals_per_hour")
+    last_renewal = ngx.now()
 
     for _, domain in ipairs(domains) do
       renew_check_cert(auto_ssl_instance, storage, domain)
