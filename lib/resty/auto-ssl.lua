@@ -99,4 +99,62 @@ function _M.hook_server(self)
   server(self)
 end
 
+function _M.get_failures(self, domain)
+  if not ngx.shared.auto_ssl_failures then
+    ngx.log(ngx.ERR, "auto-ssl: dict auto_ssl_failures could not be found. Please add it to your configuration: `lua_shared_dict auto_ssl_failures 1m;`")
+    return
+  end
+
+  local string = ngx.shared.auto_ssl_failures:get("domain:" .. domain)
+  if string then
+    local failures, json_err = self.storage.json_adapter:decode(string)
+    if json_err then
+      ngx.log(ngx.ERR, json_err, domain)
+    end
+    if failures then
+      local mt = {
+        __concat = function(op1, op2)
+          return tostring(op1) .. tostring(op2)
+        end,
+        __tostring = function(f)
+          return "first: " .. f["first"] .. ", last: " .. f["last"] .. ", num: " .. f["num"]
+        end
+      }
+      setmetatable(failures, mt)
+      return failures
+    end
+  end
+end
+
+function _M.track_failure(self, domain)
+  if not ngx.shared.auto_ssl_failures then
+    return
+  end
+
+  local failures
+  local string = ngx.shared.auto_ssl_failures:get("domain:" .. domain)
+  if string then
+    failures = self.storage.json_adapter:decode(string)
+  end
+  if not failures then
+    failures = {}
+    failures["first"] = ngx.now()
+    failures["last"] = failures["first"]
+    failures["num"] = 1
+  else
+    failures["last"] = ngx.now()
+    failures["num"] = failures["num"] + 1
+  end
+  string = self.storage.json_adapter:encode(failures)
+  ngx.shared.auto_ssl_failures:set("domain:" .. domain, string, 2592000)
+end
+
+function _M.track_success(_, domain)
+  if not ngx.shared.auto_ssl_failures then
+    return
+  end
+
+  ngx.shared.auto_ssl_failures:delete("domain:" .. domain)
+end
+
 return _M

@@ -183,6 +183,10 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
       ngx.log(ngx.WARN, "auto-ssl: existing certificate is expired, deleting: ", domain)
       storage:delete_cert(domain)
     end
+
+    auto_ssl_instance:track_failure(domain)
+  else
+    auto_ssl_instance:track_success(domain)
   end
 
   renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)

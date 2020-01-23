@@ -161,6 +161,61 @@ auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options, renewal)
 end)
 ```
 
+#### `get_failures`
+
+The optional `get_failures` function accepts a domain name argument, and can be used to retrieve statistics about failed certificate requests concerning the domain. The function will return a table with fields `first` (timestamp of first failure encountered), `last` (timestamp of most recent failure encountered), `num` (number of failures). The function will instead return `nil` if no error has been encountered.
+
+Note: the statistics are only kept for as long as the nginx instance is running. There is no sharing across multiple servers (as in a load-balanced environment) implemented.
+
+To make use of the `get_failures` function, add the following to the `http` configuration block:
+
+```nginx
+  lua_shared_dict auto_ssl_failures 1m;
+```
+
+When this shm-based dictionary exists, `lua-resty-auto-ssl` will use it to update a record it keeps for the domain whenever a Let's Encrypt certificate request fails (for both new domains, as well as renewing ones). When a certificate request is successful, `lua-resty-auto-ssl` will delete the record it has for the domain, so that future invocations will return `nil`.
+
+The `get_failures` function can be used inside `allow_domain` to implement per-domain rate-limiting, and similar rule sets.
+
+*Example:*
+
+```lua
+auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options, renewal)
+  local failures = auto_ssl:get_failures(domain)
+  -- only attempt one certificate request per hour
+  if not failures or 3600 < ngx.now() - failures["last"] then
+    return true
+  else
+    return false
+  end
+end)
+```
+
+#### `track_failure`
+
+The optional `track_failure` function accepts a domain name argument and records a failure for this domain. This can be used to avoid repeated lookups of a domain in `allow_domain`.
+
+*Example:*
+
+```lua
+auto_ssl:set("allow_domain", function(domain, auto_ssl, ssl_options, renewal)
+  local failures = auto_ssl:get_failures(domain)
+  -- only attempt one lookup or certificate request per hour
+  if failures and ngx.now() - failures["last"] <= 3600 then
+    return false
+  end
+
+  local allow
+  -- (external lookup to check domain, e.g. via http)
+  if not allow then
+    auto_ssl:track_failure(domain)
+    return false
+  else
+    return true
+  end
+end)
+```
+
 ### `dir`
 *Default:* `/etc/resty-auto-ssl`
 
