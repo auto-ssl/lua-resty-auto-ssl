@@ -270,8 +270,8 @@ local function renew(premature, auto_ssl_instance)
   end
 end
 
-function _M.spawn(auto_ssl_instance)
-  local ok, err = ngx.timer.at(auto_ssl_instance:get("renew_check_interval"), renew, auto_ssl_instance)
+function _M.spawn(auto_ssl_instance, timer_rand)
+  local ok, err = ngx.timer.at(timer_rand * auto_ssl_instance:get("renew_check_interval"), renew, auto_ssl_instance)
   if not ok then
     ngx.log(ngx.ERR, "auto-ssl: failed to create timer: ", err)
     return
