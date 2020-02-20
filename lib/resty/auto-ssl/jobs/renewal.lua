@@ -11,7 +11,7 @@ local _M = {}
 --
 -- This differs from resty-lock by ensuring that the task only gets executed
 -- once per interval across all workers. resty-lock helps ensure multiple
--- concurrent tasks don't run (in case the task takes long than interval).
+-- concurrent tasks don't run (in case the task takes longer than interval).
 local function get_interval_lock(name, interval)
   local key = "lock:" .. name
 
@@ -217,7 +217,7 @@ local function do_renew(auto_ssl_instance)
   end
   local _, lock_err = renew_lock:lock("renew")
   if lock_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to optain lock: ", lock_err)
+    ngx.log(ngx.ERR, "auto-ssl: failed to obtain lock: ", lock_err)
     return
   end
 
