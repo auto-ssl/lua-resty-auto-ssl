@@ -1,3 +1,12 @@
+-- Ensure resty.core FFI libraries are loaded to prevent potential deadlocks in
+-- shdict. These are loaded by default in OpenResty 1.15.8.1+, but this will
+-- ensure this library is loaded in older versions.
+--
+-- https://github.com/openresty/lua-nginx-module/issues/1207#issuecomment-350742782
+-- https://github.com/auto-ssl/lua-resty-auto-ssl/issues/43
+-- https://github.com/auto-ssl/lua-resty-auto-ssl/issues/220
+require "resty.core"
+
 local _M = {}
 
 local current_file_path = package.searchpath("resty.auto-ssl", package.path)
