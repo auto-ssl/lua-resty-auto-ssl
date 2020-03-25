@@ -12,11 +12,28 @@ function _M.issue_cert(auto_ssl_instance, domain)
   assert(type(base_dir) == "string", "dir must be a string")
 
   local hook_port = auto_ssl_instance:get("hook_server_port")
+  local multiname = auto_ssl_instance:get("multiname_cert")
+  domains = "--domain " .. domain .. " "
+
+  local hook_port = auto_ssl_instance:get("hook_server_port")
   assert(type(hook_port) == "number", "hook_port must be a number")
   assert(hook_port <= 65535, "hook_port must be below 65536")
 
   local hook_secret = ngx.shared.auto_ssl_settings:get("hook_server:secret")
   assert(type(hook_secret) == "string", "hook_server:secret must be a string")
+
+  if multiname then
+    local storage = auto_ssl_instance:get("storage")
+    domain_list, size = storage:get_subdomain(domain)
+    domains = " "
+    if domain_list then
+      for _, i in pairs(domain_list) do
+        domains = domains .. "--domain " .. i .. " "
+      end
+    else
+      domains = "--domain " .. domain .. " "
+    end
+  end
 
   -- Run dehydrated for this domain, using our custom hooks to handle the
   -- domain validation and the issued certificates.
@@ -31,7 +48,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--cron",
     "--accept-terms",
     "--no-lock",
-    "--domain", domain,
+    domains,
     "--challenge", "http-01",
     "--config", base_dir .. "/letsencrypt/config",
     "--hook", lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks",

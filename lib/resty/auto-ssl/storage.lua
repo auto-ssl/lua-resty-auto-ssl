@@ -1,7 +1,9 @@
 local resty_random = require "resty.random"
 local str = require "resty.string"
+local cjson = require "cjson"
 
 local _M = {}
+
 
 function _M.new(options)
   assert(options)
@@ -9,6 +11,180 @@ function _M.new(options)
   assert(options["json_adapter"])
 
   return setmetatable(options, { __index = _M })
+end
+
+function tablelength(a)
+  local count = 0
+  for _ in pairs(a) do count = count + 1 end
+  return count
+end
+
+function _M.get_domains(self, domain, level)
+    local function subdomain(a)
+      local x = {}
+      for word in string.gmatch(a, '([^.]+)') do
+          table.insert(x, word)
+      end
+      return x
+    end
+
+    local function get_name(name_list, size, level)
+      if level > size then
+        return nil
+      end
+      x = name_list[size]
+      for i=1, level-1 do
+        x = name_list[size-i] .. "." .. x
+      end
+      return x
+    end
+
+    if type(level) ~= "number" then
+      level = 2
+    end
+    local ar = subdomain(domain)
+    local size = tablelength(ar)
+
+    local main_domain = get_name(ar, size, level)
+    if main_domain then
+      return main_domain, domain
+    else
+      return domain, nil
+    end
+end
+
+function _M.get_subdomain(self, domain)
+    local function subdomains(a)
+      local x = {}
+      if a then
+        for word in string.gmatch(a, '([^:]+)') do
+          table.insert(x, word)
+        end
+        return x
+      end
+      return nil
+    end
+
+    local function check_max_len(subdomain_list, size)
+      local x = ((string.len(table.concat(subdomain_list, ":"))) * size) + (10 * size)
+      if x > 1000 then
+        return 100
+      else
+        return size
+      end
+    end
+
+    local json, err = self.adapter:get(domain .. ":main")
+    if err then
+       return nil, nil, err
+    elseif not json then
+       return nil
+    end
+    local data = cjson.decode(json)
+    local ar = subdomains(data['subdomain'])
+    local extended = subdomains(data['extended'])
+    local size = check_max_len(ar, tablelength(ar))
+    return ar, size, nil, extended
+end
+
+function _M.set_subdomain(self, domain, subdomain, extended)
+    local x, n, err, extended_list = self.get_subdomain(self, domain)
+
+    local function check_extended(extended, extended_list)
+      local x = nil
+      if extended_list then
+        x = table.concat(extended_list, ":") .. ":"
+      end
+      if extended then
+        if x then
+          x = x .. extended
+        else
+          x = extended
+        end
+      end
+      return x
+    end
+
+    local function set_subdomains(subdomain, subdomain_list, err, extend)
+      local function check_name(subdomain, subdomain_list)
+        for _, i in pairs(subdomain_list) do
+          if i == subdomain then
+            return true
+          end
+        end
+      end
+
+      if err then
+        return subdomain
+      end
+
+      local x = table.concat(subdomain_list, ":")
+      if check_name(subdomain, subdomain_list) then
+        return nil, true
+      elseif nil == string.find(x, subdomain) and extend then
+        return x
+      elseif nil == string.find(x, subdomain) then
+        x = x .. ":" .. subdomain
+        return x
+      end
+    end
+
+    local extend = check_extended(extended, extended_list)
+    local subdomain_list, exists = set_subdomains(subdomain, x, err,  extend)
+    if exists then
+      return
+    end
+    if extend then
+      data = cjson.encode({domain=domain,
+                           subdomain=subdomain_list,
+                           extended=extend})
+    else
+      data = cjson.encode({domain=domain,
+                           subdomain=subdomain_list})
+    end
+    self.adapter:set(domain .. ":main", data)
+end
+
+function _M.check_subdomain(self, domain, subdomain)
+  local x, n, err, extended = self.get_subdomain(self, domain)
+
+  local function check_main(domain_list, subdomain)
+    if domain_list then
+      local size = tablelength(domain_list)
+      for _, i in pairs(domain_list) do
+        if i == subdomain then
+          return domain, size
+        end
+      end
+    end
+  end
+
+  local function check_extended(self, extended_list, subdomain)
+    if extended_list then
+      for _, i in pairs(extended_list) do
+        domain, size = self.check_subdomain(self, i, subdomain)
+        if domain then
+          return domain, size
+        end
+      end
+    end
+  end
+
+  local domain, size = check_main(x, subdomain)
+  if domain then
+    return domain, size
+  end
+
+  local domain, size = check_extended(self, extended, subdomain)
+  if domain then
+    return domain, size
+  end
+
+  if n and n>99 then
+    return nil, n
+  end
+
+  return nil, nil
 end
 
 function _M.get_challenge(self, domain, path)
