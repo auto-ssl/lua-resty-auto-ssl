@@ -127,12 +127,22 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   end
 
   -- If expiry date is known, attempt renewal if it's within 30 days.
+  -- Between 30 and 15 days out, only attempt renewal of a subset of domains (with
+  -- increasing likelihood of renewal being attempted).
   if cert["expiry"] then
     local now = ngx.now()
     if now + (30 * 24 * 60 * 60) < cert["expiry"] then
       ngx.log(ngx.NOTICE, "auto-ssl: expiry date is more than 30 days out, skipping renewal: ", domain)
       renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
       return
+    elseif now + (15 * 24 * 60 * 60) < cert["expiry"] then
+      local rand_value = math.random(cert["expiry"] - (30 * 24 * 60 * 60), cert["expiry"] - (15 * 24 * 60 * 60))
+      local rand_renewal_threshold = now
+      if rand_value < rand_renewal_threshold then
+        ngx.log(ngx.NOTICE, "auto-ssl: expiry date is more than 15 days out, randomly not picked for renewal: ", domain)
+        renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+        return
+      end
     end
   end
 
