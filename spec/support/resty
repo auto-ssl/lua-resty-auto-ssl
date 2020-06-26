@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+exec resty \
+  -c 1024 \
+  --http-include spec/config/busted-nginx.conf \
+  "$@"

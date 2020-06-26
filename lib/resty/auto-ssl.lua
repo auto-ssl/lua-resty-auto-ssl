@@ -1,3 +1,12 @@
+-- Ensure resty.core FFI libraries are loaded to prevent potential deadlocks in
+-- shdict. These are loaded by default in OpenResty 1.15.8.1+, but this will
+-- ensure this library is loaded in older versions.
+--
+-- https://github.com/openresty/lua-nginx-module/issues/1207#issuecomment-350742782
+-- https://github.com/auto-ssl/lua-resty-auto-ssl/issues/43
+-- https://github.com/auto-ssl/lua-resty-auto-ssl/issues/220
+require "resty.core"
+
 local _M = {}
 
 local current_file_path = package.searchpath("resty.auto-ssl", package.path)
@@ -23,13 +32,17 @@ function _M.new(options)
   end
 
   if not options["allow_domain"] then
-    options["allow_domain"] = function(domain) -- luacheck: ignore
+    options["allow_domain"] = function(domain, auto_ssl, ssl_options, renewal) -- luacheck: ignore
       return false
     end
   end
 
   if not options["storage_adapter"] then
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
+  end
+
+  if not options["json_adapter"] then
+    options["json_adapter"] = "resty.auto-ssl.json_adapters.cjson"
   end
 
   if not options["ocsp_stapling_error_level"] then
@@ -48,15 +61,22 @@ function _M.new(options)
 end
 
 function _M.set(self, key, value)
+  if key == "storage" then
+    ngx.log(ngx.ERR, "auto-ssl: DEPRECATED: Don't use auto_ssl:set() for the 'storage' instance. Set directly with auto_ssl.storage.")
+    self.storage = value
+    return
+  end
+
   self.options[key] = value
 end
 
 function _M.get(self, key)
-  return self.options[key]
-end
+  if key == "storage" then
+    ngx.log(ngx.ERR, "auto-ssl: DEPRECATED: Don't use auto_ssl:get() for the 'storage' instance. Get directly with auto_ssl.storage.")
+    return self.storage
+  end
 
-function _M.allow_domain(domain) -- luacheck: ignore
-  return false
+  return self.options[key]
 end
 
 function _M.init(self)

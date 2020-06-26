@@ -1,3 +1,4 @@
 .git
 build
 t/run
+spec/tmp

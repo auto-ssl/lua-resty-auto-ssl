@@ -1,0 +1,45 @@
+FROM openresty/openresty:1.15.8.2-1-alpine-fat
+
+RUN mkdir /app
+WORKDIR /app
+
+# Runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    diffutils \
+    grep \
+    openssl \
+    sed
+
+# Build dependencies.
+RUN apk add --no-cache \
+  make
+
+# Test dependencies
+RUN apk add --no-cache \
+    findutils \
+    gcc \
+    git \
+    lsof \
+    lua \
+    procps \
+    redis \
+    sudo \
+    tzdata \
+    wget && \
+  curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/naDTyS8Kyxv/ngrok-2.3.34-linux-386.tar.gz && \
+  tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/ && \
+  rm -f /tmp/ngrok.tar.gz && \
+  chmod +x /usr/local/bin/ngrok
+
+COPY Makefile /app/Makefile
+RUN make install-test-deps
+
+ENV PATH="/tmp/resty-auto-ssl-test-luarocks/bin:${PATH}"
+ENV LUA_PATH="/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?/init.lua;${LUA_PATH}"
+ENV LUA_CPATH="/tmp/resty-auto-ssl-test-luarocks/lib/lua/5.1/?.so;${LUA_CPATH}"
+
+COPY . /app
+
+CMD ["bash"]

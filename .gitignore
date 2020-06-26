@@ -1,3 +1,5 @@
 /build
 /lib/resty/auto-ssl/vendor/*
-/t/run
+/lua-resty-auto-ssl-*
+!/lua-resty-auto-ssl-*.rockspec
+/spec/tmp

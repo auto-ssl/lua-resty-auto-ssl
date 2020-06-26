@@ -5,7 +5,7 @@
 return function(auto_ssl_instance)
   -- Extract the dynamic token filename part out of the URL path.
   local path = ngx.var.request_uri
-  local matches, match_err = ngx.re.match(path, "/([A-Za-z0-9\\-_]+)$")
+  local matches, match_err = ngx.re.match(path, "/([A-Za-z0-9\\-_]+)$", "jo")
   if not matches or not matches[1] then
     ngx.exit(ngx.HTTP_NOT_FOUND)
   elseif match_err then
@@ -15,7 +15,7 @@ return function(auto_ssl_instance)
 
   -- Return the challenge value for this token if it's found.
   local domain = ngx.var.host
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   local value = storage:get_challenge(domain, token_filename)
   if value then
     ngx.say(value)

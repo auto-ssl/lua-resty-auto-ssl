@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 services:
   app:
     build:
@@ -6,13 +6,58 @@ services:
       dockerfile: Dockerfile-test
     volumes:
       - .:/app
-      - ./t/run/logs:/test/run/logs
-      # Use a named volume to store the test and build output, so it's shared
-      # across runs, but more performant than building on the /app host share.
-      - test:/test
-    environment:
-      BUILD_DIR: /test/build
-      TEST_RUN_DIR: /test/run
-      TEST_NGINX_RESOLVER: 127.0.0.11
+      - build_cache:/app/build
+    sysctls:
+      net.core.somaxconn: 1024
+  centos:
+    build:
+      context: .
+      dockerfile: Dockerfile-test
+    volumes:
+      - .:/app
+      - centos_build_cache:/app/build
+    sysctls:
+      net.core.somaxconn: 1024
+  alpine:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-alpine
+    volumes:
+      - .:/app
+      - alpine_build_cache:/app/build
+    sysctls:
+      net.core.somaxconn: 1024
+  ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-ubuntu
+    volumes:
+      - .:/app
+      - ubuntu_build_cache:/app/build
+    sysctls:
+      net.core.somaxconn: 1024
+  openresty1.13:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-openresty1.13
+    volumes:
+      - .:/app
+      - openresty1.13_build_cache:/app/build
+    sysctls:
+      net.core.somaxconn: 1024
+  lua51:
+    build:
+      context: .
+      dockerfile: Dockerfile-test-lua51
+    volumes:
+      - .:/app
+      - lua51_build_cache:/app/build
+    sysctls:
+      net.core.somaxconn: 1024
 volumes:
-  test:
+  build_cache:
+  centos_build_cache:
+  alpine_build_cache:
+  ubuntu_build_cache:
+  openresty1.13_build_cache:
+  lua51_build_cache:
