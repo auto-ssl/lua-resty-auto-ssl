@@ -1,5 +1,65 @@
 # lua-resty-auto-ssl Change Log
 
+## 0.13.1 - 2019-10-01
+
+### Changed
+- Eliminate dependency on GNU version of the `date` command line utility to improve compatibility with Alpine Linux, BSDs, and others. Fixes warnings that may have started getting logged in v0.13.0. ([#196](https://github.com/GUI/lua-resty-auto-ssl/pull/196), [#195](https://github.com/GUI/lua-resty-auto-ssl/issues/195))
+- Enable PCRE-JIT compilation of regular expressions used in code.
+
+## 0.13.0 - 2019-09-30
+
+### Upgrade Notes
+
+This version upgrades the bundled version of the dehydrated library to fix certificate registration due to recent changes in the Let's Encrypt service. It also brings support for ACMEv2 which will be required for new account registration in November. Upgrading is recommended or certificate registration and renewal may fail. See [#192](https://github.com/GUI/lua-resty-auto-ssl/issues/192), [#189](https://github.com/GUI/lua-resty-auto-ssl/issues/189) for more details.
+
+### Added
+- Allow for additional Redis connect options to be specified. ([#191](https://github.com/GUI/lua-resty-auto-ssl/issues/191))
+- Pass `ssl_options` and `renewal` arguments to the `allow_domain` callback. Thanks to [@gohai](https://github.com/gohai). ([#123](https://github.com/GUI/lua-resty-auto-ssl/pull/123), [#176](https://github.com/GUI/lua-resty-auto-ssl/pull/176))
+- Add support for specifying HTTP proxy options for OCSP requests. Thanks to [@Unknown22](https://github.com/Unknown22). ([#133](https://github.com/GUI/lua-resty-auto-ssl/pull/133))
+
+### Changed
+- Upgrade dehydrated to v0.6.5. This fixes "badNonce" errors cropping up since 2019-09-23 and also supports ACMEv2 which will be required for new account registration in November. Thanks to [@luto](https://github.com/luto). ([#190](https://github.com/GUI/lua-resty-auto-ssl/pull/190), [#192](https://github.com/GUI/lua-resty-auto-ssl/issues/192), [#189](https://github.com/GUI/lua-resty-auto-ssl/issues/189))
+- Check whether domains are allowed (by calling `allow_domain` callback) on renewals. Thanks to [@yveslaroche](https://github.com/yveslaroche). ([#176](https://github.com/GUI/lua-resty-auto-ssl/pull/176))
+- Remove certificates that cannot be successfully renewed. Thanks to [@gohai](https://github.com/gohai). ([#128](https://github.com/GUI/lua-resty-auto-ssl/pull/128))
+- Don't store backups of previous versions of certificates. Thanks to [@gohai](https://github.com/gohai). ([#124](https://github.com/GUI/lua-resty-auto-ssl/pull/124))
+- Cleanup unused cert files after successfully adding certs to permanent storage. Thanks to [@gohai](https://github.com/gohai). ([#155](https://github.com/GUI/lua-resty-auto-ssl/pull/155))
+- Randomize order of certificate renewal processing. Thanks to [@luto](https://github.com/luto). ([#154](https://github.com/GUI/lua-resty-auto-ssl/pull/154))
+- Upgrade sockproc to newer version to fix compiling under FreeBSD. Thanks to [@imerr](https://github.com/imerr). ([#118](https://github.com/GUI/lua-resty-auto-ssl/pull/118))
+- Improve shell command escaping and handling. This could potentially fix issues if trying to store files in directories with spaces in the name. ([#175](https://github.com/GUI/lua-resty-auto-ssl/pull/175))
+- Switch the test suite to be written in Lua to better align with the code base, and hopefully make it easier to debug and maintain. ([#193](https://github.com/GUI/lua-resty-auto-ssl/pull/193))
+
+### Fixed
+- Fix documentation errors. Thanks to [@jfreax](https://github.com/jfreax), [@Ephemera](https://github.com/Ephemera). ([#118](https://github.com/GUI/lua-resty-auto-ssl/pull/120), [#183](https://github.com/GUI/lua-resty-auto-ssl/pull/183))
+
+## 0.12.0 - 2018-02-04
+
+### Upgrade Notes
+
+This version upgrades the bundled version of the dehydrated library to deal with recent redirect changes in the Let's Encrypt service. The issue could lead to certificate registration failures in dehydrated and quota exhaustion, so upgrading is recommended. See [4aed490](https://github.com/GUI/lua-resty-auto-ssl/commit/4aed490c1d76b8bf09a8151aad2373c3e0cac6ce) or https://community.letsencrypt.org/t/dehydrated-caused-rate-limits-to-be-reached/52477/2 for more details.
+
+### Added
+- Allow for the Redis `db` number to be configured. Thanks to [@RainFlying](https://github.com/RainFlying). ([#103](https://github.com/GUI/lua-resty-auto-ssl/pull/103))
+- Expose the storage adapter instance in the `allow_domain` callback so the Redis connection can be reused. ([#38](https://github.com/GUI/lua-resty-auto-ssl/issues/38))
+- Add `generate_certs` option to allow for disabling SSL certification generation within specific server blocks. Thanks to [@mklauber](https://github.com/mklauber). ([#91](https://github.com/GUI/lua-resty-auto-ssl/issues/91), [#92](https://github.com/GUI/lua-resty-auto-ssl/pull/92))
+- Add `json_adapter` option for choosing a different JSON encoder/decoder library. Thanks to [@meyskens](https://github.com/meyskens). ([#85](https://github.com/GUI/lua-resty-auto-ssl/pull/85), [#84](https://github.com/GUI/lua-resty-auto-ssl/issues/84))
+
+### Changed
+- Upgrade dehydrated to latest version from master to fix recent redirect changes in Let's Encrypt. The issue could lead to certificate registration failures in dehydrated and quota exhaustion. ([4aed490](https://github.com/GUI/lua-resty-auto-ssl/commit/4aed490c1d76b8bf09a8151aad2373c3e0cac6ce))
+- Make the renewal process more efficient so the dehydrated shell script is only executed when certificates are up for renewal (rather than every night). This can reduce CPU usage in environments with lots of certificates. Thanks to [@brianlund](https://github.com/brianlund). ([#111](https://github.com/GUI/lua-resty-auto-ssl/pull/111), [#110](https://github.com/GUI/lua-resty-auto-ssl/issues/110))
+- Only call the `allow_domain` callback if a certificate is not present in shared memory. This may improve efficiency in cases where the `allow_domain` callback is more costly or takes longer. Thanks to [@gohai](https://github.com/gohai). ([#107](https://github.com/GUI/lua-resty-auto-ssl/pull/107))
+- The internal APIs for `storage:get_cert()` and `ssl_provider.issue_cert()` has changed to return a single table of data instead of multiple values (so it's easier to pass along other metadata).
+
+### Deprecated
+- If accessing the storage object off of the auto-ssl instance, use `auto_ssl.storage` instead of `auto_ssl:get("storage")`.
+
+### Fixed
+- Fix renewals when using the file adapter and too many certificate files were present for shell globbing ([#109](https://github.com/GUI/lua-resty-auto-ssl/issues/109))
+
+## 0.11.1 - 2017-11-17
+
+### Fixed
+- Update dehydrated to v0.4.0 to account for new [Let's Encrypt Subscriber Agreement](https://letsencrypt.org/documents/2017.11.15-LE-SA-v1.2.pdf) as of November 15, 2017. This would lead to certificate registration errors for new users (but should not have affected existing lua-resty-auto-ssl users). ([#13](https://github.com/GUI/lua-resty-auto-ssl/issues/13), [#104](https://github.com/GUI/lua-resty-auto-ssl/issues/104))
+
 ## 0.11.0 - 2017-06-18
 
 ### Upgrade Notes

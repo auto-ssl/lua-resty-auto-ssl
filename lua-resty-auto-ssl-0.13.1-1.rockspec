@@ -1,8 +1,8 @@
 package = "lua-resty-auto-ssl"
-version = "0.11.0-1"
+version = "0.13.1-1"
 source = {
-  url = "git://github.com/ryokdy/lua-resty-auto-ssl.git",
-  tag = "v0.11.0",
+  url = "git://github.com/GUI/lua-resty-auto-ssl.git",
+  tag = "v0.13.1",
 }
 description = {
   summary = "Automatic SSL handling for OpenResty",
@@ -12,6 +12,7 @@ description = {
 }
 dependencies = {
   "lua-resty-http",
+  "shell-games >= 1.1.0",
 }
 build = {
   type = "make",

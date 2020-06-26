@@ -1,0 +1,4 @@
+port 9999
+dir <%- redis_test_dir %>
+loglevel verbose
+logfile <%- redis_test_dir %>/redis.log

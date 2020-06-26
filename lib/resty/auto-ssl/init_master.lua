@@ -1,5 +1,6 @@
+require "resty.auto-ssl.utils.random_seed"
 local resty_random = require "resty.random"
-local run_command = require "resty.auto-ssl.utils.run_command"
+local shell_blocking = require "shell-games"
 local str = require "resty.string"
 
 local function check_dependencies()
@@ -13,7 +14,7 @@ local function check_dependencies()
     "sed",
   }
   for _, bin in ipairs(runtime_dependencies) do
-    local _, _, err = run_command("command -v " .. bin)
+    local _, err = shell_blocking.capture_combined({ "command", "-v", bin })
     if(err) then
       ngx.log(ngx.ERR, "auto-ssl: `" .. bin .. "` was not found in PATH. Please install `" .. bin .. "` first.")
     end
@@ -46,12 +47,22 @@ end
 local function generate_config(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
 
-  local _, _, mkdir_err = run_command("umask 0022 && mkdir -p " .. base_dir .. "/letsencrypt/conf.d")
+  local _, tmp_mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/tmp" })
+  if tmp_mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir: ", tmp_mkdir_err)
+  end
+
+  local _, tmp_chmod_err = shell_blocking.capture_combined({ "chmod", "777", base_dir .. "/tmp" })
+  if tmp_chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir permissions: ", tmp_chmod_err)
+  end
+
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/conf.d" }, { umask = "0022" })
   if mkdir_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/conf.d dir: ", mkdir_err)
   end
 
-  local _, _, chmod_err = run_command("chmod 777 " .. base_dir .. "/letsencrypt")
+  local _, chmod_err = shell_blocking.capture_combined({ "chmod", "777", base_dir .. "/letsencrypt" })
   if chmod_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt dir permissions: ", chmod_err)
   end
@@ -65,7 +76,7 @@ local function generate_config(auto_ssl_instance)
     ngx.log(ngx.ERR, "auto-ssl: failed to open letsencrypt config file")
   else
     file:write('# This file will be overwritten by resty-auto-ssl.\n')
-    file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d\n\n')
+    file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d/*.sh\n\n')
     file:write('CONFIG_D="' .. base_dir .. '/letsencrypt/conf.d"\n')
     file:write('LOCKFILE="' .. base_dir .. '/letsencrypt/locks/lock"\n')
     file:write('WELLKNOWN="' .. base_dir .. '/letsencrypt/.acme-challenges"\n')
@@ -80,15 +91,21 @@ local function generate_config(auto_ssl_instance)
 end
 
 local function setup_storage(auto_ssl_instance)
-  local adapter = require(auto_ssl_instance:get("storage_adapter"))
-  local adapter_instance = adapter.new(auto_ssl_instance)
-  if adapter_instance.setup then
-    adapter_instance:setup()
+  local storage_adapter = require(auto_ssl_instance:get("storage_adapter"))
+  local storage_adapter_instance = storage_adapter.new(auto_ssl_instance)
+  if storage_adapter_instance.setup then
+    storage_adapter_instance:setup()
   end
 
+  local json_adapter = require(auto_ssl_instance:get("json_adapter"))
+  local json_adapter_instance = json_adapter.new(auto_ssl_instance)
+
   local storage = require "resty.auto-ssl.storage"
-  local storage_instance = storage.new(adapter_instance)
-  auto_ssl_instance:set("storage", storage_instance)
+  local storage_instance = storage.new({
+    adapter = storage_adapter_instance,
+    json_adapter = json_adapter_instance,
+  })
+  auto_ssl_instance.storage = storage_instance
 end
 
 return function(auto_ssl_instance)

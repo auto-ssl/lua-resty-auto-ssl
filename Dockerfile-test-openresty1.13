@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.15.8.1-4-centos
+FROM openresty/openresty:1.13.6.2-2-centos
 
 # Runtime dependencies
 RUN yum -y install \
@@ -12,9 +12,6 @@ RUN yum -y install \
 
 # Build dependencies.
 RUN yum -y install make
-
-# Dependencies for the release process.
-RUN yum -y install git zip
 
 # Test dependencies
 RUN yum -y install epel-release && \

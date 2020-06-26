@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.15.8.1-4-centos
+FROM openresty/openresty:1.11.2.1-centos
 
 # Runtime dependencies
 RUN yum -y install \
@@ -13,9 +13,6 @@ RUN yum -y install \
 # Build dependencies.
 RUN yum -y install make
 
-# Dependencies for the release process.
-RUN yum -y install git zip
-
 # Test dependencies
 RUN yum -y install epel-release && \
   yum -y install \
@@ -28,6 +25,9 @@ RUN yum -y install epel-release && \
     sudo \
     https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.34-linux-amd64.rpm
 
+ENV PATH /usr/local/openresty/luajit/bin:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV TEST_NGINX_RESOLVER 127.0.0.11 ipv6=off
+
 RUN mkdir /app
 WORKDIR /app
 
@@ -35,9 +35,10 @@ COPY Makefile /app/Makefile
 RUN make install-test-deps
 
 ENV PATH="/tmp/resty-auto-ssl-test-luarocks/bin:${PATH}"
-ENV LUA_PATH="/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?/init.lua;${LUA_PATH}"
-ENV LUA_CPATH="/tmp/resty-auto-ssl-test-luarocks/lib/lua/5.1/?.so;${LUA_CPATH}"
+ENV LUA_PATH="/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?/init.lua;;"
+ENV LUA_CPATH="/tmp/resty-auto-ssl-test-luarocks/lib/lua/5.1/?.so;;"
 
 COPY . /app
 
+ENTRYPOINT []
 CMD ["bash"]

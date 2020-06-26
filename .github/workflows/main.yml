@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: "18 7 * * *"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - centos
+          - alpine
+          - ubuntu
+          - openresty1.13
+          - lua51
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build Container
+        run: docker-compose build ${{ matrix.variant }}
+      - name: Lint
+        run: docker-compose run --rm ${{ matrix.variant }} make lint
+      - name: Test
+        run: docker-compose run --name "${{ matrix.variant }}-test" ${{ matrix.variant }} make test
+      - name: Copy Artifacts
+        if: always()
+        run: |
+          rm -rf /tmp/resty-auto-ssl-test
+          docker cp ${{ matrix.variant }}-test:/tmp/resty-auto-ssl-test /tmp/resty-auto-ssl-test
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: "${{ matrix.variant }}-logs"
+          path: /tmp/resty-auto-ssl-test
