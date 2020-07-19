@@ -1,5 +1,6 @@
 local _M = {}
 
+local shell_blocking = require "shell-games"
 local shell_execute = require "resty.auto-ssl.utils.shell_execute"
 
 function _M.issue_cert(auto_ssl_instance, domain)
@@ -36,8 +37,17 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--config", base_dir .. "/letsencrypt/config",
     "--hook", lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks",
   })
+
   if result["status"] ~= 0 then
     ngx.log(ngx.ERR, "auto-ssl: dehydrated failed: ", result["command"], " status: ", result["status"], " out: ", result["output"], " err: ", err)
+    -- remove the created files from dehydrated's cert directory
+    assert(string.find(domain, "/") == nil)
+    assert(string.find(domain, "%.%.") == nil)
+    local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
+    local _, rm_err = shell_blocking.capture_combined({ "rm", "-rf", dir })
+    if rm_err then
+      ngx.log(ngx.ERR, "auto-ssl: failed to cleanup certs: ", rm_err)
+    end
     return nil, "dehydrated failure"
   end
 
