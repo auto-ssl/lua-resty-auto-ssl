@@ -182,4 +182,84 @@ describe("expiry", function()
     assert.Not.matches("[alert]", error_log, nil, true)
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)
+
+  it("removes cert on renewal if expiration has expired and allow_domain is false", function()
+    server.start({
+      auto_ssl_pre_new = [[
+        options["renew_check_interval"] = 1
+        options["allow_domain"] = function(domain)
+          if string.find(domain, "disallowed.example") then
+            return false
+          else
+            return true
+          end
+        end
+      ]],
+    })
+
+    -- Issue a new certificate for a valid domain so we can use that for
+    -- copying and manipulation.
+    do
+      local httpc = http.new()
+      local _, connect_err = httpc:connect("127.0.0.1", 9443)
+      assert.equal(nil, connect_err)
+
+      local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
+      assert.equal(nil, ssl_err)
+
+      local res, request_err = httpc:request({ path = "/foo" })
+      assert.equal(nil, request_err)
+      assert.equal(200, res.status)
+
+      local body, body_err = res:read_body()
+      assert.equal(nil, body_err)
+      assert.equal("foo", body)
+
+      local error_log = server.nginx_error_log_tail:read()
+      assert.matches("issuing new certificate for", error_log, nil, true)
+    end
+
+    -- Copy the cert to a disallowed domain to verify first that non-expired
+    -- disallowed certs remain.
+    local cert_path = server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest")
+    local disallowed_cert_path = server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri("disallowed.example:latest")
+    local _, cp_err = shell_blocking.capture_combined({ "cp", "-p", cert_path, disallowed_cert_path })
+    assert.equal(nil, cp_err)
+
+    -- Wait for scheduled renewals to happen.
+    ngx.sleep(3)
+
+    local error_log = server.nginx_error_log_tail:read()
+    assert.matches("auto-ssl: checking certificate renewals for disallowed.example", error_log, nil, true)
+    assert.matches("auto-ssl: expiry date is more than 30 days out, skipping renewal: disallowed.example", error_log, nil, true)
+
+    local content = assert(file.read(disallowed_cert_path))
+    assert.string(content)
+    local data = assert(cjson.decode(content))
+    assert.number(data["expiry"])
+
+    -- Set the expiration time to some time in the past.
+    data["expiry"] = 1000
+
+    assert(file.write(disallowed_cert_path, assert(cjson.encode(data))))
+
+    -- Wait for scheduled renewals to happen.
+    ngx.sleep(5)
+
+    -- Verify that the disallowed domain got removed now that the cert was set
+    -- to expire in the past.
+    error_log = server.nginx_error_log_tail:read()
+    assert.matches("auto-ssl: checking certificate renewals for disallowed.example", error_log, nil, true)
+    assert.matches("auto-ssl: domain not allowed, not renewing: disallowed.example", error_log, nil, true)
+    assert.matches(" auto-ssl: existing certificate is expired, deleting: disallowed.example", error_log, nil, true)
+
+    local file_content, file_err = file.read(disallowed_cert_path)
+    assert.equal(nil, file_content)
+    assert.matches("No such file or directory", file_err, nil, true)
+
+    error_log = server.read_error_log()
+    assert.Not.matches("[error]", error_log, nil, true)
+    assert.Not.matches("[alert]", error_log, nil, true)
+    assert.Not.matches("[emerg]", error_log, nil, true)
+  end)
 end)
