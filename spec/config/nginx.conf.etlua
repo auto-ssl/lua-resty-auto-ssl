@@ -33,6 +33,7 @@ http {
       allow_domain = function(domain)
         return true
       end,
+      renewals_per_hour = 3600,
     }
     <%- auto_ssl_pre_new or "" %>
     auto_ssl = (require "resty.auto-ssl").new(options)

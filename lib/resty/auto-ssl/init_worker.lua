@@ -2,6 +2,7 @@ local random_seed = require "resty.auto-ssl.utils.random_seed"
 local renewal_job = require "resty.auto-ssl.jobs.renewal"
 local shell_blocking = require "shell-games"
 local start_sockproc = require "resty.auto-ssl.utils.start_sockproc"
+local timer_rand = math.random()
 
 return function(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
@@ -37,5 +38,5 @@ return function(auto_ssl_instance)
     storage_adapter:setup_worker()
   end
 
-  renewal_job.spawn(auto_ssl_instance)
+  renewal_job.spawn(auto_ssl_instance, timer_rand)
 end
