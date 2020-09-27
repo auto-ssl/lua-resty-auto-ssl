@@ -99,6 +99,11 @@ function _M.challenge_server(self)
   server(self)
 end
 
+function _M.has_certificate(self, domain, shmem_only)
+  local has_certificate = require "resty.auto-ssl.utils.has_certificate"
+  return has_certificate(self, domain, shmem_only)
+end
+
 function _M.hook_server(self)
   local server = require "resty.auto-ssl.servers.hook"
   server(self)
