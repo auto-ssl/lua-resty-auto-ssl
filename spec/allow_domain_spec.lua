@@ -1,5 +1,3 @@
-local cjson = require "cjson.safe"
-local file = require "pl.file"
 local http = require "resty.http"
 local server = require "spec.support.server"
 
@@ -19,30 +17,30 @@ describe("allow_domain", function()
 
           local httpc = (require "resty.http").new()
           local cjson = (require "cjson")
-  
+
           local url = "http://localhost:3000/domains?d=" .. domain
           httpc:set_timeout(10000)
           local res, req_err = httpc:request_uri(url, {
             ssl_verify = false,
             method = "GET"
           })
-  
+
           if not res then
             ngx.log(ngx.ERR, "Verification failed (" .. (url or "") .. "): " .. (req_err or ""))
             return false
           end
-  
+
           if res.status ~= 200 then
             ngx.log(ngx.ERR, "Verification returns bad HTTP status code (" .. (url or "") .. "): " .. (res.status or ""))
             return false
           end
-  
+
           local resp = res.body
           if not resp or resp == "" then
             ngx.log(ngx.ERR, "Verification returns bad response body (" .. (url or "") .. "): " .. (resp or ""))
             return false
           end
-  
+
           local data = cjson.decode(resp)
           if not data["valid"] then
             ngx.log(ngx.ERR, "Invalid domain: " .. domain)
