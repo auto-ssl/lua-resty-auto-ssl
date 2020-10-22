@@ -144,7 +144,7 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
   -- Next, Check to ensure the domain is one we allow.
   local valid, verify_domain_err = verify_domain(auto_ssl_instance, domain)
   if not valid then
-    return nil, nil, nil, verify_domain_err
+    return nil, verify_domain_err
   end
 
   -- Finally, issue a new certificate if one hasn't been found yet.
