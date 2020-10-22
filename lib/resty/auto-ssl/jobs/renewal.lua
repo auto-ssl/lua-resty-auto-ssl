@@ -147,8 +147,9 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   local valid, verify_domain_err = verify_domain(auto_ssl_instance, domain)
   if not valid then
     ngx.log(ngx.ERR, "auto-ssl: this domain seems to have been invalid: ", verify_domain_err)
+    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return
-  end  
+  end
 
   -- We didn't previously store the cert.pem (since it can be derived from the
   -- fullchain.pem). So for backwards compatibility, set the cert.pem value to
