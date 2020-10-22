@@ -11,7 +11,7 @@ describe("allow_domain", function()
     server.start({
       auto_ssl_pre_new = [[
         options["allow_domain"] = function(domain)
-          if ngx.re.match(domain, "^([0-9]\\.[0-9]\\.[0-9]\\.[0-9])$", "ijo") then
+          if ngx.re.match(domain, "^([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)$", "ijo") then
             return false
           elseif ngx.re.match(domain, "(amazonaws.com|google-analytics.com)$", "ijo") then
             return false
@@ -56,8 +56,7 @@ describe("allow_domain", function()
     local httpc = http.new()
     local _, connect_err = httpc:connect("127.0.0.1", 9443)
     assert.equal(nil, connect_err)
-
     local _, ssl_err = httpc:ssl_handshake(nil, server.ngrok_hostname, true)
-    assert.equal(nil, ssl_err)
+    assert.equal("18: self signed certificate", ssl_err)
   end)
 end)
