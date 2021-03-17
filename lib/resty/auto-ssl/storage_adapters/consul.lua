@@ -237,7 +237,6 @@ function _M.delete(self, key)
   return connection:delete_key(prefixed_key(self, key))
 end
 
--- TODO: finish _M.keys_with_suffix (fititnt, 2019-27-23:01 BRT)
 --- Returns a stored Key Value from the Consul
 -- @param  self
 -- @param  suffix   The umprefixed key name
@@ -251,6 +250,8 @@ function _M.keys_with_suffix(self, suffix)
   end
 
   local result = {}
+
+  -- Get all keys under prefix/*
   local res, err = connection:list_keys(self.options["prefix"])
   if res and self.options["prefix"] then
 
@@ -259,18 +260,31 @@ function _M.keys_with_suffix(self, suffix)
       keys = res.body
     end
 
+    -- Match keys with requested suffix.
+    local keys_with_suffix = {}
+    for _, key in ipairs(keys) do
+
+      local match = string.match(key, '.*' ..suffix .. '$')
+      if match == nil then
+        goto continue
+      end
+
+      table.insert(keys_with_suffix, key)
+
+      ::continue::
+    end
+
+
     local unprefixed_keys = {}
     -- First character past the prefix and a colon
     local offset = string.len(self.options["prefix"]) + 2
 
-    for _, key in ipairs(keys) do
-
+    -- Remove prefix from key so that only the actual key remains.
+    for _, key in ipairs(keys_with_suffix) do
       local unprefixed = string.sub(key, offset)
-
       table.insert(unprefixed_keys, unprefixed)
-
     end
-    result = unprefixed_keys
+    result = keys_with_suffix
 
   end
 
