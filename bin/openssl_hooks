@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# OpenSSL, by definition, is run locally. To pass back its execution state
+# it will call this hooks script.
+# For more details regarding internals see letsencrypt_hooks.
+
+set -Eeuo pipefail
+
+deploy_cert() {
+  local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}"
+  local EXPIRY
+  if ! EXPIRY=$(openssl x509 -enddate -noout -in "$CERTFILE"); then
+    echo "failed to get the expiry date"
+  fi
+
+  curl --silent --show-error --fail -XPOST \
+    --header "X-Hook-Secret: $HOOK_SECRET" \
+    --data-urlencode "domain=$DOMAIN" \
+    --data-urlencode "privkey@$KEYFILE" \
+    --data-urlencode "cert@$CERTFILE" \
+    --data-urlencode "fullchain@$FULLCHAINFILE" \
+    --data-urlencode "expiry=$EXPIRY" \
+    "http://127.0.0.1:$HOOK_SERVER_PORT/deploy-cert" || { echo "hook request (deploy_cert) failed" 1>&2; exit 1; }
+}
+
+unchanged_cert() {
+  local DOMAIN="${1}" KEYFILE="${2}" CERTFILE="${3}" FULLCHAINFILE="${4}" CHAINFILE="${5}"
+}
+
+request_failure() {
+  local STATUSCODE="${1}" REASON="${2}"
+  echo "Failure: STATUSCODE=${STATUSCODE} REASON=${REASON} REQTYPE=${REQTYPE}"
+  exit 1
+}
+
+startup_hook() {
+  :
+}
+
+exit_hook() {
+  :
+}
+
+HANDLER=$1; shift;
+
+if ! command -v "$HANDLER"; then
+  exit 0
+fi
+
+$HANDLER "$@"

@@ -1,6 +1,7 @@
 local _M = {}
 
 local shell_execute = require "resty.auto-ssl.utils.shell_execute"
+local shell_blocking = require "shell-games"
 
 function _M.issue_cert(auto_ssl_instance, domain)
   assert(type(domain) == "string", "domain must be a string")
@@ -64,6 +65,34 @@ function _M.issue_cert(auto_ssl_instance, domain)
   end
 
   return cert
+end
+
+function _M.renew_cert(auto_ssl_instance, domain, current_cert_pem)
+  -- Write out the cert.pem value to the location dehydrated expects it for
+  -- checking.
+  local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", dir }, { umask = "0022" })
+  if mkdir_err then
+    return false, "failed to create letsencrypt/certs dir: " .. mkdir_err
+  end
+
+  local cert_pem_path = dir .. "/cert.pem"
+  local file, err = io.open(cert_pem_path, "w")
+  if err then
+    return false, "write cert.pem for " .. domain .. " failed: " .. err
+  end
+  file:write(current_cert_pem)
+  file:close()
+
+  -- Trigger a normal certificate issuance attempt, which dehydrated will
+  -- skip if the certificate already exists or renew if it's within the
+  -- configured time for renewals.
+  local _, issue_err = _M.issue_cert(auto_ssl_instance, domain)
+  if issue_err then
+    return false, "issuing renewal certificate failed: " .. issue_err
+  end
+
+  return true, nil
 end
 
 function _M.cleanup(auto_ssl_instance, domain)

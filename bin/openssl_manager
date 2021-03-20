@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# This script is responsible for the actual certificates generation/renewal
+# It's like dehydrated but for OpenSSL. As of now it makes the following assumptions:
+#  - First parameter is always the config file; leave empty to use defaults [below]
+#  - Second parameter is always the hook file; cannot be empty (pass "true" if you REALLY want)
+
+set -Eeuo pipefail
+
+# Default configuration
+BASEDIR="/etc/resty-auto-ssl/openssl"
+CERTSDIR="${BASEDIR}/certs"
+CACRT="${CERTSDIR}/_ca.crt"
+INTCACRT="${CERTSDIR}/_int.crt"
+SIGNKEY="${CERTSDIR}/_sign.key"
+KEYSPEC="rsa:2048"
+CRTEXPDAYS="14"
+SUBJECT="/C=WW/ST=/L=/O=/CN=<domain>"
+OSLCFG="keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = <domain>"
+
+if [[ ! -z "${MANAGER_CFG:-}" ]] && [[ -f "${MANAGER_CFG}" ]] ; then
+   echo "[*] Loading custom config ${MANAGER_CFG}"
+   #shellcheck source=/dev/null
+  . "${CFGFILE}"
+fi
+
+if [[ -z "${HOOK_BIN:-}" ]] ; then
+   echo "[?] No HOOK_BIN set"
+   HOOK_BIN="echo"
+fi
+
+mkdir -p "${BASEDIR}"
+mkdir -p "${CERTSDIR}"
+
+issue_cert() {
+  local DOMAIN="${1}"
+  local DOMAINDIR=${CERTSDIR}/${DOMAIN};
+  mkdir -p "${DOMAINDIR}"
+
+  [[ -z "${INTCACRT}" ]] && local SIGNCRT="${CACRT}" || local SIGNCRT="${INTCACRT}" # use intermediate cert if available
+  local OSLCFGFILE="${CERTSDIR}/openssl.cfg" # OpenSSL signing config  (deleted after)
+  local KEYFILE="${DOMAINDIR}/privkey.pem" # certificate private key
+  local CSRFILE="${DOMAINDIR}/request.csr" # signing request (deleted after)
+  local CERFILE="${DOMAINDIR}/cert.pem" # contains just new cert file
+  local CHAINFILE="${DOMAINDIR}/fullchain.pem" # contains intermediate + cert
+
+  echo "[*] Generating CSR for ${DOMAIN} to ${CSRFILE}"
+  openssl req -subj "${SUBJECT//<domain>/$DOMAIN}" -newkey "${KEYSPEC}" -nodes -keyout "${KEYFILE}" -out "${CSRFILE}" \
+    || _fail $? "OpenSSL failed failed to make CSR+KEY"
+
+  echo "[*] Signing CSR for ${DOMAIN}"
+  echo "${OSLCFG//<domain>/$DOMAIN}" > "${OSLCFGFILE}"
+  openssl x509 -req \
+    -in "${CSRFILE}" \
+    -CA "${SIGNCRT}" -CAkey "${SIGNKEY}" -CAcreateserial \
+    -out "${CERFILE}" \
+    -days "${CRTEXPDAYS}" -sha256 -extfile "${OSLCFGFILE}" \
+    || _fail $? "[-] OpenSSL failed failed to sign CSR"
+
+  echo "[*] Cleaning up"
+  rm "${OSLCFGFILE}" "${CSRFILE}"
+
+  echo "[*] Generating chain files"
+  cat "${CERFILE}" > "${CHAINFILE}"
+  if [[ -f "${INTCACRT}" ]] ; then
+    # shellcheck source=/dev/null
+    cat "${INTCACRT}" >> "${CHAINFILE}"
+  fi
+
+  echo "[+] Certificate for ${DOMAIN} issued successfully (${CERFILE}), calling hook"
+  "${HOOK_BIN}" deploy_cert "${DOMAIN}" "${KEYFILE}" "${CERFILE}" "${CHAINFILE}"
+}
+
+_fail() { # Args: code; reason text
+  echo "[-] ${2}" 1>&2
+  echo "[*] Calling request_failure hook"
+  "${HOOK_BIN}" request_failure "${1}" "${2}"
+  exit 1
+}
+
+HANDLER=$1; shift;
+
+if ! command -v "$HANDLER"; then
+  exit 0
+fi
+
+"${HOOK_BIN}" startup_hook
+$HANDLER "$@"
+"${HOOK_BIN}" exit_hook
