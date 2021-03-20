@@ -45,6 +45,10 @@ function _M.new(options)
     options["json_adapter"] = "resty.auto-ssl.json_adapters.cjson"
   end
 
+  if not options["ssl_provider"] then
+    options["ssl_provider"] = "resty.auto-ssl.ssl_providers.lets_encrypt"
+  end
+
   if not options["ocsp_stapling_error_level"] then
     options["ocsp_stapling_error_level"] = ngx.ERR
   end
@@ -55,6 +59,10 @@ function _M.new(options)
 
   if not options["hook_server_port"] then
     options["hook_server_port"] = 8999
+  end
+
+  if not options["openssl_config"] then
+    options["openssl_config"] = ""
   end
 
   return setmetatable({ options = options }, { __index = _M })

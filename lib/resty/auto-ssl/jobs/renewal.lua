@@ -2,7 +2,6 @@ local lock = require "resty.lock"
 local parse_openssl_time = require "resty.auto-ssl.utils.parse_openssl_time"
 local shell_blocking = require "shell-games"
 local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
-local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local _M = {}
 
@@ -160,32 +159,14 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     cert["cert_pem"] = cert["fullchain_pem"]
   end
 
-  -- Write out the cert.pem value to the location dehydrated expects it for
-  -- checking.
-  local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
-  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", dir }, { umask = "0022" })
-  if mkdir_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/certs dir: ", mkdir_err)
+  -- Attempt renewal using provider logic
+  local ok, err = require(auto_ssl_instance:get("ssl_provider")).renew_cert(auto_ssl_instance, domain, cert["cert_pem"])
+  if not ok then
+    ngx.log(ngx.ERR, "auto-ssl: cert renewal for " .. domain .. " failed: ", err)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
-    return false, mkdir_err
-  end
-  local cert_pem_path = dir .. "/cert.pem"
-  local file, err = io.open(cert_pem_path, "w")
-  if err then
-    ngx.log(ngx.ERR, "auto-ssl: write cert.pem for " .. domain .. " failed: ", err)
-    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
-    return false, err
-  end
-  file:write(cert["cert_pem"])
-  file:close()
-
-  -- Trigger a normal certificate issuance attempt, which dehydrated will
-  -- skip if the certificate already exists or renew if it's within the
-  -- configured time for renewals.
-  local _, issue_err = ssl_provider.issue_cert(auto_ssl_instance, domain)
-  if issue_err then
-    ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", issue_err)
     delete_cert_if_expired(domain, storage, cert)
+
+    return false, err
   end
 
   renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)

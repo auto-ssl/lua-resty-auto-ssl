@@ -2,7 +2,6 @@ local http = require "resty.http"
 local lock = require "resty.lock"
 local ocsp = require "ngx.ocsp"
 local ssl = require "ngx.ssl"
-local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local function convert_to_der_and_cache(domain, cert)
   -- Convert certificate from PEM to DER format.
@@ -91,8 +90,9 @@ local function issue_cert(auto_ssl_instance, storage, domain)
     return cert
   end
 
-  ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
-  cert, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+  local ssl_provider_name = auto_ssl_instance:get("ssl_provider")
+  ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain, " using ", ssl_provider_name)
+  cert, err = require(ssl_provider_name).issue_cert(auto_ssl_instance, domain)
   if err then
     ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
   end
@@ -157,10 +157,10 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
 end
 
 local function get_ocsp_response(fullchain_der, auto_ssl_instance)
-  -- Pull the OCSP URL to hit out of the certificate chain.
+  -- Pull the OCSP URL (if available) to hit out of the certificate chain.
   local ocsp_url, ocsp_responder_err = ocsp.get_ocsp_responder_from_der_chain(fullchain_der)
   if not ocsp_url then
-    return nil, "failed to get OCSP responder: " .. (ocsp_responder_err or "")
+    return nil, nil -- lack of OCSP URL is *not* an error
   end
 
   -- Generate the OCSP request body.
@@ -221,7 +221,9 @@ local function set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
 
     local ocsp_response_err
     ocsp_resp, ocsp_response_err = get_ocsp_response(cert_der["fullchain_der"], auto_ssl_instance)
-    if ocsp_response_err then
+    if ocsp_resp == nil and ocsp_response_err == nil then
+      return nil, nil
+    elseif ocsp_response_err then
       return false, "failed to get ocsp response: " .. (ocsp_response_err or "")
     end
 
@@ -256,7 +258,9 @@ local function set_response_cert(auto_ssl_instance, domain, cert_der)
 
   -- Set OCSP stapling.
   ok, err = set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
-  if not ok then
+  if ok == nil and err == nil then
+    ngx.log(ngx.NOTICE, "auto-ssl: ocsp stapling skipped for ", domain, " - no OCSP responder available")
+  elseif not ok then
     ngx.log(auto_ssl_instance:get("ocsp_stapling_error_level"), "auto-ssl: failed to set ocsp stapling for ", domain, " - continuing anyway - ", err)
   end
 
