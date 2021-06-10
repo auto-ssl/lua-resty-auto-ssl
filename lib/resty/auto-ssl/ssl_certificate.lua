@@ -281,6 +281,9 @@ local function do_ssl(auto_ssl_instance, ssl_options)
     ngx.log(ngx.WARN, "auto-ssl: could not determine domain for request (SNI not supported?) - using fallback - " .. (domain_err or ""))
     return
   end
+  
+  -- Forces the domain to be lowercase
+  domain = domain:lower()
 
   -- Get or issue the certificate for this domain.
   local cert_der, get_cert_der_err = get_cert_der(auto_ssl_instance, domain, ssl_options)
