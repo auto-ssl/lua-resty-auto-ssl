@@ -37,6 +37,14 @@ function _M.new(options)
     end
   end
 
+  if not options["zerossl_ca"] then
+    options["zerossl_ca"] = "https://acme.zerossl.com/v2/DV90"
+  end
+
+  if not options["letsencrypt_ca"] then
+    options["letsencrypt_ca"] = "https://acme-v02.api.letsencrypt.org/directory"
+  end
+
   if not options["storage_adapter"] then
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
   end
