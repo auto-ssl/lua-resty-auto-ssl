@@ -1,7 +1,7 @@
 package = "lua-resty-auto-ssl-multi"
 version = "git-1"
 source = {
-  url = "git+ssh://git@github.com:zyro-inc/lua-resty-auto-ssl-multi.git",
+  url = "git+https://github.com/zyro-inc/lua-resty-auto-ssl-multi.git",
 }
 description = {
   summary = "Automatic SSL handling for OpenResty",
