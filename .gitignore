@@ -3,3 +3,4 @@
 /lua-resty-auto-ssl-*
 !/lua-resty-auto-ssl-*.rockspec
 /spec/tmp
+/ngrok.log

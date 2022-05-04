@@ -46,6 +46,102 @@ local function generate_hook_sever_secret()
   end
 end
 
+local function generate_config_letsencrypt(auto_ssl_instance)
+  local base_dir = auto_ssl_instance:get("dir")
+
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/conf.d" }, { umask = "0022" })
+  if mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/conf.d dir: ", mkdir_err)
+  end
+
+  local _, chmod_err = shell_blocking.capture_combined({ "chmod", "777", base_dir .. "/letsencrypt" })
+  if chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt dir permissions: ", chmod_err)
+  end
+
+  local file, err = io.open(base_dir .. "/letsencrypt/config", "w")
+  if err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to open letsencrypt config file")
+  else
+    file:write('# This file will be overwritten by resty-auto-ssl.\n')
+    file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d/*.sh\n\n')
+    file:write('CONFIG_D="' .. base_dir .. '/letsencrypt/conf.d"\n')
+    file:write('LOCKFILE="' .. base_dir .. '/letsencrypt/locks/lock"\n')
+    file:write('WELLKNOWN="' .. base_dir .. '/letsencrypt/.acme-challenges"\n')
+
+    local ca = auto_ssl_instance:get("letsencrypt_ca")
+    if ca then
+      file:write('CA="' .. ca .. '"\n')
+    end
+    file:close()
+  end
+
+  local _, mkdir_challenges_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/.acme-challenges" }, { umask = "0022" })
+  if mkdir_challenges_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/.acme-challenges dir: ", mkdir_challenges_err)
+  end
+  local _, chown_challenges_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/letsencrypt/.acme-challenges" })
+  if chown_challenges_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to chown letsencrypt/.acme-challenges dir: ", chown_challenges_err)
+  end
+  local _, mkdir_locks_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/locks" }, { umask = "0022" })
+  if mkdir_locks_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/locks dir: ", mkdir_locks_err)
+  end
+  local _, chown_locks_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/letsencrypt/locks" })
+  if chown_locks_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to chown letsencrypt/locks dir: ", chown_locks_err)
+  end
+end
+
+local function generate_config_zerossl(auto_ssl_instance)
+  local base_dir = auto_ssl_instance:get("dir")
+
+  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/zerossl/conf.d" }, { umask = "0022" })
+  if mkdir_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create zerossl/conf.d dir: ", mkdir_err)
+  end
+
+  local _, chmod_err = shell_blocking.capture_combined({ "chmod", "777", base_dir .. "/zerossl" })
+  if chmod_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create zerossl dir permissions: ", chmod_err)
+  end
+
+  local file, err = io.open(base_dir .. "/zerossl/config", "w")
+  if err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to open zerossl config file")
+  else
+    file:write('# This file will be overwritten by resty-auto-ssl.\n')
+    file:write('# Place any customizations in ' .. base_dir .. '/zerossl/conf.d/*.sh\n\n')
+    file:write('CONFIG_D="' .. base_dir .. '/zerossl/conf.d"\n')
+    file:write('LOCKFILE="' .. base_dir .. '/zerossl/locks/lock"\n')
+    file:write('WELLKNOWN="' .. base_dir .. '/zerossl/.acme-challenges"\n')
+
+    local ca = auto_ssl_instance:get("zerossl_ca")
+    if ca then
+      file:write('CA="' .. ca .. '"\n')
+    end
+    file:close()
+  end
+
+  local _, mkdir_challenges_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/zerossl/.acme-challenges" }, { umask = "0022" })
+  if mkdir_challenges_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create zerossl/.acme-challenges dir: ", mkdir_challenges_err)
+  end
+  local _, chown_challenges_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/zerossl/.acme-challenges" })
+  if chown_challenges_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to chown zerossl/.acme-challenges dir: ", chown_challenges_err)
+  end
+  local _, mkdir_locks_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/zerossl/locks" }, { umask = "0022" })
+  if mkdir_locks_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to create zerossl/locks dir: ", mkdir_locks_err)
+  end
+  local _, chown_locks_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/zerossl/locks" })
+  if chown_locks_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to chown zerossl/locks dir: ", chown_locks_err)
+  end
+end
+
 local function generate_config(auto_ssl_instance)
   local base_dir = auto_ssl_instance:get("dir")
 
@@ -59,37 +155,19 @@ local function generate_config(auto_ssl_instance)
     ngx.log(ngx.ERR, "auto-ssl: failed to create tmp dir permissions: ", tmp_chmod_err)
   end
 
-  local _, mkdir_err = shell_blocking.capture_combined({ "mkdir", "-p", base_dir .. "/letsencrypt/conf.d" }, { umask = "0022" })
-  if mkdir_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/conf.d dir: ", mkdir_err)
+  if not auto_ssl_instance:get("letsencrypt_ca") and not auto_ssl_instance:get("zerossl_ca") then
+    ngx.log(ngx.ERR, "auto-ssl: zerossl_ca and letsencrypt_ca parameters are missing!")
   end
 
-  local _, chmod_err = shell_blocking.capture_combined({ "chmod", "777", base_dir .. "/letsencrypt" })
-  if chmod_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt dir permissions: ", chmod_err)
+  if auto_ssl_instance:get("letsencrypt_ca") then
+    generate_config_letsencrypt(auto_ssl_instance)
   end
 
-  -- Remove the old "config.sh" file used by dehydrated v0.2.0. Now it's
-  -- moved to just "config".
-  os.remove(base_dir .. "/letsencrypt/config.sh")
-
-  local file, err = io.open(base_dir .. "/letsencrypt/config", "w")
-  if err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to open letsencrypt config file")
-  else
-    file:write('# This file will be overwritten by resty-auto-ssl.\n')
-    file:write('# Place any customizations in ' .. base_dir .. '/letsencrypt/conf.d/*.sh\n\n')
-    file:write('CONFIG_D="' .. base_dir .. '/letsencrypt/conf.d"\n')
-    file:write('LOCKFILE="' .. base_dir .. '/letsencrypt/locks/lock"\n')
-    file:write('WELLKNOWN="' .. base_dir .. '/letsencrypt/.acme-challenges"\n')
-
-    local ca = auto_ssl_instance:get("ca")
-    if ca then
-      file:write('CA="' .. ca .. '"\n')
-    end
-
-    file:close()
+  if auto_ssl_instance:get("zerossl_ca") then
+    generate_config_zerossl(auto_ssl_instance)
   end
+
+
 end
 
 local function setup_storage(auto_ssl_instance)

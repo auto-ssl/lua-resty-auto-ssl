@@ -2,7 +2,6 @@ local http = require "resty.http"
 local lock = require "resty.lock"
 local ocsp = require "ngx.ocsp"
 local ssl = require "ngx.ssl"
-local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
 
 local function convert_to_der_and_cache(domain, cert)
   -- Convert certificate from PEM to DER format.
@@ -81,22 +80,29 @@ local function issue_cert(auto_ssl_instance, storage, domain)
 
   -- After obtaining the local and distributed lock, see if the certificate
   -- has already been registered.
-  local cert, err = storage:get_cert(domain)
-  if err then
-    ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", err)
+  local cert
+  for ssl_provider_name, ssl_provider_class in pairs(auto_ssl:get("ssl_provider")) do
+    local err
+    cert, err = storage:get_cert(domain,ssl_provider_name)
+    if err then
+      ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for " ..  ssl_provider_name .. ", " .. domain, ": ", err)
+    end
+
+    if cert and cert["fullchain_pem"] and cert["privkey_pem"] then
+      issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+      return cert
+    end
   end
 
-  if cert and cert["fullchain_pem"] and cert["privkey_pem"] then
-    issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
-    return cert
+  for ssl_provider_name, ssl_provider_class in pairs(auto_ssl:get("ssl_provider")) do
+    local ssl_provider = require(ssl_provider_class)
+    ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for " .. ssl_provider_name .. ", ", domain)
+    local err
+    cert, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+    if err then
+      ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: " .. ssl_provider_name .. " ", err)
+    end
   end
-
-  ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", domain)
-  cert, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
-  if err then
-    ngx.log(ngx.ERR, "auto-ssl: issuing new certificate failed: ", err)
-  end
-
   issue_cert_unlock(domain, storage, local_lock, distributed_lock_value)
   return cert, err
 end
@@ -129,20 +135,22 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
   -- Next, look for the certificate in permanent storage (which can be shared
   -- across servers depending on the storage).
   local storage = auto_ssl_instance.storage
-  local cert, get_cert_err = storage:get_cert(domain)
-  if get_cert_err then
-    ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
-  end
+  for ssl_provider, provider_class  in pairs(auto_ssl:get("ssl_provider")) do
+    local cert, get_cert_err = storage:get_cert(domain, ssl_provider)
+    if get_cert_err then
+      ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage " .. ssl_provider .. " for ", domain, ": ", get_cert_err)
+    end
 
-  if cert and cert["fullchain_pem"] and cert["privkey_pem"] then
-    local cert_der = convert_to_der_and_cache(domain, cert)
-    cert_der["newly_issued"] = false
-    return cert_der
+    if cert and cert["fullchain_pem"] and cert["privkey_pem"] then
+      local cert_der = convert_to_der_and_cache(domain, cert)
+      cert_der["newly_issued"] = false
+      return cert_der
+    end
   end
 
   -- Finally, issue a new certificate if one hasn't been found yet.
   if not ssl_options or ssl_options["generate_certs"] ~= false then
-    cert = issue_cert(auto_ssl_instance, storage, domain)
+    local cert = issue_cert(auto_ssl_instance, storage, domain)
     if cert and cert["fullchain_pem"] and cert["privkey_pem"] then
       local cert_der = convert_to_der_and_cache(domain, cert)
       cert_der["newly_issued"] = true

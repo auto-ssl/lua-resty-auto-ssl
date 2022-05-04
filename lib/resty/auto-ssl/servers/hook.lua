@@ -24,6 +24,7 @@ return function(auto_ssl_instance)
     assert(params["domain"])
     assert(params["token_filename"])
     assert(params["token_value"])
+    assert(params["provider"])
     local _, err = storage:set_challenge(params["domain"], params["token_filename"], params["token_value"])
     if err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set challenge: ", err)
@@ -32,6 +33,7 @@ return function(auto_ssl_instance)
   elseif path == "/clean-challenge" then
     assert(params["domain"])
     assert(params["token_filename"])
+    assert(params["provider"])
     local _, err = storage:delete_challenge(params["domain"], params["token_filename"])
     if err then
       ngx.log(ngx.ERR, "auto-ssl: failed to delete challenge: ", err)
@@ -42,13 +44,14 @@ return function(auto_ssl_instance)
     assert(params["fullchain"])
     assert(params["privkey"])
     assert(params["expiry"])
+    assert(params["provider"])
 
     local expiry, parse_err = parse_openssl_time(params["expiry"])
     if parse_err then
       ngx.log(ngx.ERR, "auto-ssl: failed to parse expiry date: ", parse_err)
     end
 
-    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"], expiry)
+    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"], expiry, params["provider"])
     if err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set cert: ", err)
       return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)

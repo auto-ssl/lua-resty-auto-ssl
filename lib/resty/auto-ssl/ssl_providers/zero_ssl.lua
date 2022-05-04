@@ -33,8 +33,8 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--no-lock",
     "--domain", domain,
     "--challenge", "http-01",
-    "--config", base_dir .. "/letsencrypt/config",
-    "--hook", lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks",
+    "--config", base_dir .. "/zerossl/config",
+    "--hook", lua_root .. "/bin/resty-auto-ssl/zerossl_hooks",
   })
 
   -- Cleanup dehydrated files after running to prevent temp files from piling
@@ -53,7 +53,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
   local storage = auto_ssl_instance.storage
-  local cert, get_cert_err = storage:get_cert(domain, "letsencrypt")
+  local cert, get_cert_err = storage:get_cert(domain, "zerossl")
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", get_cert_err)
   end
@@ -70,7 +70,7 @@ function _M.cleanup(auto_ssl_instance, domain)
   assert(string.find(domain, "/") == nil)
   assert(string.find(domain, "%.%.") == nil)
 
-  local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
+  local dir = auto_ssl_instance:get("dir") .. "/zerossl/certs/" .. domain
   local _, rm_err = shell_execute({ "rm", "-rf", dir })
   if rm_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to cleanup certs: ", rm_err)

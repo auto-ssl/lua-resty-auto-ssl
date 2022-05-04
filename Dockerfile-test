@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.15.8.1-4-centos
+FROM openresty/openresty:1.19.9.1-5-centos7
 
 # Runtime dependencies
 RUN yum -y install \
@@ -26,13 +26,13 @@ RUN yum -y install epel-release && \
     procps-ng \
     redis \
     sudo \
-    https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.34-linux-amd64.rpm
+    https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.40-linux-amd64.rpm
 
 RUN mkdir /app
 WORKDIR /app
 
 COPY Makefile /app/Makefile
-RUN make install-test-deps
+#RUN make install-test-deps
 
 ENV PATH="/tmp/resty-auto-ssl-test-luarocks/bin:${PATH}"
 ENV LUA_PATH="/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?.lua;/tmp/resty-auto-ssl-test-luarocks/share/lua/5.1/?/init.lua;${LUA_PATH}"

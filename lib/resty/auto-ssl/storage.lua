@@ -23,8 +23,8 @@ function _M.delete_challenge(self, domain, path)
   return self.adapter:delete(domain .. ":challenge:" .. path)
 end
 
-function _M.get_cert(self, domain)
-  local json, err = self.adapter:get(domain .. ":latest")
+function _M.get_cert(self, domain, ssl_provider)
+  local json, err = self.adapter:get(domain .. ":" .. ssl_provider .. ":latest")
   if err then
     return nil, err
   elseif not json then
@@ -39,7 +39,7 @@ function _M.get_cert(self, domain)
   return data
 end
 
-function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
+function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry, ssl_provider)
   -- Store the public certificate and private key as a single JSON string.
   --
   -- We use a single JSON string so that the storage adapter just has to store
@@ -57,11 +57,11 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   end
 
   -- Store the cert under the "latest" alias, which is what this app will use.
-  return self.adapter:set(domain .. ":latest", string)
+  return self.adapter:set(domain .. ":" .. ssl_provider .. ":latest", string)
 end
 
-function _M.delete_cert(self, domain)
-  return self.adapter:delete(domain .. ":latest")
+function _M.delete_cert(self, domain, ssl_provider)
+  return self.adapter:delete(domain .. ":" .. ssl_provider .. ":latest")
 end
 
 function _M.all_cert_domains(self)
@@ -72,8 +72,9 @@ function _M.all_cert_domains(self)
 
   local domains = {}
   for _, key in ipairs(keys) do
-    local domain = ngx.re.sub(key, ":latest$", "", "jo")
-    table.insert(domains, domain)
+    local domain = ngx.re.sub(key, ":.*:latest$", "", "jo")
+    local ssl_provider = ngx.re.match(key, "(?<=:)(.*)(?=:latest)", "jo")
+    table.insert(domains, {[domain]=ssl_provider[0]})
   end
 
   return domains
