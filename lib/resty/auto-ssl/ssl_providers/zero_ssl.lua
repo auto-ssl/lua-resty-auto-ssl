@@ -48,7 +48,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
     return nil, "dehydrated failure"
   end
 
-  ngx.log(ngx.DEBUG, "auto-ssl: dehydrated output: " .. result["output"])
+  ngx.log(ngx.NOTICE, "auto-ssl: dehydrated output: " .. result["output"])
 
   -- The result of running that command should result in the certs being
   -- populated in our storage (due to the deploy_cert hook triggering).
