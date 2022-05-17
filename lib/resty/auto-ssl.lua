@@ -45,6 +45,14 @@ function _M.new(options)
     options["letsencrypt_ca"] = "https://acme-v02.api.letsencrypt.org/directory"
   end
 
+  if not options["provider_order"] then
+    options["provider_order"] = {"letsencrypt"}
+  end
+
+  if not options["ssl_provider"] then
+    options["ssl_provider"] = {["letsencrypt"]="resty.auto-ssl.ssl_providers.lets_encrypt"}
+  end
+
   if not options["storage_adapter"] then
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
   end

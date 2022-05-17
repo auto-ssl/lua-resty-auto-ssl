@@ -81,7 +81,8 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   -- After obtaining the local and distributed lock, see if the certificate
   -- has already been registered.
   local cert
-  for ssl_provider_name, ssl_provider_class in pairs(auto_ssl:get("ssl_provider")) do
+  local provider_order = auto_ssl:get("provider_order")
+  for i,ssl_provider_name in ipairs(provider_order) do
     local err
     cert, err = storage:get_cert(domain,ssl_provider_name)
     if err then
@@ -94,9 +95,10 @@ local function issue_cert(auto_ssl_instance, storage, domain)
     end
   end
 
-  for ssl_provider_name, ssl_provider_class in pairs(auto_ssl:get("ssl_provider")) do
-    local ssl_provider = require(ssl_provider_class)
-    ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for " .. ssl_provider_name .. ", ", domain)
+  local ssl_providers = auto_ssl:get("ssl_provider")
+  for i,ssl_provider_name in ipairs(provider_order) do
+    local ssl_provider = require(ssl_providers[ssl_provider_name])
+    ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", ssl_provider_name .. ", ", domain)
     local err
     cert, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
     if err then
@@ -135,7 +137,7 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
   -- Next, look for the certificate in permanent storage (which can be shared
   -- across servers depending on the storage).
   local storage = auto_ssl_instance.storage
-  for ssl_provider, provider_class  in pairs(auto_ssl:get("ssl_provider")) do
+  for i,ssl_provider in ipairs(auto_ssl:get("provider_order")) do
     local cert, get_cert_err = storage:get_cert(domain, ssl_provider)
     if get_cert_err then
       ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage " .. ssl_provider .. " for ", domain, ": ", get_cert_err)
