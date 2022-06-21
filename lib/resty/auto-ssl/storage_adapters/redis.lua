@@ -107,6 +107,15 @@ function _M.delete(self, key)
   return connection:del(prefixed_key(self, key))
 end
 
+function _M.rename(self, key, newkey)
+  local connection, connection_err = self:get_connection()
+  if connection_err then
+    return false, connection_err
+  end
+
+  return connection:rename(prefixed_key(self, key),  prefixed_key(self, newkey))
+end
+
 function _M.keys_with_suffix(self, suffix)
   local connection, connection_err = self:get_connection()
   if connection_err then
