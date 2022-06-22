@@ -39,6 +39,27 @@ function _M.get_cert(self, domain, ssl_provider)
   return data
 end
 
+function _M.do_storage_format_update(self, domain)
+  local json, err = self.adapter:get(domain .. ":latest")
+  if err then
+    return nil, err
+  elseif not json then
+    return nil
+  end
+
+  local status, err = self.adapter:rename(domain .. ":latest", domain .. ":letsencrypt:latest")
+  if err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to rename: ", err)
+  end
+
+  local data, json_err = self.json_adapter:decode(json)
+  if json_err then
+    return nil, json_err
+  end
+
+  return data
+end
+
 function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry, ssl_provider)
   -- Store the public certificate and private key as a single JSON string.
   --

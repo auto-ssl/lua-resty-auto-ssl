@@ -53,6 +53,10 @@ function _M.new(options)
     options["ssl_provider"] = {["letsencrypt"]="resty.auto-ssl.ssl_providers.lets_encrypt"}
   end
 
+  if not options["storage_format_update"] then
+    options["storage_format_update"] = true
+  end
+
   if not options["storage_adapter"] then
     options["storage_adapter"] = "resty.auto-ssl.storage_adapters.file"
   end

@@ -150,6 +150,18 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
     end
   end
 
+  -- Check if cert is stored in old letsencrypt format and needs update
+  if auto_ssl:get("storage_format_update") then
+    local cert, err = storage:do_storage_format_update(domain)
+    if err then
+      ngx.log(ngx.ERR, "auto-ssl: error fetching certificate from storage for ", domain, ": ", err)
+    elseif cert and cert["fullchain_pem"] and cert["privkey_pem"] then
+      local cert_der = convert_to_der_and_cache(domain, cert)
+      cert_der["newly_issued"] = false
+      return cert_der
+    end
+  end
+
   -- Finally, issue a new certificate if one hasn't been found yet.
   if not ssl_options or ssl_options["generate_certs"] ~= false then
     local cert = issue_cert(auto_ssl_instance, storage, domain)
