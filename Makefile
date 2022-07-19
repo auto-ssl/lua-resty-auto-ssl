@@ -127,6 +127,8 @@ dev:
 	\cp test_conf/nginx/resty-auto-ssl-fallback.crt /usr/local/openresty/nginx/conf/
 	\cp test_conf/nginx/resty-auto-ssl-fallback.key /usr/local/openresty/nginx/conf/
 	\cp test_conf/dehydrated/zero-ssl.sh /etc/resty-auto-ssl/zerossl/conf.d/
+	\cp test_conf/redis.conf /etc/
+	redis-server /etc/redis.conf&
 	ngrok authtoken $(NGROK_TOKEN)
 	nginx
 	ngrok http https://localhost --log=stdout > ngrok.log &

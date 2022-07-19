@@ -28,6 +28,9 @@ RUN yum -y install epel-release && \
     sudo \
     https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.40-linux-amd64.rpm
 
+RUN yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+RUN yum --enablerepo=remi install redis -y
+
 RUN mkdir /app
 WORKDIR /app
 
