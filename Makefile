@@ -37,6 +37,7 @@ install: check-dependencies
 	install -m 644 lib/resty/auto-ssl/json_adapters/cjson.lua $(INST_LUADIR)/resty/auto-ssl/json_adapters/cjson.lua
 	install -m 644 lib/resty/auto-ssl/json_adapters/dkjson.lua $(INST_LUADIR)/resty/auto-ssl/json_adapters/dkjson.lua
 	install -m 644 lib/resty/auto-ssl/jobs/renewal.lua $(INST_LUADIR)/resty/auto-ssl/jobs/renewal.lua
+	install -m 644 lib/resty/auto-ssl/jobs/cleanup.lua $(INST_LUADIR)/resty/auto-ssl/jobs/cleanup.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/servers
 	install -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
 	install -m 644 lib/resty/auto-ssl/servers/hook.lua $(INST_LUADIR)/resty/auto-ssl/servers/hook.lua

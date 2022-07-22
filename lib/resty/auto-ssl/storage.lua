@@ -12,10 +12,14 @@ function _M.new(options)
 end
 
 function _M.get_challenge(self, domain, path)
-  return self.adapter:get(domain .. ":challenge:" .. path)
+  local value, timestamp 
+  value = self.adapter:get(domain .. ":challenge:" .. path)
+  value, timestamp = value:match("([^:]+):([^:]+)")
+  return value, timestamp
 end
 
 function _M.set_challenge(self, domain, path, value)
+  value = value .. ":" .. os.time()
   return self.adapter:set(domain .. ":challenge:" .. path, value)
 end
 
@@ -99,6 +103,23 @@ function _M.all_cert_domains(self)
   end
 
   return domains
+end
+
+function _M.all_domain_challenges(self)
+  local keys, err = self.adapter:keys_search(":challenge:")
+
+  if err then
+    return nil, err
+  end
+
+  local challenges = {}
+  for _, key in ipairs(keys) do
+    local domain = ngx.re.sub(key, ":challenge.*", "", "jo")
+    local path = ngx.re.match(key, "(?<=:challenge:).*", "jo")
+    table.insert(challenges, {[domain]=path[0]})
+  end
+
+  return challenges
 end
 
 -- A simplistic locking mechanism to try and ensure the app doesn't try to

@@ -140,4 +140,28 @@ function _M.keys_with_suffix(self, suffix)
   return keys, err
 end
 
+function _M.keys_search(self, pattern)
+  local connection, connection_err = self:get_connection()
+  if connection_err then
+    return false, connection_err
+  end
+
+  local keys, err = connection:keys(prefixed_key(self, "*" .. pattern .. "*"))
+
+  if keys and self.options["prefix"] then
+    local unprefixed_keys = {}
+    -- First character past the prefix and a colon
+    local offset = string.len(self.options["prefix"]) + 2
+
+    for _, key in ipairs(keys) do
+      local unprefixed = string.sub(key, offset)
+      table.insert(unprefixed_keys, unprefixed)
+    end
+
+    keys = unprefixed_keys
+  end
+
+  return keys, err
+end
+
 return _M
