@@ -14,7 +14,9 @@ end
 function _M.get_challenge(self, domain, path)
   local value, timestamp 
   value = self.adapter:get(domain .. ":challenge:" .. path)
-  value, timestamp = value:match("([^:]+):([^:]+)")
+  if value then
+    value, timestamp = value:match("([^:]+):([^:]+)")
+  end
   return value, timestamp
 end
 
