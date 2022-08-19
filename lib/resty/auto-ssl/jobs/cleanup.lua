@@ -38,7 +38,7 @@ local function cleanup_stale_challenges(auto_ssl_instance)
     for domain, path in pairs(line) do
       local challenge,timestamp = storage:get_challenge(domain,path)
       if timestamp == nil or current_time > timestamp + 300 then
-        ngx.log(ngx.INFO, "auto-ssl: delete stuck challenge ", domain,":", path)
+        ngx.log(ngx.WARN, "auto-ssl: delete stuck challenge ", domain,":", path)
         storage:delete_challenge(domain,path)
       end
     end
