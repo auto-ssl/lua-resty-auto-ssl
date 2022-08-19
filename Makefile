@@ -55,6 +55,7 @@ install: check-dependencies
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/shuffle_table.lua $(INST_LUADIR)/resty/auto-ssl/utils/shuffle_table.lua
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
+	install -m 644 lib/resty/auto-ssl/utils/dns_check.lua $(INST_LUADIR)/resty/auto-ssl/utils/dns_check.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
 	install -d $(INST_BINDIR)/resty-auto-ssl
@@ -130,10 +131,10 @@ dev:
 	\cp test_conf/dehydrated/zero-ssl.sh /etc/resty-auto-ssl/zerossl/conf.d/
 	\cp test_conf/redis.conf /etc/
 	redis-server /etc/redis.conf&
-	ngrok authtoken $(NGROK_TOKEN)
+	#ngrok authtoken $(NGROK_TOKEN)
 	nginx
-	ngrok http https://localhost --log=stdout > ngrok.log &
-	sleep 1 && cat ngrok.log
+	#ngrok http https://localhost --log=stdout > ngrok.log &
+	#sleep 1 && cat ngrok.log
 	bash
 
 release:

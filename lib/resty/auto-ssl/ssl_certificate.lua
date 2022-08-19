@@ -2,6 +2,7 @@ local http = require "resty.http"
 local lock = require "resty.lock"
 local ocsp = require "ngx.ocsp"
 local ssl = require "ngx.ssl"
+local dns_check = require "resty.auto-ssl.utils.dns_check"
 
 local function convert_to_der_and_cache(domain, cert)
   -- Convert certificate from PEM to DER format.
@@ -98,7 +99,7 @@ local function issue_cert(auto_ssl_instance, storage, domain)
   local ssl_providers = auto_ssl:get("ssl_provider")
   for i,ssl_provider_name in ipairs(provider_order) do
     local ssl_provider = require(ssl_providers[ssl_provider_name])
-    ngx.log(ngx.NOTICE, "auto-ssl: issuing new certificate for ", ssl_provider_name .. ", ", domain)
+    ngx.log(ngx.INFO, "auto-ssl: issuing new certificate for ", ssl_provider_name .. ", ", domain)
     local err
     cert, err = ssl_provider.issue_cert(auto_ssl_instance, domain)
     if err then
@@ -164,6 +165,10 @@ local function get_cert_der(auto_ssl_instance, domain, ssl_options)
 
   -- Finally, issue a new certificate if one hasn't been found yet.
   if not ssl_options or ssl_options["generate_certs"] ~= false then
+    if not dns_check(auto_ssl_instance, domain) then
+      return nil, "dns check failed"
+    end
+
     local cert = issue_cert(auto_ssl_instance, storage, domain)
     if cert and cert["fullchain_pem"] and cert["privkey_pem"] then
       local cert_der = convert_to_der_and_cache(domain, cert)

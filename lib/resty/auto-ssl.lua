@@ -81,6 +81,14 @@ function _M.new(options)
     options["hook_server_port"] = 8999
   end
 
+  if not options["dns_check_before_cert"] then
+    options["dns_check_before_cert"] = false
+  end
+
+  if not options["dns_check_hosts"] then
+    options["dns_check_hosts"] = {"host1", "1.1.1.1"}
+  end
+
   return setmetatable({ options = options }, { __index = _M })
 end
 
