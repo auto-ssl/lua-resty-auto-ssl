@@ -139,11 +139,11 @@ function _M.issue_cert_lock(self, domain)
   local key = domain .. ":issue_cert_lock"
   local lock_rand_value = str.to_hex(resty_random.bytes(32))
 
-  -- Wait up to 300 seconds for any existing locks to be unlocked (zerossl is slow).
+  -- Wait up to 200 seconds for any existing locks to be unlocked (zerossl is slow).
   local unlocked = false
   local wait_time = 0
   local sleep_time = 0.5
-  local max_time = 300
+  local max_time = 200
   repeat
     local existing_value = self.adapter:get(key)
     if not existing_value then
@@ -155,7 +155,7 @@ function _M.issue_cert_lock(self, domain)
   until unlocked or wait_time > max_time
 
   -- Create a new lock.
-  local ok, err = self.adapter:set(key, lock_rand_value, { exptime = 30 })
+  local ok, err = self.adapter:set(key, lock_rand_value, { exptime = 200 })
   if not ok then
     return nil, err
   else
