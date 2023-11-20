@@ -5,9 +5,11 @@ local str = require "resty.string"
 
 local function check_dependencies()
   local runtime_dependencies = {
+    "awk",
     "bash",
     "curl",
     "diff",
+    "find",
     "grep",
     "mktemp",
     "openssl",

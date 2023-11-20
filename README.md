@@ -315,13 +315,17 @@ auto_ssl:set("http_proxy_options", {
 })
 ```
 
-## `ssl_certificate` Configuration
+## API
+
+<a id="ssl_certificate-configuration"></a>
+### `ssl_certificate`
+*Syntax:* `auto_ssl:ssl_certificate(options)`
 
 The `ssl_certificate` function accepts an optional table of configuration options. These options can be used to customize and control the SSL behavior on a per nginx `server` basis. Some built-in options may control the default behavior of lua-resty-auto-ssl, but any other custom data can be given as options, which will then be passed along to the [`allow_domain`](#allow_domain) and [`request_domain`](#request_domain) callback functions.
 
 Built-in configuration options:
 
-### `generate_certs`
+#### `generate_certs`
 *Default:* true
 
 This variable can be used to disable generating certs on a per server block location.
@@ -337,7 +341,26 @@ server {
 }
 ```
 
-### Advanced Let's Encrypt Configuration
+### `has_certificate`
+*Syntax:* `exists = auto_ssl:has_certificate(domain, shmem_only?)`
+
+The `has_certificate` function returns a boolean value for whether or not a certificate exists for the given `domain`. This is first looked up in the local shared memory cache, and then falls back to fetching from storage.
+
+The optional `shmem_only` parameter can be set to true in order to only check the local shared memory cache for the presence of the certificate, and not check the storage engine.
+
+*Example:*
+
+```nginx
+rewrite_by_lua_block {
+  local has_cert = auto_ssl:has_certificate(ngx.var.host)
+  if has_cert then
+    local https_uri = "https://" .. ngx.var.host .. ngx.var.request_uri
+    ngx.redirect(https_uri, 301)
+  end
+}
+```
+
+## Advanced Let's Encrypt Configuration
 
 Internally, lua-resty-auto-ssl uses [dehydrated](https://github.com/lukas2511/dehydrated) as it's Let's Encrypt client. If you'd like to adjust lower-level settings, like the private key size, public key algorithm, or your registration e-mail, these settings can be configured in a custom dehydrated configuration file.
 

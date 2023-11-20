@@ -197,6 +197,52 @@ describe("sanity", function()
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)
 
+  it("cleans up dehydrated files on certificate registration failure", function()
+    server.start()
+
+    local ls_before_result, ls_before_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
+    assert.equal(nil, ls_before_err)
+    local expected_ls_before = {
+      "conf.d",
+      "config",
+      "locks",
+    }
+    if server.dehydrated_cached_accounts then
+      table.insert(expected_ls_before, "accounts")
+    end
+    table.sort(expected_ls_before)
+    assert.same(expected_ls_before, pl_utils.split(ls_before_result["output"]))
+
+    local httpc = http.new()
+    local _, connect_err = httpc:connect("127.0.0.1", 9443)
+    assert.equal(nil, connect_err)
+
+    local _, ssl_err = httpc:ssl_handshake(nil, "unresolvable-sdjfklsdjf.example", true)
+    assert.equal("18: self signed certificate", ssl_err)
+
+    local error_log = server.read_error_log()
+    assert.matches("auto-ssl: issuing new certificate for unresolvable-sdjfklsdjf.example", error_log, nil, true)
+    assert.matches("auto-ssl: dehydrated failed", error_log, nil, true)
+    assert.matches("auto-ssl: could not get certificate for unresolvable-sdjfklsdjf.example", error_log, nil, true)
+    assert.Not.matches("[alert]", error_log, nil, true)
+    assert.Not.matches("[emerg]", error_log, nil, true)
+
+    local ls_result, ls_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt" })
+    assert.equal(nil, ls_err)
+    assert.same({
+      "accounts",
+      "certs",
+      "chains",
+      "conf.d",
+      "config",
+      "locks",
+    }, pl_utils.split(ls_result["output"]))
+
+    local ls_certs_result, ls_certs_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt/certs" })
+    assert.equal(nil, ls_certs_err)
+    assert.same({}, pl_utils.split(ls_certs_result["output"]))
+  end)
+
   it("allows for custom logic to control domain name to handle lack of SNI support", function()
     server.start({
       auto_ssl_pre_new = [[
@@ -378,7 +424,7 @@ describe("sanity", function()
     assert.Not.matches("[emerg]", error_log, nil, true)
   end)
 
-  it("retains dehydrated temporary files if cert deployment fails", function()
+  it("deletes dehydrated temporary files if cert deployment fails", function()
     server.start()
 
     -- Create a directory where the storage file would normally belong so
@@ -429,9 +475,7 @@ describe("sanity", function()
 
     local ls_certs_result, ls_certs_err = shell_blocking.capture_combined({ "ls", "-1", server.current_test_dir .. "/auto-ssl/letsencrypt/certs" })
     assert.equal(nil, ls_certs_err)
-    assert.same({
-      server.ngrok_hostname,
-    }, pl_utils.split(ls_certs_result["output"]))
+    assert.same({}, pl_utils.split(ls_certs_result["output"]))
 
     assert(dir.rmtree(server.current_test_dir .. "/auto-ssl/storage/file/" .. ngx.escape_uri(server.ngrok_hostname .. ":latest")))
 
@@ -452,8 +496,9 @@ describe("sanity", function()
 
       local error_log = server.nginx_error_log_tail:read()
       assert.matches("auto-ssl: issuing new certificate for", error_log, nil, true)
-      assert.matches("Checking domain name(s) of existing cert... unchanged.", error_log, nil, true)
-      assert.matches("auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to manually copy", error_log, nil, true)
+      assert.Not.matches("[error]", error_log, nil, true)
+      assert.Not.matches("[alert]", error_log, nil, true)
+      assert.Not.matches("[emerg]", error_log, nil, true)
     end
 
     local error_log = server.read_error_log()
