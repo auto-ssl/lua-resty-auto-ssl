@@ -3,7 +3,6 @@ FROM openresty/openresty:1.21.4.1-0-centos
 # Runtime dependencies
 RUN yum -y install \
   bash \
-  coreutils \
   curl \
   diffutils \
   grep \
@@ -25,8 +24,10 @@ RUN yum -y install epel-release && \
     lua \
     procps-ng \
     redis \
-    sudo \
-    https://bin.equinox.io/a/6iuHhJeWypm/ngrok-3.4.0-linux-amd64.rpm
+    sudo
+RUN curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz && \
+  tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/ && \
+  rm -f /tmp/ngrok.tar.gz
 
 RUN mkdir /app
 WORKDIR /app

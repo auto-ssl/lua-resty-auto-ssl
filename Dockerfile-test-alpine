@@ -27,9 +27,10 @@ RUN apk add --no-cache \
     redis \
     sudo \
     tzdata \
-    wget && \
-  curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install ngrok && \
-  chmod +x /usr/local/bin/ngrok
+    wget
+RUN curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-386.tgz && \
+  tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/ && \
+  rm -f /tmp/ngrok.tar.gz
 
 COPY Makefile /app/Makefile
 RUN make install-test-deps
