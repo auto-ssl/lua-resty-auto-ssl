@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.13.6.2-2-centos
+FROM openresty/openresty:1.21.4.1-0-centos
 
 # Runtime dependencies
 RUN yum -y install \
@@ -23,7 +23,7 @@ RUN yum -y install epel-release && \
     procps-ng \
     redis \
     sudo \
-    https://bin.equinox.io/a/6iuHhJeWypm/ngrok-2.3.34-linux-amd64.rpm
+    https://bin.equinox.io/a/6iuHhJeWypm/ngrok-3.4.0-linux-amd64.rpm
 
 RUN mkdir /app
 WORKDIR /app

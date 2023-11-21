@@ -96,11 +96,11 @@ install-test-deps:
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install busted 2.0.0-1
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install etlua 1.3.0-1
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install inspect 3.1.1-0
-	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install lua-resty-http 0.15-0
+	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install lua-resty-http 0.17.1-0
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install luacheck 0.23.0-1
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install luaposix 34.1.1-1
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install penlight 1.5.4-1
-	luarocks install luarocks-fetch-gitrec && luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install process 1.9.0-1
+	luarocks install luarocks-fetch-gitrec && luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install process 1.9.1-1
 	luarocks --tree=/tmp/resty-auto-ssl-test-luarocks install shell-games 1.0.1-1
 
 lint:
