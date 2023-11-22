@@ -3,7 +3,6 @@ local parse_openssl_time = require "resty.auto-ssl.utils.parse_openssl_time"
 local shell_blocking = require "shell-games"
 local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
 local ssl_provider = require "resty.auto-ssl.ssl_providers.lets_encrypt"
-local verify_domain = require "resty.auto-ssl.utils.verify_domain"
 
 local _M = {}
 
@@ -149,14 +148,6 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   if not allow_domain(domain, auto_ssl_instance, nil, true) then
     ngx.log(ngx.NOTICE, "auto-ssl: domain not allowed, not renewing: ", domain)
     delete_cert_if_expired(domain, storage, cert)
-    renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
-    return
-  end
-
-  -- Check to ensure the domain is one we allow again.
-  local valid, verify_domain_err = verify_domain(auto_ssl_instance, domain)
-  if not valid then
-    ngx.log(ngx.ERR, "auto-ssl: this domain seems to have been invalid: ", verify_domain_err)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return
   end
