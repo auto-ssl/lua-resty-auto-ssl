@@ -161,7 +161,6 @@ function _M.start(options)
 
   start_ngrok()
   start_redis()
-  _M.stop_sockproc()
 
   if not options then
     options = {}
@@ -240,20 +239,12 @@ function _M.stop()
 
     kill(_M.nginx_process)
     _M.nginx_process = nil
-
-    _M.stop_sockproc()
   end
 end
 
 function _M.read_error_log()
   local log = log_tail.new(_M.current_test_dir .. "/error.log")
   return log:read()
-end
-
-function _M.stop_sockproc()
-  shell_blocking.capture_combined({ "pkill", "sockproc" })
-  local _, err = shell_blocking.capture_combined({ "rm", "-f", "/tmp/shell.sock", "/tmp/auto-ssl-sockproc.pid" })
-  assert(not err, err)
 end
 
 return _M

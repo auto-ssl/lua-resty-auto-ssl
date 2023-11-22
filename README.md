@@ -413,4 +413,4 @@ To release a new version to LuaRocks:
 - Document and formalize the API for other storage adapters.
 - Open source the MongoDB storage adapter we're using in API Umbrella.
 - Add the ability to encrypt data at rest for any storage adapter (based on what we built for API Umbrella's MongoDB storage adapter).
-- We currently rely on [dehydrated](https://github.com/lukas2511/dehydrated) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.
+- We currently rely on [dehydrated](https://github.com/lukas2511/dehydrated) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/openresty/lua-resty-shell), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.

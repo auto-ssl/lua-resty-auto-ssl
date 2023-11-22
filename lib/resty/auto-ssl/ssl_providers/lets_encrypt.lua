@@ -71,8 +71,8 @@ function _M.cleanup(auto_ssl_instance, domain)
   assert(string.find(domain, "%.%.") == nil)
 
   local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
-  local _, rm_err = shell_execute({ "rm", "-rf", dir })
-  if rm_err then
+  local result, rm_err = shell_execute({ "rm", "-rf", dir })
+  if result["status"] ~= 0 then
     ngx.log(ngx.ERR, "auto-ssl: failed to cleanup certs: ", rm_err)
   end
 end
