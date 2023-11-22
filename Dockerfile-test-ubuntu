@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.15.8.2-1-bionic
+FROM openresty/openresty:1.21.4.1-0-jammy
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
   apt-get -y install \
     bash \
-    coreutils \
     curl \
     diffutils \
     grep \
@@ -22,13 +21,17 @@ RUN apt-get update && \
   apt-get -y install \
     git \
     lsof \
-    lua5.2 \
+    lua5.4 \
     redis-server \
     sudo \
-    tzdata && \
-  curl -fsSL -o /tmp/ngrok.deb https://bin.equinox.io/a/b2wQezFbsHk/ngrok-2.3.34-linux-amd64.deb && \
-  dpkg -i /tmp/ngrok.deb || apt-get -fy install && \
-  rm -f /tmp/ngrok.deb
+    tzdata \
+    bsdmainutils
+RUN curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
+    sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && \
+    echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
+    sudo tee /etc/apt/sources.list.d/ngrok.list && \
+    sudo apt update && \
+    sudo apt install ngrok
 
 RUN mkdir /app
 WORKDIR /app

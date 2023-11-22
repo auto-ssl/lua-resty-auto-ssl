@@ -207,9 +207,24 @@ local function get_ocsp_response(fullchain_der, auto_ssl_instance)
   return ocsp_resp
 end
 
-local function set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
-  -- Fetch the OCSP stapling response from the cache, or make the request to
-  -- fetch it.
+local function get_ocsp_response_unlock(local_lock)
+  local _, local_unlock_err = local_lock:unlock()
+  if local_unlock_err then
+    ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
+  end
+end
+
+local function get_ocsp_response_lock(domain, cert_der, auto_ssl_instance)
+  -- Before issuing a cert, create a local lock to ensure multiple workers
+  -- don't simultaneously try to get OCSP response for the same cert.
+  local local_lock, new_local_lock_err = lock:new("auto_ssl", { exptime = 30, timeout = 5 })
+  if new_local_lock_err then
+    return nil, "auto-ssl: failed to create lock: " .. (new_local_lock_err or "")
+  end
+  local _, local_lock_err = local_lock:lock("set_ocsp_stapling:" .. domain)
+  if local_lock_err then
+    return nil, "auto-ssl: failed to obtain lock: " .. (local_lock_err or "")
+  end
   local ocsp_resp = ngx.shared.auto_ssl:get("domain:ocsp:" .. domain)
   if not ocsp_resp then
     -- If the certificate was just issued on the current request, wait 1 second
@@ -222,7 +237,8 @@ local function set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
     local ocsp_response_err
     ocsp_resp, ocsp_response_err = get_ocsp_response(cert_der["fullchain_der"], auto_ssl_instance)
     if ocsp_response_err then
-      return false, "failed to get ocsp response: " .. (ocsp_response_err or "")
+      get_ocsp_response_unlock(local_lock)
+      return nil, "failed to get ocsp response: " .. (ocsp_response_err or "")
     end
 
     -- Cache the OCSP stapling response for 1 hour (this is what nginx does by
@@ -232,6 +248,23 @@ local function set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
       ngx.log(ngx.ERR, "auto-ssl: failed to set shdict cache of OCSP response for " .. domain .. ": ", set_ocsp_err)
     elseif set_ocsp_forcible then
       ngx.log(ngx.ERR, "auto-ssl: 'lua_shared_dict auto_ssl' might be too small - consider increasing its configured size (old entries were removed while adding OCSP response for " .. domain .. ")")
+    end
+  end
+
+  get_ocsp_response_unlock(local_lock)
+
+  return ocsp_resp
+end
+
+local function set_ocsp_stapling(domain, cert_der, auto_ssl_instance)
+  -- Fetch the OCSP stapling response from the cache, or make the request to
+  -- fetch it.
+  local ocsp_resp = ngx.shared.auto_ssl:get("domain:ocsp:" .. domain)
+  if not ocsp_resp then
+    local ocsp_response_err
+    ocsp_resp, ocsp_response_err = get_ocsp_response_lock(domain, cert_der, auto_ssl_instance)
+    if not ocsp_resp then
+      return false, ocsp_response_err
     end
   end
 

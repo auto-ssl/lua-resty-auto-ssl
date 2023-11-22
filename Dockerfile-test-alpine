@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.15.8.2-1-alpine-fat
+FROM openresty/openresty:1.21.4.1-0-alpine-fat
 
 RUN mkdir /app
 WORKDIR /app
@@ -27,11 +27,10 @@ RUN apk add --no-cache \
     redis \
     sudo \
     tzdata \
-    wget && \
-  curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/a/naDTyS8Kyxv/ngrok-2.3.34-linux-386.tar.gz && \
+    wget
+RUN curl -fsSL -o /tmp/ngrok.tar.gz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-386.tgz && \
   tar -xvf /tmp/ngrok.tar.gz -C /usr/local/bin/ && \
-  rm -f /tmp/ngrok.tar.gz && \
-  chmod +x /usr/local/bin/ngrok
+  rm -f /tmp/ngrok.tar.gz
 
 COPY Makefile /app/Makefile
 RUN make install-test-deps

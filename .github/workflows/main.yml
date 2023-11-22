@@ -20,7 +20,7 @@ jobs:
           - centos
           - alpine
           - ubuntu
-          - openresty1.13
+          - openresty1.21
           - lua51
     steps:
       - uses: actions/checkout@v1
