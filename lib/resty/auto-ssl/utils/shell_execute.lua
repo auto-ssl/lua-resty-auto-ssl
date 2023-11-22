@@ -7,8 +7,11 @@ return function(args)
     shell.run(command, nil, 60000)
 
   return {
+    ok = ok,
+    reason = reason,
     command = command,
     status = status,
     output = stdout,
-  }, stderr
+    err = stderr
+  }
 end
