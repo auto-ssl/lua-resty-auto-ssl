@@ -214,7 +214,7 @@ local function get_ocsp_response(fullchain_der, auto_ssl_instance)
   return ocsp_resp
 end
 
-local function get_ocsp_response_unlock(domain, local_lock)
+local function get_ocsp_response_unlock(local_lock)
   local _, local_unlock_err = local_lock:unlock()
   if local_unlock_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to unlock: ", local_unlock_err)
@@ -244,7 +244,7 @@ local function get_ocsp_response_lock(domain, cert_der, auto_ssl_instance)
     local ocsp_response_err
     ocsp_resp, ocsp_response_err = get_ocsp_response(cert_der["fullchain_der"], auto_ssl_instance)
     if ocsp_response_err then
-      get_ocsp_response_unlock(domain, local_lock)
+      get_ocsp_response_unlock(local_lock)
       return nil, "failed to get ocsp response: " .. (ocsp_response_err or "")
     end
 
@@ -258,7 +258,7 @@ local function get_ocsp_response_lock(domain, cert_der, auto_ssl_instance)
     end
   end
 
-  get_ocsp_response_unlock(domain, local_lock)
+  get_ocsp_response_unlock(local_lock)
 
   return ocsp_resp
 end
