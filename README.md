@@ -10,7 +10,7 @@ This OpenResty plugin automatically and transparently issues SSL certificates fr
 - If the system already has a SSL certificate for that domain, it is immediately returned (with OCSP stapling).
 - If the system does not yet have an SSL certificate for this domain, it issues a new SSL certificate from Let's Encrypt. Domain validation is handled for you. After receiving the new certificate (usually within a few seconds), the new certificate is saved, cached, and returned to the client (without dropping the original request).
 
-This uses the `ssl_certificate_by_lua` functionality in OpenResty 1.9.7.2+.
+This uses the `ssl_certificate_by_lua` functionality.
 
 By using lua-resty-auto-ssl to register SSL certificates with Let's Encrypt, you agree to the [Let's Encrypt Subscriber Agreement](https://letsencrypt.org/repository/).
 
@@ -22,9 +22,7 @@ Used in production (but the internal APIs might still be in flux).
 
 Requirements:
 
-- [OpenResty](http://openresty.org/#Download) 1.9.7.2 or higher
-  - **Recommended:** OpenResty 1.15.8.1 or higher is recommended for best performance and stability.
-  - Or nginx patched with [ssl_cert_cb_yield](https://github.com/openresty/openresty/blob/v1.11.2.2/patches/nginx-1.11.2-ssl_cert_cb_yield.patch) and built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
+- [OpenResty](http://openresty.org/#Download) 1.15.8.1 or higher
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
 - gcc, make (for initial install via LuaRocks)
