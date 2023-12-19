@@ -2,6 +2,7 @@ local lock = require "resty.lock"
 local parse_openssl_time = require "resty.auto-ssl.utils.parse_openssl_time"
 local shell_blocking = require "shell-games"
 local shuffle_table = require "resty.auto-ssl.utils.shuffle_table"
+local dns_check = require "resty.auto-ssl.utils.dns_check"
 
 local _M = {}
 
@@ -181,9 +182,14 @@ local function renew_check_cert(auto_ssl_instance, storage, domain, ssl_provider
   -- Trigger a normal certificate issuance attempt, which dehydrated will
   -- skip if the certificate already exists or renew if it's within the
   -- configured time for renewals.
-  local ssl_provider_class = auto_ssl:get("ssl_provider")[ssl_provider]
-  ssl_provider_class = require (ssl_provider_class)
-  local _, issue_err = ssl_provider_class.issue_cert(auto_ssl_instance, domain)
+  local _, issue_err
+  if dns_check(auto_ssl_instance, domain) then
+    local ssl_provider_class = auto_ssl:get("ssl_provider")[ssl_provider]
+    ssl_provider_class = require (ssl_provider_class)
+    _, issue_err = ssl_provider_class.issue_cert(auto_ssl_instance, domain)
+  else
+    issue_err = domain .. " dns check failed"
+  end
   if issue_err then
     ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", issue_err)
     delete_cert_if_expired(domain, storage, cert, ssl_provider)

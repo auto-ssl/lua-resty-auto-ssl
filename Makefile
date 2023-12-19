@@ -1,7 +1,7 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR?=$(ROOT_DIR)/build
 
-DEHYDRATED_VERSION:=784fb806c891979262eef9c8f38e3c10b825aefd
+DEHYDRATED_VERSION:=ea841998631561543357f032fa7c06598c34d517
 LUA_RESTY_SHELL_VERSION:=955243d70506c21e7cc29f61d745d1a8a718994f
 SOCKPROC_VERSION:=92aba736027bb5d96e190b71555857ac5bb6b2be
 
@@ -71,7 +71,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/stamp-dehydrated-2-$(DEHYDRATED_VERSION): | $(BUILD_DIR)
 	rm -f $(BUILD_DIR)/stamp-dehydrated-*
 	mkdir -p $(BUILD_DIR)/bin
-	curl -sSLo $(BUILD_DIR)/bin/dehydrated "https://raw.githubusercontent.com/lukas2511/dehydrated/$(DEHYDRATED_VERSION)/dehydrated"
+	curl -sSLo $(BUILD_DIR)/bin/dehydrated "https://raw.githubusercontent.com//dehydrated-io/dehydrated/$(DEHYDRATED_VERSION)/dehydrated"
 	chmod +x $(BUILD_DIR)/bin/dehydrated
 	touch $@
 

@@ -29,7 +29,7 @@ return function(auto_ssl_instance, domain)
   end
   
   for i, ans in ipairs(answers) do
-      --ngx.log(ngx.ERR, ans.name, " ", ans.address or ans.cname, " type:", ans.type, " class:", ans.class, " ttl:", ans.ttl)
+      ngx.log(ngx.NOTICE, ans.name, " ", ans.address or ans.cname, " type:", ans.type, " class:", ans.class, " ttl:", ans.ttl)
       for i, entry in ipairs(auto_ssl_instance:get("dns_check_hosts")) do
         if entry == ans.name or entry == ans.address or entry == ans.cname then
           return true
