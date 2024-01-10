@@ -1,5 +1,6 @@
 local _M = {}
 
+local account_counter = 1
 local shell_execute = require "resty.auto-ssl.utils.shell_execute"
 
 function _M.issue_cert(auto_ssl_instance, domain)
@@ -18,11 +19,23 @@ function _M.issue_cert(auto_ssl_instance, domain)
   local hook_secret = ngx.shared.auto_ssl_settings:get("hook_server:secret")
   assert(type(hook_secret) == "string", "hook_server:secret must be a string")
 
+  local config_location = base_dir .. "/letsencrypt/config"
+
+  if auto_ssl_instance:get("letsencrypt_multi_account") then
+    config_location = base_dir .. "/letsencrypt/accounts/" .. account_counter .. "/config"
+    if ( auto_ssl_instance:get("letsencrypt_account_count") > account_counter  ) then
+      account_counter = account_counter + 1
+    else
+      account_counter = 1
+    end
+  end
+
   -- Run dehydrated for this domain, using our custom hooks to handle the
   -- domain validation and the issued certificates.
   --
   -- Disable dehydrated's locking, since we perform our own domain-specific
   -- locking using the storage adapter.
+
   local result, err = shell_execute({
     "env",
     "HOOK_SECRET=" .. hook_secret,
@@ -33,7 +46,8 @@ function _M.issue_cert(auto_ssl_instance, domain)
     "--no-lock",
     "--domain", domain,
     "--challenge", "http-01",
-    "--config", base_dir .. "/letsencrypt/config",
+    "--config", config_location,
+    "--out", base_dir .. "/letsencrypt/certs",
     "--hook", lua_root .. "/bin/resty-auto-ssl/letsencrypt_hooks",
   })
 

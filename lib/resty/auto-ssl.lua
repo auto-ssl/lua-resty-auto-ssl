@@ -45,6 +45,14 @@ function _M.new(options)
     options["letsencrypt_ca"] = "https://acme-v02.api.letsencrypt.org/directory"
   end
 
+  if not options["letsencrypt_multi_account"] then
+    options["letsencrypt_multi_account"] = false
+  end
+  -- 10 per 3h per IP.
+  if not options["letsencrypt_account_count"] then
+    options["letsencrypt_account_count"] = 2
+  end
+
   if not options["provider_order"] then
     options["provider_order"] = {"letsencrypt"}
   end
