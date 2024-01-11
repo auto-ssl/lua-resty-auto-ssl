@@ -92,6 +92,29 @@ local function generate_config_letsencrypt(auto_ssl_instance)
   if chown_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to chown letsencrypt/locks dir: ", chown_locks_err)
   end
+
+  -- if multi account enabled reuse main config by symlinkink
+  if auto_ssl_instance:get("letsencrypt_multi_account") then
+    local account_count = auto_ssl_instance:get("letsencrypt_account_count")
+    for account_counter = 1, account_count do
+      local account_dir = base_dir .. "/letsencrypt/accounts/" .. account_counter
+
+      local _, mkdir_account_err = shell_blocking.capture_combined({ "mkdir", "-p", account_dir }, { umask = "0022" })
+      if mkdir_account_err then
+        ngx.log(ngx.ERR, "auto-ssl: failed to create " .. account_dir .. " dir: ", mkdir_account_err)
+      end
+
+      local _, chown_account_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", account_dir })
+      if chown_account_err then
+        ngx.log(ngx.ERR, "auto-ssl: failed to chown " .. account_dir .. " dir: ", chown_account_err)
+      end
+
+      local _, symlink_account_err = shell_blocking.capture_combined({ "ln", "-srf", "letsencrypt/config", account_dir .. "/" }, { chdir = base_dir })
+      if symlink_account_err then
+        ngx.log(ngx.ERR, "auto-ssl: failed to symlink " .. base_dir .. "letsencrypt/config" .. " to " .. account_dir .. "/", symlink_account_err)
+      end
+    end
+  end
 end
 
 local function generate_config_zerossl(auto_ssl_instance)
