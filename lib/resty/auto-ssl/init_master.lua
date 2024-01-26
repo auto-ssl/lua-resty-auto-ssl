@@ -14,6 +14,7 @@ local function check_dependencies()
     "mktemp",
     "openssl",
     "sed",
+    "getent",
   }
   for _, bin in ipairs(runtime_dependencies) do
     local _, err = shell_blocking.capture_combined({ "command", "-v", bin })
@@ -21,6 +22,14 @@ local function check_dependencies()
       ngx.log(ngx.ERR, "auto-ssl: `" .. bin .. "` was not found in PATH. Please install `" .. bin .. "` first.")
     end
   end
+end
+
+-- debian or redhat
+local nobody_group = os.execute("getent group nobody")
+if nobody_group then
+  nobody_group = "nobody:nobody"
+else
+  nobody_group = "nobody:nogroup"
 end
 
 -- Generate a secret token used for the dehydrated bash hook script to
@@ -80,7 +89,7 @@ local function generate_config_letsencrypt(auto_ssl_instance)
   if mkdir_challenges_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/.acme-challenges dir: ", mkdir_challenges_err)
   end
-  local _, chown_challenges_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/letsencrypt/.acme-challenges" })
+  local _, chown_challenges_err = shell_blocking.capture_combined({ "chown", nobody_group, base_dir .. "/letsencrypt/.acme-challenges" })
   if chown_challenges_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to chown letsencrypt/.acme-challenges dir: ", chown_challenges_err)
   end
@@ -88,7 +97,7 @@ local function generate_config_letsencrypt(auto_ssl_instance)
   if mkdir_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create letsencrypt/locks dir: ", mkdir_locks_err)
   end
-  local _, chown_locks_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/letsencrypt/locks" })
+  local _, chown_locks_err = shell_blocking.capture_combined({ "chown", nobody_group, base_dir .. "/letsencrypt/locks" })
   if chown_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to chown letsencrypt/locks dir: ", chown_locks_err)
   end
@@ -104,7 +113,7 @@ local function generate_config_letsencrypt(auto_ssl_instance)
         ngx.log(ngx.ERR, "auto-ssl: failed to create " .. account_dir .. " dir: ", mkdir_account_err)
       end
 
-      local _, chown_account_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", account_dir })
+      local _, chown_account_err = shell_blocking.capture_combined({ "chown", nobody_group, account_dir })
       if chown_account_err then
         ngx.log(ngx.ERR, "auto-ssl: failed to chown " .. account_dir .. " dir: ", chown_account_err)
       end
@@ -151,7 +160,7 @@ local function generate_config_zerossl(auto_ssl_instance)
   if mkdir_challenges_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create zerossl/.acme-challenges dir: ", mkdir_challenges_err)
   end
-  local _, chown_challenges_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/zerossl/.acme-challenges" })
+  local _, chown_challenges_err = shell_blocking.capture_combined({ "chown", nobody_group, base_dir .. "/zerossl/.acme-challenges" })
   if chown_challenges_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to chown zerossl/.acme-challenges dir: ", chown_challenges_err)
   end
@@ -159,7 +168,7 @@ local function generate_config_zerossl(auto_ssl_instance)
   if mkdir_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to create zerossl/locks dir: ", mkdir_locks_err)
   end
-  local _, chown_locks_err = shell_blocking.capture_combined({ "chown", "nobody:nobody", base_dir .. "/zerossl/locks" })
+  local _, chown_locks_err = shell_blocking.capture_combined({ "chown", nobody_group, base_dir .. "/zerossl/locks" })
   if chown_locks_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to chown zerossl/locks dir: ", chown_locks_err)
   end
