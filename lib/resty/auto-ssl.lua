@@ -57,6 +57,15 @@ function _M.new(options)
     options["hook_server_port"] = 8999
   end
 
+  if not options["challenge_keys_exptime"] then
+    options["challenge_keys_exptime"] = 7200 -- 2h
+  end
+
+
+  if not options["ssl_certs_keys_exptime"] then
+    options["ssl_certs_keys_exptime"] = 7776000 -- 90 days
+  end
+
   return setmetatable({ options = options }, { __index = _M })
 end
 

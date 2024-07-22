@@ -16,7 +16,7 @@ function _M.get_challenge(self, domain, path)
 end
 
 function _M.set_challenge(self, domain, path, value)
-  return self.adapter:set(domain .. ":challenge:" .. path, value)
+  return self.adapter:set(domain .. ":challenge:" .. path, value, { exptime = self.challenge_keys_exptime })
 end
 
 function _M.delete_challenge(self, domain, path)
@@ -57,7 +57,7 @@ function _M.set_cert(self, domain, fullchain_pem, privkey_pem, cert_pem, expiry)
   end
 
   -- Store the cert under the "latest" alias, which is what this app will use.
-  return self.adapter:set(domain .. ":latest", string)
+  return self.adapter:set(domain .. ":latest", string, { exptime = self.ssl_certs_keys_exptime })
 end
 
 function _M.delete_cert(self, domain)
