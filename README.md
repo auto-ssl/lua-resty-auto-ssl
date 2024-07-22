@@ -1,12 +1,6 @@
-# lua-resty-auto-ssl
-
-[![CI](https://github.com/GUI/lua-resty-auto-ssl/workflows/CI/badge.svg)](https://github.com/GUI/lua-resty-auto-ssl/actions?workflow=CI)
-
-On the fly (and free) SSL registration and renewal inside [OpenResty/nginx](http://openresty.org) with [Let's Encrypt](https://letsencrypt.org).
-
 ----
 
-## Latest update Notice
+### Latest update Notice
 
 > [!TIP]
 > This fork was started on top of the commit `7125960`, we've added two new global parameters in order to set a TTL expiry time for the keys being inserted to redis (primarly). The TTL Applies to two types of inserted keys : challenges keys (when a challenge fails sometimes it lefts its keys in the db) and SSL-certs keys (validity duration of the certificate). To set them use {default values} : 
@@ -15,6 +9,12 @@ On the fly (and free) SSL registration and renewal inside [OpenResty/nginx](http
   auto_ssl:set("ssl_certs_keys_exptime", 7776000) -- 90 days
   ```
 ----
+
+# lua-resty-auto-ssl
+
+[![CI](https://github.com/GUI/lua-resty-auto-ssl/workflows/CI/badge.svg)](https://github.com/GUI/lua-resty-auto-ssl/actions?workflow=CI)
+
+On the fly (and free) SSL registration and renewal inside [OpenResty/nginx](http://openresty.org) with [Let's Encrypt](https://letsencrypt.org).
 
 This OpenResty plugin automatically and transparently issues SSL certificates from Let's Encrypt (a free certificate authority) as requests are received. It works like:
 
