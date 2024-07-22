@@ -58,7 +58,7 @@ function _M.new(options)
   end
 
   if not options["challenge_keys_exptime"] then
-    options["challenge_keys_exptime"] = 7200 -- 2h
+    options["challenge_keys_exptime"] = 3600 -- 1h
   end
 
 
