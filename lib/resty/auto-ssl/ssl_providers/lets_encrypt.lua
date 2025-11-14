@@ -23,7 +23,7 @@ function _M.issue_cert(auto_ssl_instance, domain)
   --
   -- Disable dehydrated's locking, since we perform our own domain-specific
   -- locking using the storage adapter.
-  local result, err = shell_execute({
+  local result = shell_execute({
     "env",
     "HOOK_SECRET=" .. hook_secret,
     "HOOK_SERVER_PORT=" .. hook_port,
@@ -43,8 +43,8 @@ function _M.issue_cert(auto_ssl_instance, domain)
   -- (in which case these files aren't of much additional use).
   _M.cleanup(auto_ssl_instance, domain)
 
-  if result["status"] ~= 0 then
-    ngx.log(ngx.ERR, "auto-ssl: dehydrated failed: ", result["command"], " status: ", result["status"], " out: ", result["output"], " err: ", err)
+  if not result["ok"] then
+    ngx.log(ngx.ERR, "auto-ssl: dehydrated failed: ", result["command"], " status: ", result["status"], " out: ", result["output"], " err: ", result["err"])
     return nil, "dehydrated failure"
   end
 
@@ -71,9 +71,9 @@ function _M.cleanup(auto_ssl_instance, domain)
   assert(string.find(domain, "%.%.") == nil)
 
   local dir = auto_ssl_instance:get("dir") .. "/letsencrypt/certs/" .. domain
-  local _, rm_err = shell_execute({ "rm", "-rf", dir })
-  if rm_err then
-    ngx.log(ngx.ERR, "auto-ssl: failed to cleanup certs: ", rm_err)
+  local result = shell_execute({ "rm", "-rf", dir })
+  if not result["ok"] then
+    ngx.log(ngx.ERR, "auto-ssl: failed to cleanup certs: ", result["err"])
   end
 end
 

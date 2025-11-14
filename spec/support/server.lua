@@ -49,12 +49,12 @@ end
 local function start_ngrok()
   if not _M.ngrok_hostname then
     assert(dir.makepath(_M.ngrok_test_dir))
-    local ngrok_process, exec_err = process.exec("ngrok", { "http", "9080", "--log", _M.ngrok_test_dir .. "/ngrok.log", "--log-format", "logfmt", "--log-level", "debug" })
+    local ngrok_process, exec_err = process.exec("ngrok", { "http", "9080", "--scheme", "http", "--log", _M.ngrok_test_dir .. "/ngrok.log", "--log-format", "logfmt", "--log-level", "debug" })
     assert(not exec_err, exec_err)
     _M.ngrok_process = ngrok_process
 
     local log = log_tail.new(_M.ngrok_test_dir .. "/ngrok.log")
-    local ok, output = log:read_until("start tunnel listen.*Hostname:[a-z0-9]+.ngrok.io")
+    local ok, output = log:read_until("started tunnel.*url=https?://[a-z0-9-]+.ngrok.io")
     if not ok then
       print(ngrok_process:stdout())
       print(ngrok_process:stderr())
@@ -68,7 +68,7 @@ local function start_ngrok()
       error("ngrok did not startup as expected")
     end
 
-    local matches, match_err = ngx.re.match(output, "Hostname:([a-z0-9]+.ngrok.io)", "jo")
+    local matches, match_err = ngx.re.match(output, "url=https?://([a-z0-9-]+.ngrok.io)", "jo")
     assert(not match_err, match_err)
     _M.ngrok_hostname = matches[1]
   end
@@ -161,7 +161,6 @@ function _M.start(options)
 
   start_ngrok()
   start_redis()
-  _M.stop_sockproc()
 
   if not options then
     options = {}
@@ -240,20 +239,12 @@ function _M.stop()
 
     kill(_M.nginx_process)
     _M.nginx_process = nil
-
-    _M.stop_sockproc()
   end
 end
 
 function _M.read_error_log()
   local log = log_tail.new(_M.current_test_dir .. "/error.log")
   return log:read()
-end
-
-function _M.stop_sockproc()
-  shell_blocking.capture_combined({ "pkill", "sockproc" })
-  local _, err = shell_blocking.capture_combined({ "rm", "-f", "/tmp/shell.sock", "/tmp/auto-ssl-sockproc.pid" })
-  assert(not err, err)
 end
 
 return _M
