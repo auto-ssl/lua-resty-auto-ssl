@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.15.8.2-1-alpine-fat
+FROM openresty/openresty:1.27.1.2-5-alpine-fat
 
 RUN mkdir /app
 WORKDIR /app
